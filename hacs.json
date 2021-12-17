@@ -1,0 +1,14 @@
+{
+    "domain": "midea_dehumidifier_local",
+    "name": "Midea Dehumidifier (LAN)",
+    "version": "0.0.1",
+    "config_flow": true,
+    "documentation": "https://github.com/nbogojevic/midea-dehumidifier-lan/main/README.md",
+    "issue_tracker": "https://github.com/nbogojevic/midea-dehumidifier-lan/issues",
+    "codeowners": ["@nbogojevic"],
+    "requirements": ["midea-beautiful-dehumidifier==0.0.10"],
+    "iot_class": "local_polling",
+    "render_readme": true,
+    "homeassistant": "2021.12.0"
+  }
+  
