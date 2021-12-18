@@ -1,7 +1,12 @@
+"""Adds dehumidifer entity for each dehumidifer appliance."""
+
 import logging
 
-from midea_beautiful_dehumidifier.lan import LanDevice
-
+from config.custom_components.midea_dehumidifier_local import (
+    ApplianceUpdateCoordinator,
+    Hub,
+    ApplianceEntity,
+)
 from config.custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.humidifier import (
     HumidifierDeviceClass,
@@ -28,29 +33,24 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
 
-    hub = hass.data[DOMAIN][config_entry.entry_id]
+    hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    # Add all entities to HA
     async_add_entities(
-        DehumidifierEntity(appliance) for appliance in hub.appliances
+        DehumidifierEntity(coordinator) for coordinator in hub.coordinators
     )
 
 
-class DehumidifierEntity(HumidifierEntity):
-    def __init__(self, appliance: LanDevice) -> None:
-        super().__init__()
-        self._appliance = appliance
-        self._unique_id = f"midea_dehumidifier_{appliance.id}"
+class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
 
     @property
-    def unique_id(self):
-        """Return the unique id."""
-        return self._unique_id
+    def name_suffix(self) -> str:
+        return ""
 
     @property
-    def name(self):
-        """Return the unique id."""
-        return str(getattr(self._appliance.state, "name", self.unique_id))
+    def unique_id_prefix(self) -> str:
+        return "midea_dehumidifier_"
 
     @property
     def should_poll(self):
@@ -60,7 +60,7 @@ class DehumidifierEntity(HumidifierEntity):
 
     @property
     def is_on(self):
-        return getattr(self._appliance.state, "is_on", False)
+        return getattr(self.appliance.state, "is_on", False)
 
     @property
     def device_class(self):
@@ -68,7 +68,7 @@ class DehumidifierEntity(HumidifierEntity):
 
     @property
     def target_humidity(self):
-        return getattr(self._appliance.state, "target_humidity", 0)
+        return getattr(self.appliance.state, "target_humidity", 0)
 
     @property
     def supported_features(self):
@@ -80,7 +80,7 @@ class DehumidifierEntity(HumidifierEntity):
 
     @property
     def mode(self):
-        curr_mode = getattr(self._appliance.state, "mode", 1)
+        curr_mode = getattr(self.appliance.state, "mode", 1)
         if curr_mode == 1:
             return MODE_NORMAL
         if curr_mode == 2:
@@ -102,19 +102,15 @@ class DehumidifierEntity(HumidifierEntity):
         """Return the max humidity set."""
         return 85
 
-    @property
-    def fan_speed(self):
-        return getattr(self._appliance.state, "fan_speed", 0)
-
     def turn_on(self, **kwargs):
         """Turn the entity on."""
-        setattr(self._appliance.state, "is_on", True)
-        self._appliance.apply()
+        setattr(self.appliance.state, "is_on", True)
+        self.appliance.apply()
 
     def turn_off(self, **kwargs):
         """Turn the entity off."""
-        setattr(self._appliance.state, "is_on", False)
-        self._appliance.apply()
+        setattr(self.appliance.state, "is_on", False)
+        self.appliance.apply()
 
     def set_mode(self, mode):
         """Set new target preset mode."""
@@ -129,32 +125,10 @@ class DehumidifierEntity(HumidifierEntity):
         else:
             _LOGGER.warn("Unsupported dehumidifer mode %s", mode)
             curr_mode = 1
-        setattr(self._appliance.state, "mode", curr_mode)
-        self._appliance.apply()
+        setattr(self.appliance.state, "mode", curr_mode)
+        self.appliance.apply()
 
     def set_humidity(self, humidity):
         """Set new target humidity."""
-        setattr(self._appliance.state, "target_humidity", False)
-        self._appliance.apply()
-
-    def update(self) -> None:
-        self._appliance.refresh()
-
-    @property
-    def extra_state_attributes(self):
-        """Return entity specific state attributes."""
-
-        return {
-            "fan_speed": self.fan_speed,
-        }
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                (DOMAIN, self._appliance.sn)
-            },
-            "name": str(getattr(self._appliance.state, "name", self.unique_id)),
-            "manufacturer": "Midea",
-            "model": str(self._appliance.type),
-        }
+        setattr(self.appliance.state, "target_humidity", False)
+        self.appliance.apply()

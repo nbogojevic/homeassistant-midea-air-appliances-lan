@@ -1,4 +1,9 @@
-from midea_beautiful_dehumidifier.lan import LanDevice
+"""Adds fan entity for each dehumidifer appliance."""
+from config.custom_components.midea_dehumidifier_local import (
+    ApplianceUpdateCoordinator,
+    Hub,
+    ApplianceEntity,
+)
 from config.custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.fan import SUPPORT_SET_SPEED, FanEntity
 from homeassistant.core import HomeAssistant
@@ -11,50 +16,34 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    hub = hass.data[DOMAIN][config_entry.entry_id]
+    hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    # Add all entities to HA
     async_add_entities(
-        DehumidiferFan(appliance) for appliance in hub.appliances
+        DehumidiferFan(coordinator) for coordinator in hub.coordinators
     )
 
 
-class DehumidiferFan(FanEntity):
-    def __init__(self, appliance: LanDevice) -> None:
-        super().__init__()
-        self._appliance = appliance
-        self._unique_id = f"midea_dehumidifier_fan_{appliance.id}"
+class DehumidiferFan(ApplianceEntity, FanEntity):
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
 
     @property
-    def unique_id(self):
-        """Return the unique id."""
-        return self._unique_id
+    def name_suffix(self) -> str:
+        return " Fan"
 
     @property
-    def name(self):
-        """Return the unique id."""
-        return str(getattr(self._appliance.state, "name", self.unique_id)) + " Fan"
+    def unique_id_prefix(self) -> str:
+        return "midea_dehumidifier_fan_"
 
     @property
     def percentage(self):
-        return getattr(self._appliance.state, "fan_speed", 0)
+        return getattr(self.appliance.state, "fan_speed", 0)
 
     @property
     def supported_features(self):
         return SUPPORT_SET_SPEED
-    
+
     def set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
-        setattr(self._appliance.state, "fan_speed", percentage)
-        self._appliance.apply()
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                (DOMAIN, self._appliance.sn)
-            },
-            "name": str(getattr(self._appliance.state, "name", self.unique_id)),
-            "manufacturer": "Midea",
-            "model": str(self._appliance.type),
-        }
+        setattr(self.appliance.state, "fan_speed", percentage)
+        self.appliance.apply()

@@ -6,7 +6,7 @@
   "documentation": "https://github.com/nbogojevic/midea-dehumidifier-lan/main/README.md",
   "issue_tracker": "https://github.com/nbogojevic/midea-dehumidifier-lan/issues",
   "codeowners": ["@nbogojevic"],
-  "requirements": ["midea-beautiful-dehumidifier==0.0.10"],
+  "requirements": ["midea-beautiful-dehumidifier==0.0.12"],
   "iot_class": "local_polling",
   "render_readme": true,
   "homeassistant": "2021.12.0"

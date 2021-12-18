@@ -1,4 +1,9 @@
-from midea_beautiful_dehumidifier.lan import LanDevice
+"""Support for ION mode switch"""
+from config.custom_components.midea_dehumidifier_local import (
+    ApplianceUpdateCoordinator,
+    Hub,
+    ApplianceEntity,
+)
 from config.custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
@@ -12,27 +17,24 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
 
-    hub = hass.data[DOMAIN][config_entry.entry_id]
+    hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    # Add all entities to HA
-    async_add_entities(IonSwitch(appliance) for appliance in hub.appliances)
+    async_add_entities(
+        IonSwitch(coordinator) for coordinator in hub.coordinators
+    )
 
 
-class IonSwitch(SwitchEntity):
-    def __init__(self, appliance: LanDevice) -> None:
-        super().__init__()
-        self._appliance = appliance
-        self._unique_id = f"midea_dehumidifier_ion_mode_{appliance.id}"
-
-    @property
-    def unique_id(self):
-        """Return the unique id."""
-        return self._unique_id
+class IonSwitch(ApplianceEntity, SwitchEntity):
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
 
     @property
-    def name(self):
-        """Return the unique id."""
-        return str(getattr(self._appliance.state, "name", self.unique_id)) + " Ion Mode"
+    def name_suffix(self) -> str:
+        return " Ion Mode"
+
+    @property
+    def unique_id_prefix(self) -> str:
+        return "midea_dehumidifier_ion_mode_"
 
     @property
     def icon(self):
@@ -40,28 +42,14 @@ class IonSwitch(SwitchEntity):
 
     @property
     def is_on(self):
-        return getattr(self._appliance.state, "ion_mode", False)
+        return getattr(self.appliance.state, "ion_mode", False)
 
     def turn_on(self, **kwargs):
         """Turn the entity on."""
-        setattr(self._appliance.state, "ion_mode", True)
-        self._appliance.apply()
+        setattr(self.appliance.state, "ion_mode", True)
+        self.appliance.apply()
 
     def turn_off(self, **kwargs):
         """Turn the entity off."""
-        setattr(self._appliance.state, "ion_mode", False)
-        self._appliance.apply()
-
-    def update(self) -> None:
-        self._appliance.refresh()
-
-    @property
-    def device_info(self):
-        return {
-            "identifiers": {
-                (DOMAIN, self._appliance.sn)
-            },
-            "name": str(getattr(self._appliance.state, "name", self.unique_id)),
-            "manufacturer": "Midea",
-            "model": str(self._appliance.type),
-        }
+        setattr(self.appliance.state, "ion_mode", False)
+        self.appliance.apply()

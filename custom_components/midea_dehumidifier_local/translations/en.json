@@ -1,41 +1,38 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "data": {
-            "username": "Username",
-            "password": "Password",
-            "app_key": "App key"
-          },
-          "description": "Please enter Midea cloud credentials. Those are the ones used from the mobile application.",
-          "title": "Midea cloud credentials"
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Username",
+          "password": "Password"
         },
-        "unreachable_appliance": {
-          "data": {
-            "id": "Appliance ID",
-            "ip_address": "IP address",
-            "port": "IP discovery port",
-            "token": "Token",
-            "token_key": "Token key",
-            "ignore_appliance": "Ignore this appliance"
-          },
-          "description": "We were unable to discover an appliance with id {id}, name {name} on the local network. If you know its address, please enter it to add it to Home Assistant.",
-          "title": "Appliance address missing"
-        }
+        "description": "Please enter credentials that you use to connect with the mobile application.",
+        "title": "Sign-in with Midea app account"
       },
-      "error": {
-        "api_problem": "Bad response from server",
-        "cannot_connect": "Failed to connect to server",
-        "invalid_auth": "Invalid credentials",
-        "unsupported": "Unsupported operation",
-        "unknown": "An unknown error occurred",
-        "invalid_ip_address": "Invalid IPv4 address, please enter valid IPv4 address.",
-        "not_discovered": "Unable to find appliance at specified IPv4 address."
-      },
-      "abort": {
-        "already_configured": "Already configured",
-        "single_instance_allowed": "Already defined a Midea cloud account. Only a single account is supported for dehumidifier integration."
+      "unreachable_appliance": {
+        "data": {
+          "ip_address": "IPv4 address",
+          "name": "Device name",
+          "token": "Token",
+          "token_key": "Token key",
+          "ignore_appliance": "Ignore this appliance"
+        },
+        "description": "We were unable to discover an appliance called {name} with the id {id} on the local network.\n\nIf you know appliance's IPv4 address, please enter it below to add it to Home Assistant.\n\nYou can also provide token and key if you have them. If not, we will obtain them from Midea cloud.",
+        "title": "Appliance IPv4 address is missing"
       }
+    },
+    "error": {
+      "api_problem": "Bad response from server",
+      "cannot_connect": "Failed to connect to server",
+      "invalid_auth": "Invalid credentials",
+      "unsupported": "Unsupported operation",
+      "unknown": "An unknown error occurred",
+      "invalid_ip_address": "Invalid IPv4 address, please enter valid IPv4 address.",
+      "not_discovered": "Unable to find appliance at specified IPv4 address."
+    },
+    "abort": {
+      "already_configured": "Already configured",
+      "single_instance_allowed": "Already defined a Midea cloud account. Only a single account is supported for dehumidifier integration."
     }
   }
-  
+}

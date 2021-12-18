@@ -1,3 +1,4 @@
+"""Constants for Midea dehumidifier custom component"""
 from __future__ import annotations
 
 from typing import Final
@@ -6,21 +7,29 @@ from homeassistant.const import Platform
 __version__ = "0.0.1"
 
 # Base component constants
-NAME = "Midea Dehumidifier (LAN)"
-DOMAIN = "midea_dehumidifier_local"
-DOMAIN_DATA = f"{DOMAIN}_data"
-ISSUE_URL = "https://github.com/nbogojevic/midea_dehumidifier_local/issues"
+NAME: Final = "Midea Dehumidifier (LAN)"
+DOMAIN: Final = "midea_dehumidifier_local"
+ISSUE_URL: Final = (
+    "https://github.com/nbogojevic/midea-dehumidifier-lan/issues"
+)
 
-CONF_APP_KEY = "app_key"
-CONF_TOKEN_KEY = "token_key"
-CONF_IGNORE_APPLIANCE = "ignore_appliance"
+CONF_TOKEN_KEY: Final = "token_key"
+CONF_IGNORE_APPLIANCE: Final = "ignore_appliance"
 
-PLATFORMS: Final = [Platform.FAN, Platform.HUMIDIFIER, Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
+PLATFORMS: Final = [
+    Platform.FAN,
+    Platform.HUMIDIFIER,
+    Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
-IGNORED_IP_ADDRESS = "0.0.0.0"
-DEFAULT_ANNOUNCE_PORT = 6445
+IGNORED_IP_ADDRESS: Final = "0.0.0.0"
 
-STARTUP_MESSAGE = f"""
+DEFAULT_USERNAME: Final = ""
+DEFAULT_PASSWORD: Final = ""
+
+STARTUP_MESSAGE: Final = f"""
 -------------------------------------------------------------------
 {NAME}
 Version: {__version__}
