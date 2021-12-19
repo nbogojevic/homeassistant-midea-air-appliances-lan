@@ -8,6 +8,5 @@
     "sensor",
     "switch"
   ],
-  "render_readme": true,
   "homeassistant": "2021.12.0"
 }
