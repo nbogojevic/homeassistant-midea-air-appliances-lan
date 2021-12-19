@@ -7,6 +7,5 @@
   "issue_tracker": "https://github.com/nbogojevic/midea-dehumidifier-lan/issues",
   "codeowners": ["@nbogojevic"],
   "requirements": ["midea-beautiful-dehumidifier==0.0.14"],
-  "iot_class": "local_polling",
-  "render_readme": true
+  "iot_class": "local_polling"
 }
