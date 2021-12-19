@@ -6,7 +6,7 @@
           "username": "Username",
           "password": "Password"
         },
-        "description": "Please enter credentials that you use to connect with the mobile application.",
+        "description": "Please enter credentials that you use to connect with the NetHome Plus mobile application.",
         "title": "Sign-in with Midea app account"
       },
       "unreachable_appliance": {

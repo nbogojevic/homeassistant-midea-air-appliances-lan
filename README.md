@@ -15,13 +15,13 @@ Add this repository as custom integration repository to HACS.
 
 ### Configuring
 1. Add `Midea Dehumidifer (LAN)` integration via UI
-2. Enter Midea cloud username and password. Those are the same used in Midea mobile application.
-3. The integration will discover dehumidifiers on local LAN network(s).
+2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
+3. The integration will discover dehumidifiers on local network(s).
 4. If a dehumidifer is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the dehumidifier. 
 
 ## Known issues
 
-* If IPv4 address of dehumidifer changes, new IPv4 address will not be used until Home Assistant's restart
+* If IPv4 address of dehumidifer changes, new IPv4 address will not be used until Home Assistant's restart.
 
 
 ## Supported entities

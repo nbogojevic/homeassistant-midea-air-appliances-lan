@@ -37,5 +37,9 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
         return "midea_dehumidifier_tank_full_"
 
     @property
+    def device_class(self):
+        return "problem"
+
+    @property
     def is_on(self):
         return getattr(self.appliance.state, "tank_full", False)

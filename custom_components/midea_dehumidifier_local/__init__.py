@@ -1,5 +1,6 @@
 """
 The custom component for local network access to Midea Dehumidifier
+
 """
 from __future__ import annotations
 from datetime import timedelta
@@ -59,14 +60,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 class Hub:
     async def start(self, hass: HomeAssistant, data):
-        cloud = await hass.async_add_executor_job(
-            connect_to_cloud,
-            data[CONF_USERNAME],
-            data[CONF_PASSWORD],
-            DEFAULT_APPKEY,
-        )
+        cloud = None
         self.coordinators: list[ApplianceUpdateCoordinator] = []
         for devconf in data[CONF_DEVICES]:
+            if not devconf[CONF_TOKEN] or not devconf[CONF_TOKEN_KEY]:
+                if cloud is None:
+                    # TODO maybe if there is no username, we should skip this
+                    # and log an error
+                    cloud =  await hass.async_add_executor_job(
+                        connect_to_cloud,
+                        data[CONF_USERNAME],
+                        data[CONF_PASSWORD],
+                        DEFAULT_APPKEY,
+                    )
             appliance = await hass.async_add_executor_job(
                 appliance_state,
                 devconf[CONF_IP_ADDRESS],
@@ -155,4 +161,5 @@ class ApplianceEntity(CoordinatorEntity):
             ),
             "manufacturer": "Midea",
             "model": str(self.appliance.type),
+            "sw_version": getattr(self.appliance.state, "firmware_version", None)
         }
