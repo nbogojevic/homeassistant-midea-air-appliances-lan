@@ -3,31 +3,30 @@ The custom component for local network access to Midea Dehumidifier
 
 """
 from __future__ import annotations
-from datetime import timedelta
 
+from datetime import timedelta
 import logging
 from typing import final
 
-from midea_beautiful_dehumidifier.lan import LanDevice
-from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY
-
-from homeassistant.core import HomeAssistant, callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_DEVICES,
     CONF_IP_ADDRESS,
     CONF_NAME,
-    CONF_USERNAME,
     CONF_PASSWORD,
     CONF_TOKEN,
+    CONF_USERNAME,
 )
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
-from .const import DOMAIN, PLATFORMS, CONF_TOKEN_KEY
-
 from midea_beautiful_dehumidifier import appliance_state, connect_to_cloud
+from midea_beautiful_dehumidifier.lan import LanDevice
+from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY
+
+from .const import CONF_TOKEN_KEY, DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,9 +48,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # This is called when an entry/configured device is to be removed. The class
     # needs to unload itself, and remove callbacks. See the classes for further
     # details
-    unload_ok = await hass.config_entries.async_unload_platforms(
-        entry, PLATFORMS
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 
@@ -67,7 +64,7 @@ class Hub:
                 if cloud is None:
                     # TODO maybe if there is no username, we should skip this
                     # and log an error
-                    cloud =  await hass.async_add_executor_job(
+                    cloud = await hass.async_add_executor_job(
                         connect_to_cloud,
                         data[CONF_USERNAME],
                         data[CONF_PASSWORD],
@@ -121,9 +118,7 @@ class ApplianceEntity(CoordinatorEntity):
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
         await super().async_added_to_hass()
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self._updated_data)
-        )
+        self.async_on_remove(self.coordinator.async_add_listener(self._updated_data))
 
     @property
     @final
@@ -156,10 +151,8 @@ class ApplianceEntity(CoordinatorEntity):
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, self.appliance.sn)},
-            "name": str(
-                getattr(self.appliance.state, "name", self.unique_id)
-            ),
+            "name": str(getattr(self.appliance.state, "name", self.unique_id)),
             "manufacturer": "Midea",
             "model": str(self.appliance.type),
-            "sw_version": getattr(self.appliance.state, "firmware_version", None)
+            "sw_version": getattr(self.appliance.state, "firmware_version", None),
         }

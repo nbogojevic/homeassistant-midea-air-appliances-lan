@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Final
+
 from homeassistant.const import Platform
 
 __version__ = "0.0.1"
@@ -9,9 +10,7 @@ __version__ = "0.0.1"
 # Base component constants
 NAME: Final = "Midea Dehumidifier (LAN)"
 DOMAIN: Final = "midea_dehumidifier_local"
-ISSUE_URL: Final = (
-    "https://github.com/nbogojevic/midea-dehumidifier-lan/issues"
-)
+ISSUE_URL: Final = "https://github.com/nbogojevic/midea-dehumidifier-lan/issues"
 
 CONF_TOKEN_KEY: Final = "token_key"
 CONF_IGNORE_APPLIANCE: Final = "ignore_appliance"

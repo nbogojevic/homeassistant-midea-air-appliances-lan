@@ -5,13 +5,6 @@ import ipaddress
 import logging
 from typing import Tuple
 
-from midea_beautiful_dehumidifier import connect_to_cloud, find_appliances
-from midea_beautiful_dehumidifier.cloud import MideaCloud
-from midea_beautiful_dehumidifier.exceptions import CloudAuthenticationError
-from midea_beautiful_dehumidifier.lan import LanDevice, get_appliance_state
-from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY, DISCOVERY_PORT
-import voluptuous as vol
-
 from homeassistant import config_entries, exceptions
 from homeassistant.const import (
     CONF_DEVICES,
@@ -23,7 +16,12 @@ from homeassistant.const import (
     CONF_TYPE,
     CONF_USERNAME,
 )
-from homeassistant.helpers import config_validation as cv
+from midea_beautiful_dehumidifier import connect_to_cloud, find_appliances
+from midea_beautiful_dehumidifier.cloud import MideaCloud
+from midea_beautiful_dehumidifier.exceptions import CloudAuthenticationError
+from midea_beautiful_dehumidifier.lan import LanDevice, get_appliance_state
+from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY, DISCOVERY_PORT
+import voluptuous as vol
 
 from .const import (
     CONF_IGNORE_APPLIANCE,
@@ -88,9 +86,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 (
                     self._cloud,
                     self._appliances,
-                ) = await self.hass.async_add_executor_job(
-                    validate_input, input
-                )
+                ) = await self.hass.async_add_executor_job(validate_input, input)
                 self._appliance_idx = -1
                 self._conf = input
                 self._conf[""]
@@ -110,12 +106,8 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
-                        CONF_USERNAME, default=DEFAULT_USERNAME
-                    ): str,
-                    vol.Required(
-                        CONF_PASSWORD, default=DEFAULT_PASSWORD
-                    ): str,
+                    vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
+                    vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
                 }
             ),
             errors=errors,
@@ -135,9 +127,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             appliance.port = DISCOVERY_PORT
             appliance.name = input[CONF_NAME]
             appliance.token = input[CONF_TOKEN] if CONF_TOKEN in input else ""
-            appliance.key = (
-                input[CONF_TOKEN_KEY] if CONF_TOKEN_KEY in input else ""
-            )
+            appliance.key = input[CONF_TOKEN_KEY] if CONF_TOKEN_KEY in input else ""
             try:
                 await self.hass.async_add_executor_job(
                     validate_appliance,
@@ -159,9 +149,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except exceptions.IntegrationError as ex:
                 errors["base"] = str(ex)
             except Exception:
-                logging.error(
-                    "Exception while validating appliance", exc_info=True
-                )
+                logging.error("Exception while validating appliance", exc_info=True)
                 errors["base"] = "invalid_ip_address"
 
         name = appliance.name
@@ -170,9 +158,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_IGNORE_APPLIANCE, default=False): bool,
-                    vol.Optional(
-                        CONF_IP_ADDRESS, default=IGNORED_IP_ADDRESS
-                    ): str,
+                    vol.Optional(CONF_IP_ADDRESS, default=IGNORED_IP_ADDRESS): str,
                     vol.Optional(CONF_NAME, default=name): str,
                     vol.Optional(CONF_TOKEN): str,
                     vol.Optional(CONF_TOKEN_KEY): str,
@@ -200,9 +186,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_TOKEN_KEY: a.key,
                         }
                     )
-            existing_entry = await self.async_set_unique_id(
-                self._conf[CONF_USERNAME]
-            )
+            existing_entry = await self.async_set_unique_id(self._conf[CONF_USERNAME])
             self._conf[CONF_DEVICES] = self._appliance_conf
             if existing_entry:
                 self.hass.config_entries.async_update_entry(
@@ -211,9 +195,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 # Reload the config entry otherwise devices will remain unavailable
                 self.hass.async_create_task(
-                    self.hass.config_entries.async_reload(
-                        existing_entry.entry_id
-                    )
+                    self.hass.config_entries.async_reload(existing_entry.entry_id)
                 )
 
                 return self.async_abort(reason="reauth_successful")

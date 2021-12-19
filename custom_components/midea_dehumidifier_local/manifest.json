@@ -3,8 +3,8 @@
   "name": "Midea Dehumidifier (LAN)",
   "version": "0.0.1",
   "config_flow": true,
-  "documentation": "https://github.com/nbogojevic/midea-dehumidifier-lan/main/README.md",
-  "issue_tracker": "https://github.com/nbogojevic/midea-dehumidifier-lan/issues",
+  "documentation": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/main/README.md",
+  "issue_tracker": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/issues",
   "codeowners": ["@nbogojevic"],
   "requirements": ["midea-beautiful-dehumidifier==0.0.14"],
   "iot_class": "local_polling"

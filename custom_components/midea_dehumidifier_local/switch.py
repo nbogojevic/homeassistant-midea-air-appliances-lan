@@ -19,9 +19,7 @@ async def async_setup_entry(
 
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(
-        IonSwitch(coordinator) for coordinator in hub.coordinators
-    )
+    async_add_entities(IonSwitch(coordinator) for coordinator in hub.coordinators)
 
 
 class IonSwitch(ApplianceEntity, SwitchEntity):
