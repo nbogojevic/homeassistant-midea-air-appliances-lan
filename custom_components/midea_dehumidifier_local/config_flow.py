@@ -89,7 +89,6 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ) = await self.hass.async_add_executor_job(validate_input, input)
                 self._appliance_idx = -1
                 self._conf = input
-                self._conf[""]
                 for i, a in enumerate(self._appliances):
                     if not a.ip:
                         self._appliance_idx = i
