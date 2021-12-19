@@ -1,10 +1,10 @@
 """Adds fan entity for each dehumidifer appliance."""
-from config.custom_components.midea_dehumidifier_local import (
+from custom_components.midea_dehumidifier_local import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
     Hub,
 )
-from config.custom_components.midea_dehumidifier_local.const import DOMAIN
+from custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.fan import SUPPORT_SET_SPEED, FanEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant

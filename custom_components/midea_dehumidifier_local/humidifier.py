@@ -2,12 +2,12 @@
 
 import logging
 
-from config.custom_components.midea_dehumidifier_local import (
+from custom_components.midea_dehumidifier_local import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
     Hub,
 )
-from config.custom_components.midea_dehumidifier_local.const import DOMAIN
+from custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
 from homeassistant.components.humidifier.const import (
     MODE_AUTO,

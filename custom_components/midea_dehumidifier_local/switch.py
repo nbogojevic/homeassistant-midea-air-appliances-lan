@@ -1,10 +1,10 @@
 """Support for ION mode switch"""
-from config.custom_components.midea_dehumidifier_local import (
+from custom_components.midea_dehumidifier_local import (
     ApplianceUpdateCoordinator,
     Hub,
     ApplianceEntity,
 )
-from config.custom_components.midea_dehumidifier_local.const import DOMAIN
+from custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
