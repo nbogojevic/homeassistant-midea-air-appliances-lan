@@ -8,6 +8,5 @@
   "codeowners": ["@nbogojevic"],
   "requirements": ["midea-beautiful-dehumidifier==0.0.14"],
   "iot_class": "local_polling",
-  "render_readme": true,
-  "homeassistant": "2021.12.0"
+  "render_readme": true
 }
