@@ -39,18 +39,12 @@ _LOGGER = logging.getLogger(__name__)
 def validate_cloud(conf: dict) -> Tuple[MideaCloud, list[LanDevice]]:
     """Validates that cloud credentials are valid and discovers local appliances"""
     cloud = connect_to_cloud(
-        appkey=DEFAULT_APPKEY,
-        account=conf[CONF_USERNAME],
-        password=conf[CONF_PASSWORD],
+        appkey=DEFAULT_APPKEY, account=conf[CONF_USERNAME], password=conf[CONF_PASSWORD]
     )
     if cloud is None:
         raise exceptions.IntegrationError("no_cloud")
 
-    appliances = find_appliances(
-        cloud=cloud,
-        broadcast_retries=2,
-        broadcast_timeout=3,
-    )
+    appliances = find_appliances(cloud=cloud)
 
     return cloud, appliances
 
