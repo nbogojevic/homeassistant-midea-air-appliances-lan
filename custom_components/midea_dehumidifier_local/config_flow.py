@@ -16,17 +16,23 @@ from homeassistant.const import (
     CONF_TYPE,
     CONF_USERNAME,
 )
+from midea_beautiful_dehumidifier.midea import (
+    DEFAULT_APP_ID,
+    DEFAULT_APPKEY,
+    SUPPORTED_APPS,
+)
 import voluptuous as vol
 
 from midea_beautiful_dehumidifier import connect_to_cloud, find_appliances
 from midea_beautiful_dehumidifier.cloud import MideaCloud
 from midea_beautiful_dehumidifier.exceptions import CloudAuthenticationError
 from midea_beautiful_dehumidifier.lan import LanDevice, get_appliance_state
-from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY, DISCOVERY_PORT
 
 from .const import (
+    CONF_APP,
     CONF_IGNORE_APPLIANCE,
     CONF_TOKEN_KEY,
+    DEFAULT_APP,
     DEFAULT_PASSWORD,
     DEFAULT_USERNAME,
     DOMAIN,
@@ -38,13 +44,23 @@ _LOGGER = logging.getLogger(__name__)
 
 def validate_cloud(conf: dict) -> Tuple[MideaCloud, list[LanDevice]]:
     """Validates that cloud credentials are valid and discovers local appliances"""
+    if conf[CONF_APP]:
+        conf["appkey"] = SUPPORTED_APPS[conf[CONF_APP]]["appkey"]
+        conf["appid"] = SUPPORTED_APPS[conf[CONF_APP]]["appid"]
+    else:
+        conf["appkey"] = DEFAULT_APPKEY
+        conf["appid"] = DEFAULT_APP_ID
+
     cloud = connect_to_cloud(
-        appkey=DEFAULT_APPKEY, account=conf[CONF_USERNAME], password=conf[CONF_PASSWORD]
+        account=conf[CONF_USERNAME],
+        password=conf[CONF_PASSWORD],
+        appkey=conf["appkey"],
+        appid=conf["appid"],
     )
     if cloud is None:
         raise exceptions.IntegrationError("no_cloud")
 
-    appliances = find_appliances(cloud=cloud)
+    appliances = find_appliances(cloud)
 
     return cloud, appliances
 
@@ -118,13 +134,16 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
                     vol.Required(CONF_PASSWORD, default=DEFAULT_PASSWORD): str,
+                    vol.Optional(CONF_APP, default=DEFAULT_APP): vol.In(
+                        ["NetHome", "MideaAir"]
+                    ),
                 }
             ),
             errors=errors,
         )
 
     async def async_step_unreachable_appliance(self, user_input=None):
-        """Manage the appliances that were not found on LAN."""
+        """Manage the appliances that were not discovered automatically on LAN."""
         errors: dict = {}
         appliance = self._appliances[self._appliance_idx]
 
@@ -134,7 +153,6 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if not user_input[CONF_IGNORE_APPLIANCE]
                 else IGNORED_IP_ADDRESS
             )
-            appliance.port = DISCOVERY_PORT
             appliance.name = user_input[CONF_NAME]
             appliance.token = user_input[CONF_TOKEN] if CONF_TOKEN in user_input else ""
             appliance.key = (

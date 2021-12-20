@@ -6,7 +6,7 @@
           "username": "Username",
           "password": "Password"
         },
-        "description": "Please enter credentials that you use to connect with the NetHome Plus mobile application.",
+        "description": "Please enter username and password that you use to connect with the NetHome Plus mobile application.",
         "title": "Sign-in with Midea app account"
       },
       "unreachable_appliance": {
@@ -22,17 +22,14 @@
       }
     },
     "error": {
-      "api_problem": "Bad response from server",
-      "cannot_connect": "Failed to connect to server",
-      "invalid_auth": "Invalid credentials",
-      "unsupported": "Unsupported operation",
-      "unknown": "An unknown error occurred",
+      "invalid_auth": "Invalid username or password.",
+      "unknown": "An unknown error has occurred. See log for more information.",
       "invalid_ip_address": "Invalid IPv4 address, please enter valid IPv4 address.",
-      "not_discovered": "Unable to find appliance at specified IPv4 address."
+      "not_discovered": "Unable to find appliance at specified IPv4 address.",
+      "no_cloud": "Unable to connect to Midea cloud API"
     },
     "abort": {
-      "already_configured": "Already configured",
-      "single_instance_allowed": "Already defined a Midea cloud account. Only a single account is supported for dehumidifier integration."
+      "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for dehumidifier integration."
     }
   }
 }

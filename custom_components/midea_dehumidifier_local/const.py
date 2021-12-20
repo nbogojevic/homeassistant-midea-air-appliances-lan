@@ -12,6 +12,7 @@ NAME: Final = "Midea Dehumidifier (LAN)"
 DOMAIN: Final = "midea_dehumidifier_local"
 ISSUE_URL: Final = "https://github.com/nbogojevic/midea-dehumidifier-lan/issues"
 
+CONF_APP: Final = "mobile_app"
 CONF_TOKEN_KEY: Final = "token_key"
 CONF_IGNORE_APPLIANCE: Final = "ignore_appliance"
 
@@ -24,6 +25,9 @@ PLATFORMS: Final = [
 ]
 
 IGNORED_IP_ADDRESS: Final = "0.0.0.0"
+
+
+DEFAULT_APP: Final = "NetHome"
 
 DEFAULT_USERNAME: Final = ""
 DEFAULT_PASSWORD: Final = ""
