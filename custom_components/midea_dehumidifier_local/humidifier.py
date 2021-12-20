@@ -2,12 +2,6 @@
 
 import logging
 
-from custom_components.midea_dehumidifier_local import (
-    ApplianceEntity,
-    ApplianceUpdateCoordinator,
-    Hub,
-)
-from custom_components.midea_dehumidifier_local.const import DOMAIN
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
 from homeassistant.components.humidifier.const import (
     MODE_AUTO,
@@ -20,6 +14,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from custom_components.midea_dehumidifier_local import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_local.const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 AVAILABLE_MODES = [MODE_AUTO, MODE_NORMAL, MODE_BOOST, MODE_COMFORT]
 
@@ -29,7 +26,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-
+    """Sets up dehumidifier entites"""
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
     async_add_entities(
@@ -38,15 +35,16 @@ async def async_setup_entry(
 
 
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
-    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
-        super().__init__(coordinator)
+    """(de)Humidifer entity for Midea appliances """
 
     @property
     def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
         return ""
 
     @property
     def unique_id_prefix(self) -> str:
+        """Prefix for entity id"""
         return "midea_dehumidifier_"
 
     @property
@@ -86,7 +84,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             return MODE_AUTO
         if curr_mode == 4:
             return MODE_BOOST
-        _LOGGER.warn("Unknown mode %d", curr_mode)
+        _LOGGER.warning("Unknown mode %d", curr_mode)
         return MODE_NORMAL
 
     @property
@@ -120,7 +118,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         elif mode == MODE_BOOST:
             curr_mode = 4
         else:
-            _LOGGER.warn("Unsupported dehumidifer mode %s", mode)
+            _LOGGER.warning("Unsupported dehumidifer mode %s", mode)
             curr_mode = 1
         setattr(self.appliance.state, "mode", curr_mode)
         self.appliance.apply()

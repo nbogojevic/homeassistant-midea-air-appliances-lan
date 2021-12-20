@@ -1,14 +1,12 @@
 """Support for ION mode switch"""
-from custom_components.midea_dehumidifier_local import (
-    ApplianceUpdateCoordinator,
-    Hub,
-    ApplianceEntity,
-)
-from custom_components.midea_dehumidifier_local.const import DOMAIN
+
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from custom_components.midea_dehumidifier_local import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_local.const import DOMAIN
 
 
 async def async_setup_entry(
@@ -16,6 +14,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Sets up ion mode switches for dehumidifiers"""
 
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
@@ -23,15 +22,16 @@ async def async_setup_entry(
 
 
 class IonSwitch(ApplianceEntity, SwitchEntity):
-    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
-        super().__init__(coordinator)
+    """Ion mode switches"""
 
     @property
     def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
         return " Ion Mode"
 
     @property
     def unique_id_prefix(self) -> str:
+        """Prefix for entity id"""
         return "midea_dehumidifier_ion_mode_"
 
     @property

@@ -1,7 +1,7 @@
 """
 The custom component for local network access to Midea Dehumidifier
-
 """
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -22,6 +22,7 @@ from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
+
 from midea_beautiful_dehumidifier import appliance_state, connect_to_cloud
 from midea_beautiful_dehumidifier.lan import LanDevice
 from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY
@@ -56,7 +57,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 class Hub:
+    """Central class for interacting with appliances"""
+
+    def __init__(self) -> None:
+        self.coordinators: list[ApplianceUpdateCoordinator] = []
+
     async def start(self, hass: HomeAssistant, data):
+        """
+        sets up appliances and creates an update coordinator for
+        each appliance
+        """
         cloud = None
         self.coordinators: list[ApplianceUpdateCoordinator] = []
         for devconf in data[CONF_DEVICES]:
@@ -94,21 +104,26 @@ class Hub:
 
 
 class ApplianceUpdateCoordinator(DataUpdateCoordinator):
+    """Single class to retrieve data from an appliances"""
+
     def __init__(self, hass, appliance: LanDevice):
         super().__init__(
             hass,
             _LOGGER,
             name="Midea appliance",
-            update_method=self.async_appliance_refresh,
+            update_method=self._async_appliance_refresh,
             update_interval=timedelta(seconds=30),
         )
         self.appliance = appliance
 
-    async def async_appliance_refresh(self):
+    async def _async_appliance_refresh(self):
+        """Called to refresh appliance state"""
         await self.hass.async_add_executor_job(self.appliance.refresh)
 
 
 class ApplianceEntity(CoordinatorEntity):
+    """Represents an appliance that gets data from a coordinator"""
+
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
         self.coordinator = coordinator
@@ -141,10 +156,12 @@ class ApplianceEntity(CoordinatorEntity):
 
     @property
     def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
         return ""
 
     @property
     def unique_id_prefix(self) -> str:
+        """Prefix for entity id"""
         return ""
 
     @property

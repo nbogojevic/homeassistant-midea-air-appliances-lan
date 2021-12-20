@@ -1,14 +1,12 @@
 """Adds fan entity for each dehumidifer appliance."""
-from custom_components.midea_dehumidifier_local import (
-    ApplianceEntity,
-    ApplianceUpdateCoordinator,
-    Hub,
-)
-from custom_components.midea_dehumidifier_local.const import DOMAIN
+
 from homeassistant.components.fan import SUPPORT_SET_SPEED, FanEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from custom_components.midea_dehumidifier_local import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_local.const import DOMAIN
 
 
 async def async_setup_entry(
@@ -16,23 +14,24 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
+    """Sets up fan entity for managing dehumidifer fan"""
+
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(
-        DehumidiferFan(coordinator) for coordinator in hub.coordinators
-    )
+    async_add_entities(DehumidiferFan(coordinator) for coordinator in hub.coordinators)
 
 
 class DehumidiferFan(ApplianceEntity, FanEntity):
-    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
-        super().__init__(coordinator)
+    """Entity for managing dehumidifer fan"""
 
     @property
     def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
         return " Fan"
 
     @property
     def unique_id_prefix(self) -> str:
+        """Prefix for entity id"""
         return "midea_dehumidifier_fan_"
 
     @property
