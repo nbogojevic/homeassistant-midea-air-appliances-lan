@@ -165,6 +165,10 @@ class ApplianceEntity(CoordinatorEntity):
         return ""
 
     @property
+    def available(self) -> bool:
+        return self.appliance.online
+
+    @property
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, self.appliance.sn)},
