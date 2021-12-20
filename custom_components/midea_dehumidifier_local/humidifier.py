@@ -48,12 +48,6 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         return "midea_dehumidifier_"
 
     @property
-    def should_poll(self):
-        """Return the polling state."""
-        # get device's status by polling it
-        return True
-
-    @property
     def is_on(self):
         return getattr(self.appliance.state, "is_on", False)
 
@@ -125,5 +119,5 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     def set_humidity(self, humidity):
         """Set new target humidity."""
-        setattr(self.appliance.state, "target_humidity", False)
+        setattr(self.appliance.state, "target_humidity", humidity)
         self.appliance.apply()

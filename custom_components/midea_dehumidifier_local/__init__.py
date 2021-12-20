@@ -112,7 +112,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name="Midea appliance",
             update_method=self._async_appliance_refresh,
-            update_interval=timedelta(seconds=30),
+            update_interval=timedelta(seconds=60),
         )
         self.appliance = appliance
 
@@ -168,8 +168,8 @@ class ApplianceEntity(CoordinatorEntity):
     def device_info(self):
         return {
             "identifiers": {(DOMAIN, self.appliance.sn)},
-            "name": str(getattr(self.appliance.state, "name", self.unique_id)),
+            "name": self.appliance.name,
             "manufacturer": "Midea",
-            "model": str(self.appliance.type),
-            "sw_version": getattr(self.appliance.state, "firmware_version", None),
+            "model": str(self.appliance.model),
+            "sw_version": self.appliance.firmware_version,
         }
