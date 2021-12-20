@@ -1,12 +1,12 @@
-This is a custom component for Home assistant that adds support for Midea dehumidifier appliances via the local area network.
+This custom component for Home assistant adds support for Midea dehumidifier appliances via the local area network.
 
-# midea-dehumidifier-lan
+# homeassistant-midea-dehumidifier-lan
 Home Assistant custom component for controlling Midea dehumidiferes on local network
 
 ## Installation instruction
 
-### HACS 
-Add this repository as custom integration repository to HACS. 
+### HACS
+Add this repository as custom integration repository to HACS.
 
 ### Manual
 1. Update Home Assistant to version 2021.12 or newer
@@ -17,7 +17,7 @@ Add this repository as custom integration repository to HACS.
 1. Add `Midea Dehumidifer (LAN)` integration via UI
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
 3. The integration will discover dehumidifiers on local network(s).
-4. If a dehumidifer is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the dehumidifier. 
+4. If a dehumidifer is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the dehumidifier.
 
 ## Known issues
 

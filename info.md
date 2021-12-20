@@ -8,17 +8,17 @@
 
 ![Midea Brands][logos]
 
-
+_Adds support for Midea dehumidifer appliances via local network_
 
 **This component will set up the following platforms.**
 
 Platform | Description
 -- | --
-`humidifier` | Dehumidifier control.
-`fan` | Dehumidifier fan control.
-`binary_sensor` | Flag if tank is full.
-`sensor` | Current relative humidity.
-`switch` | Switch ION mode on and off.
+`humidifier` | Dehumidifier entity.
+`fan` | Fan entity for controlling dehumidifer fan.
+`binary_sensor` | Problem sensor active when tank is full.
+`sensor` | Current relative humidity measured by dehumidifier.
+`switch` | Switch ION mode on and off if supported by dehumidifier
 
 
 

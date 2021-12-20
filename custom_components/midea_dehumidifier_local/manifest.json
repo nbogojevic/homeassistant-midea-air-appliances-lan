@@ -1,7 +1,7 @@
 {
   "domain": "midea_dehumidifier_local",
   "name": "Midea Dehumidifier (LAN)",
-  "version": "0.1.0",
+  "version": "0.0.9",
   "config_flow": true,
   "documentation": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/main/README.md",
   "issue_tracker": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/issues",
