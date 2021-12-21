@@ -5,8 +5,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_local import ApplianceEntity, Hub
-from custom_components.midea_dehumidifier_local.const import DOMAIN
+from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan.const import DOMAIN
 
 
 async def async_setup_entry(

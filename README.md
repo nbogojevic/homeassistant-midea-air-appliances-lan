@@ -11,7 +11,7 @@ Add this repository as custom integration repository to HACS.
 ### Manual
 1. Update Home Assistant to version 2021.12 or newer
 2. Clone this repository
-3. Copy the `custom_components/midea_dehumidifier_local` folder into your Home Assistant's `custom_components` folder
+3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder
 
 ### Configuring
 1. Add `Midea Dehumidifer (LAN)` integration via UI

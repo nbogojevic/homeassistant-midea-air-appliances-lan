@@ -1,5 +1,5 @@
 {
-  "domain": "midea_dehumidifier_local",
+  "domain": "midea_dehumidifier_lan",
   "name": "Midea Dehumidifier (LAN)",
   "version": "0.1.0",
   "config_flow": true,

@@ -9,7 +9,7 @@ __version__ = "0.0.1"
 
 # Base component constants
 NAME: Final = "Midea Dehumidifier (LAN)"
-DOMAIN: Final = "midea_dehumidifier_local"
+DOMAIN: Final = "midea_dehumidifier_lan"
 ISSUE_URL: Final = "https://github.com/nbogojevic/midea-dehumidifier-lan/issues"
 
 CONF_APP: Final = "mobile_app"
