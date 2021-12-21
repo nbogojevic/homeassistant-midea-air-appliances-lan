@@ -1,6 +1,9 @@
 This custom component for Home assistant adds support for Midea dehumidifier appliances via the local area network.
 
 # homeassistant-midea-dehumidifier-lan
+
+[![Repository validation](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/actions/workflows/validate.yml)
+
 Home Assistant custom component for controlling Midea dehumidiferes on local network
 
 ## Installation instruction
