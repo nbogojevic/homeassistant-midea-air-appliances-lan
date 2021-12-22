@@ -10,6 +10,11 @@ from typing import final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    ATTR_IDENTIFIERS,
+    ATTR_MANUFACTURER,
+    ATTR_MODEL,
+    ATTR_NAME,
+    ATTR_SW_VERSION,
     CONF_DEVICES,
     CONF_IP_ADDRESS,
     CONF_NAME,
@@ -24,10 +29,10 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from midea_beautiful_dehumidifier import appliance_state, connect_to_cloud
+from midea_beautiful_dehumidifier.appliance import DehumidifierAppliance
 from midea_beautiful_dehumidifier.lan import LanDevice
-from midea_beautiful_dehumidifier.midea import DEFAULT_APPKEY
 
-from .const import CONF_TOKEN_KEY, DOMAIN, PLATFORMS
+from .const import CONF_APPID, CONF_APPKEY, CONF_TOKEN_KEY, DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -78,7 +83,8 @@ class Hub:
                         connect_to_cloud,
                         data[CONF_USERNAME],
                         data[CONF_PASSWORD],
-                        DEFAULT_APPKEY,
+                        data[CONF_APPKEY],
+                        data[CONF_APPID],
                     )
             appliance = await hass.async_add_executor_job(
                 appliance_state,
@@ -119,6 +125,9 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     async def _async_appliance_refresh(self):
         """Called to refresh appliance state"""
         await self.hass.async_add_executor_job(self.appliance.refresh)
+
+    def is_dehumidifier(self) -> bool:
+        return DehumidifierAppliance.supported(self.appliance.type)
 
 
 class ApplianceEntity(CoordinatorEntity):
@@ -171,9 +180,9 @@ class ApplianceEntity(CoordinatorEntity):
     @property
     def device_info(self):
         return {
-            "identifiers": {(DOMAIN, self.appliance.sn)},
-            "name": self.appliance.name,
-            "manufacturer": "Midea",
-            "model": str(self.appliance.model),
-            "sw_version": self.appliance.firmware_version,
+            ATTR_IDENTIFIERS: {(DOMAIN, self.appliance.sn)},
+            ATTR_NAME: self.appliance.name,
+            ATTR_MANUFACTURER: "Midea",
+            ATTR_MODEL: str(self.appliance.model),
+            ATTR_SW_VERSION: self.appliance.firmware_version,
         }
