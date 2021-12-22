@@ -18,7 +18,9 @@ async def async_setup_entry(
 
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(DehumidiferFan(coordinator) for coordinator in hub.coordinators)
+    async_add_entities(
+        DehumidiferFan(c) for c in hub.coordinators if c.is_dehumidifier()
+    )
 
 
 class DehumidiferFan(ApplianceEntity, FanEntity):

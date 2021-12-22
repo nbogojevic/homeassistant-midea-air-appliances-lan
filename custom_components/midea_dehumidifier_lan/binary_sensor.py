@@ -17,7 +17,9 @@ async def async_setup_entry(
     """Sets up full tank binary sensors"""
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(TankFullSensor(coordinator) for coordinator in hub.coordinators)
+    async_add_entities(
+        TankFullSensor(c) for c in hub.coordinators if c.is_dehumidifier()
+    )
 
 
 class TankFullSensor(ApplianceEntity, BinarySensorEntity):

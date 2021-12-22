@@ -15,7 +15,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
-from custom_components.midea_dehumidifier_lan.const import DOMAIN
+from custom_components.midea_dehumidifier_lan.const import (
+    DOMAIN,
+    MAX_TARGET_HUMIDITY,
+    MIN_TARGET_HUMIDITY,
+)
 
 _LOGGER = logging.getLogger(__name__)
 AVAILABLE_MODES = [MODE_AUTO, MODE_NORMAL, MODE_BOOST, MODE_COMFORT]
@@ -30,7 +34,7 @@ async def async_setup_entry(
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
     async_add_entities(
-        DehumidifierEntity(coordinator) for coordinator in hub.coordinators
+        DehumidifierEntity(c) for c in hub.coordinators if c.is_dehumidifier()
     )
 
 
@@ -49,7 +53,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     @property
     def is_on(self):
-        return getattr(self.appliance.state, "is_on", False)
+        return getattr(self.appliance.state, "running", False)
 
     @property
     def device_class(self):
@@ -83,22 +87,22 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     @property
     def min_humidity(self):
-        """Return the min humidity set."""
-        return 40
+        """Return the min humidity that can be set."""
+        return MIN_TARGET_HUMIDITY
 
     @property
     def max_humidity(self):
-        """Return the max humidity set."""
-        return 85
+        """Return the max humidity that can be set."""
+        return MAX_TARGET_HUMIDITY
 
     def turn_on(self, **kwargs):
         """Turn the entity on."""
-        setattr(self.appliance.state, "is_on", True)
+        setattr(self.appliance.state, "running", True)
         self.appliance.apply()
 
     def turn_off(self, **kwargs):
         """Turn the entity off."""
-        setattr(self.appliance.state, "is_on", False)
+        setattr(self.appliance.state, "running", False)
         self.appliance.apply()
 
     def set_mode(self, mode):
