@@ -33,7 +33,8 @@ This custom component creates following entites for each discovered dehumidifer:
 
 * humidifier/dehumidifer
 * fan
-* sensor with current humidity
+* sensor with current environment humidity
+* sensor with current environment temperature
 * binary sensor for full tank
 * switch for controlling ION mode (switch has no effect if dehumidifier doesn't support it)
 

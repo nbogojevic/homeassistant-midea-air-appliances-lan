@@ -17,7 +17,7 @@ Platform | Description
 `humidifier` | Dehumidifier entity.
 `fan` | Fan entity for controlling dehumidifer fan.
 `binary_sensor` | Problem sensor active when tank is full.
-`sensor` | Current relative humidity measured by dehumidifier.
+`sensor` | Sensors for current relative humidity and current temperature measured by dehumidifier.
 `switch` | Switch ION mode on and off if supported by dehumidifier
 
 
