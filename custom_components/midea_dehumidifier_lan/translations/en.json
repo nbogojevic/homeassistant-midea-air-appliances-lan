@@ -4,10 +4,23 @@
       "user": {
         "data": {
           "username": "Username",
-          "password": "Password"
+          "password": "Password",
+          "mobile_app": "Mobile app",
+          "advanced_options": "Advanced options"
         },
-        "description": "Please enter username and password that you use to connect with the NetHome Plus mobile application.",
+        "description": "Please enter username and password that you use to connect with the selected Midea mobile application.",
         "title": "Sign-in with Midea app account"
+      },
+      "advanced_options": {
+        "data": {
+          "username": "Username",
+          "password": "Password",
+          "appkey": "Mobile app key",
+          "appid": "Mobile app id",
+          "network_range": "Appliance address or network range"
+        },
+        "description": "You can provide specific Midea mobile app key and app id if the default ones don't work.\n\nYou can also specify network address (e.g. 192.0.1.2) or range (e.g. 192.0.3.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
+        "title": "Advanced options"
       },
       "unreachable_appliance": {
         "data": {
@@ -22,14 +35,18 @@
       }
     },
     "error": {
-      "invalid_auth": "Invalid username or password.",
+      "invalid_auth": "Invalid username or password ({cause})",
+      "invalid_state": "Unexpected state of configuration flow. See log for more information.",
       "unknown": "An unknown error has occurred. See log for more information.",
-      "invalid_ip_address": "Invalid IPv4 address, please enter valid IPv4 address.",
+      "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.1.2)",
       "not_discovered": "Unable to find appliance at specified IPv4 address.",
-      "no_cloud": "Unable to connect to Midea cloud API"
+      "no_cloud": "Unable to connect to Midea cloud API",
+      "invalid_ip_range": "Invalid IPv4 network address or network range ({cause}). Expected formats are 192.0.1.2 or 192.0.3.4/24",
+      "invalid_appkey": "Please provide Midea mobile app key and app id",
+      "invalid_app_name": "Unsupported application name ({cause}). See log for more information."
     },
     "abort": {
-      "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for dehumidifier integration."
+      "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for {integration_name}."
     }
   }
 }
