@@ -7,14 +7,14 @@ This custom component for Home assistant adds support for Midea dehumidifier app
 [![hacs][hacsbadge]][hacs]
 [![GitHub Release][releases-shield]][releases]
 
-Home Assistant custom component for controlling Midea dehumidiferes on local network
+Home Assistant custom component for controlling Midea dehumidifieres on local network
 
 ## Installation instruction
 
 ### HACS
 The easiest way to install the this integration is with [HACS](https://hacs.xyz/). First, install [HACS](https://hacs.xyz/docs/setup/download) if you don't have it yet. In Home Assistant go to `HACS -> Integrations`, click on `+ Explore & Download Repositories` and search for `Midea Dehumidifier (LAN)` and click download.
 
-Now you can add it in the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Dehumidifier (LAN)` or, using My Home Assistant service, you can click on:
+Once installed, you can add it in the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Dehumidifier (LAN)` or, using My Home Assistant service, you can click on:
 
 [![Add Midea Dehumidifier (LAN)][add-integration-badge]][add-integration]
 
