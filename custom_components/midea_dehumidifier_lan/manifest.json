@@ -3,7 +3,7 @@
   "name": "Midea Dehumidifier (LAN)",
   "version": "0.3.0",
   "config_flow": true,
-  "documentation": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/main/README.md",
+  "documentation": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/blob/main/README.md",
   "issue_tracker": "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/issues",
   "codeowners": [
     "@nbogojevic"
