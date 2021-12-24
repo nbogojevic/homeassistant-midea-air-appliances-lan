@@ -4,8 +4,9 @@ from __future__ import annotations
 from typing import Final
 
 from homeassistant.const import Platform
+from midea_beautiful_dehumidifier.midea import SUPPORTED_APPS
 
-__version__ = "0.0.1"
+__version__ = "0.3.0"
 
 # Base component constants
 NAME: Final = "Midea Dehumidifier (LAN)"
@@ -22,11 +23,12 @@ CONF_TOKEN_KEY: Final = "token_key"
 
 TAG_CAUSE: Final = "cause"
 TAG_ID: Final = "id"
-TAG_INTEGRATION: Final = "integration_name"
 TAG_NAME: Final = "name"
 
 MAX_TARGET_HUMIDITY: Final = 85
 MIN_TARGET_HUMIDITY: Final = 35
+
+CURRENT_CONFIG_VERSION: Final = 2
 
 PLATFORMS: Final = [
     Platform.FAN,
@@ -38,7 +40,7 @@ PLATFORMS: Final = [
 
 IGNORED_IP_ADDRESS: Final = "0.0.0.0"
 
-DEFAULT_APP: Final = "NetHome"
+DEFAULT_APP: Final = next(app for app in SUPPORTED_APPS)
 
 DEFAULT_USERNAME: Final = ""
 DEFAULT_PASSWORD: Final = ""
