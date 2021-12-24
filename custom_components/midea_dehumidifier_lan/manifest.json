@@ -9,7 +9,7 @@
     "@nbogojevic"
   ],
   "requirements": [
-    "midea-beautiful-dehumidifier==0.3.0"
+    "midea-beautiful-dehumidifier==0.4.1"
   ],
   "iot_class": "local_polling"
 }
