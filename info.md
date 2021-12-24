@@ -35,6 +35,7 @@ Platform | Description
 ## Configuration is done in the UI
 
 <!---->
+[![Add Midea Dehumidifier (LAN)][add-integration-badge]][add-integration]
 
 ***
 
@@ -52,3 +53,5 @@ Platform | Description
 
 [user_profile]: https://github.com/nbogojevic
 [logos]: assets/logos.png
+[add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=midea_dehumidifier_lan
+[add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
