@@ -45,9 +45,9 @@ class IonSwitch(ApplianceEntity, SwitchEntity):
     def turn_on(self, **kwargs):
         """Turn the entity on."""
         setattr(self.appliance.state, "ion_mode", True)
-        self.appliance.apply()
+        self.do_apply()
 
     def turn_off(self, **kwargs):
         """Turn the entity off."""
         setattr(self.appliance.state, "ion_mode", False)
-        self.appliance.apply()
+        self.do_apply()

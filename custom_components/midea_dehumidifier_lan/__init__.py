@@ -23,16 +23,28 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
 )
 
 from midea_beautiful_dehumidifier import appliance_state, connect_to_cloud
+from midea_beautiful_dehumidifier import appliance
 from midea_beautiful_dehumidifier.appliance import DehumidifierAppliance
+from midea_beautiful_dehumidifier.exceptions import AuthenticationError
 from midea_beautiful_dehumidifier.lan import LanDevice
+from midea_beautiful_dehumidifier.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
-from .const import CONF_APPID, CONF_APPKEY, CONF_TOKEN_KEY, DOMAIN, PLATFORMS
+from .const import (
+    CONF_APPID,
+    CONF_APPKEY,
+    CONF_NETWORK_RANGE,
+    CONF_TOKEN_KEY,
+    CURRENT_CONFIG_VERSION,
+    DOMAIN,
+    PLATFORMS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hub = Hub()
     hass.data[DOMAIN][entry.entry_id] = hub
-    await hub.start(hass, entry.data)
+    await hub.start(hass, entry)
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     return True
@@ -61,31 +73,65 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Migrate old config entry to new version."""
+    _LOGGER.debug("Migrating from version %s", config_entry.version)
+
+    if config_entry.version < CURRENT_CONFIG_VERSION:
+
+        new = {**config_entry.data}
+        if not new.get(CONF_APPID) or not new.get(CONF_APPKEY):
+            new[CONF_APPKEY] = DEFAULT_APPKEY
+            new[CONF_APPID] = DEFAULT_APP_ID
+        if new.get(CONF_NETWORK_RANGE) is None:
+            new[CONF_NETWORK_RANGE] = []
+
+        config_entry.version = CURRENT_CONFIG_VERSION
+        _LOGGER.info("Migration from %s", config_entry.data)
+        _LOGGER.info("Migration to %s", new)
+        # hass.config_entries.async_update_entry(config_entry, data=new)
+
+    _LOGGER.info("Migration to version %s successful", config_entry.version)
+
+    return True
+
+
 class Hub:
     """Central class for interacting with appliances"""
 
     def __init__(self) -> None:
         self.coordinators: list[ApplianceUpdateCoordinator] = []
 
-    async def start(self, hass: HomeAssistant, data):
+    async def start(self, hass: HomeAssistant, config_entry: ConfigEntry):
         """
-        sets up appliances and creates an update coordinator for
-        each appliance
+        Sets up appliances and creates an update coordinator for
+        each one
         """
         cloud = None
         self.coordinators: list[ApplianceUpdateCoordinator] = []
+        updated_conf = False
+        data = {**config_entry.data}
         for devconf in data[CONF_DEVICES]:
             if not devconf[CONF_TOKEN] or not devconf[CONF_TOKEN_KEY]:
+                _LOGGER.warn(
+                    "Appliance %s has no token, trying to get it from Midea cloud API",
+                    devconf[CONF_NAME],
+                )
                 if cloud is None:
                     # TODO maybe if there is no username, we should skip this
                     # and log an error
-                    cloud = await hass.async_add_executor_job(
-                        connect_to_cloud,
-                        data[CONF_USERNAME],
-                        data[CONF_PASSWORD],
-                        data[CONF_APPKEY],
-                        data[CONF_APPID],
-                    )
+                    try:
+                        cloud = await hass.async_add_executor_job(
+                            connect_to_cloud,
+                            data[CONF_USERNAME],
+                            data[CONF_PASSWORD],
+                            data[CONF_APPKEY],
+                            data[CONF_APPID],
+                        )
+                    except AuthenticationError as ex:
+                        raise ConfigEntryAuthFailed(
+                            f"Unable to login to Midea cloud {ex}"
+                        )
             appliance = await hass.async_add_executor_job(
                 appliance_state,
                 devconf[CONF_IP_ADDRESS],
@@ -95,6 +141,14 @@ class Hub:
             )
             # For each appliance create a coordinator
             if appliance is not None:
+                if not devconf[CONF_TOKEN] or not devconf[CONF_TOKEN_KEY]:
+                    devconf[CONF_TOKEN] = appliance.token
+                    devconf[CONF_TOKEN_KEY] = appliance.key
+                    updated_conf = True
+                    _LOGGER.debug(
+                        "Updating token for Midea dehumidifer %s",
+                        devconf[CONF_NAME],
+                    )
                 appliance.name = devconf[CONF_NAME]
                 coordinator = ApplianceUpdateCoordinator(hass, appliance)
                 self.coordinators.append(coordinator)
@@ -107,6 +161,10 @@ class Hub:
 
         for coordinator in self.coordinators:
             await coordinator.async_config_entry_first_refresh()
+
+        if updated_conf:
+            _LOGGER.warn("Updated Midea dehumidifers with new tokens")
+            hass.config_entries.async_update_entry(config_entry, data=data)
 
 
 class ApplianceUpdateCoordinator(DataUpdateCoordinator):
@@ -125,6 +183,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     async def _async_appliance_refresh(self):
         """Called to refresh appliance state"""
         await self.hass.async_add_executor_job(self.appliance.refresh)
+        return appliance
 
     def is_dehumidifier(self) -> bool:
         return DehumidifierAppliance.supported(self.appliance.type)
@@ -186,3 +245,7 @@ class ApplianceEntity(CoordinatorEntity):
             ATTR_MODEL: str(self.appliance.model),
             ATTR_SW_VERSION: self.appliance.firmware_version,
         }
+
+    def do_apply(self):
+        self.appliance.apply()
+        self.schedule_update_ha_state(force_refresh=True)

@@ -47,4 +47,4 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     def set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
         setattr(self.appliance.state, "fan_speed", percentage)
-        self.appliance.apply()
+        self.do_apply()

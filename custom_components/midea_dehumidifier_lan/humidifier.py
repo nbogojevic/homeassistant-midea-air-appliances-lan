@@ -98,12 +98,12 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     def turn_on(self, **kwargs):
         """Turn the entity on."""
         setattr(self.appliance.state, "running", True)
-        self.appliance.apply()
+        self.do_apply()
 
     def turn_off(self, **kwargs):
         """Turn the entity off."""
         setattr(self.appliance.state, "running", False)
-        self.appliance.apply()
+        self.do_apply()
 
     def set_mode(self, mode):
         """Set new target preset mode."""
@@ -119,9 +119,9 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             _LOGGER.warning("Unsupported dehumidifer mode %s", mode)
             curr_mode = 1
         setattr(self.appliance.state, "mode", curr_mode)
-        self.appliance.apply()
+        self.do_apply()
 
     def set_humidity(self, humidity):
         """Set new target humidity."""
         setattr(self.appliance.state, "target_humidity", humidity)
-        self.appliance.apply()
+        self.do_apply()
