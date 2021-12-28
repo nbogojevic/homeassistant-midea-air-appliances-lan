@@ -40,7 +40,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
         return "midea_dehumidifier_humidity_"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
         return "humidity"
 
     @property
@@ -48,11 +48,11 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
         return getattr(self.appliance.state, "current_humidity", None)
 
     @property
-    def native_unit_of_measurement(self):
+    def native_unit_of_measurement(self) -> str:
         return "%"
 
     @property
-    def state_class(self):
+    def state_class(self) -> str:
         return "measurement"
 
 
@@ -70,7 +70,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
         return "midea_dehumidifier_temperature_"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
         return "temperature"
 
     @property
@@ -78,9 +78,9 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
         return getattr(self.appliance.state, "current_temperature", None)
 
     @property
-    def native_unit_of_measurement(self):
+    def native_unit_of_measurement(self) -> str:
         return "°C"
 
     @property
-    def state_class(self):
+    def state_class(self) -> str:
         return "measurement"

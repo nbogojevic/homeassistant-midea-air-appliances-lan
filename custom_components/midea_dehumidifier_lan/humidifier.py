@@ -1,13 +1,10 @@
 """Adds dehumidifer entity for each dehumidifer appliance."""
 
 import logging
+from typing import Final
 
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
 from homeassistant.components.humidifier.const import (
-    MODE_AUTO,
-    MODE_BOOST,
-    MODE_COMFORT,
-    MODE_NORMAL,
     SUPPORT_MODES,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -21,8 +18,15 @@ from custom_components.midea_dehumidifier_lan.const import (
     MIN_TARGET_HUMIDITY,
 )
 
+
 _LOGGER = logging.getLogger(__name__)
-AVAILABLE_MODES = [MODE_AUTO, MODE_NORMAL, MODE_BOOST, MODE_COMFORT]
+
+MODE_SET: Final = "Set"
+MODE_DRY: Final = "Dry"
+MODE_SMART: Final = "Smart"
+MODE_CONTINOUS: Final = "Continuous"
+
+AVAILABLE_MODES: Final = [MODE_SMART, MODE_SET, MODE_DRY, MODE_CONTINOUS]
 
 
 async def async_setup_entry(
@@ -52,76 +56,72 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         return "midea_dehumidifier_"
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         return getattr(self.appliance.state, "running", False)
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
         return HumidifierDeviceClass.DEHUMIDIFIER
 
     @property
-    def target_humidity(self):
-        return getattr(self.appliance.state, "target_humidity", 0)
+    def target_humidity(self) -> int:
+        return int(getattr(self.appliance.state, "target_humidity", 0))
 
     @property
-    def supported_features(self):
+    def supported_features(self) -> int:
         return SUPPORT_MODES
 
     @property
-    def available_modes(self):
+    def available_modes(self) -> list[str]:
         return AVAILABLE_MODES
 
     @property
     def mode(self):
         curr_mode = getattr(self.appliance.state, "mode", 1)
         if curr_mode == 1:
-            return MODE_NORMAL
+            return MODE_SET
         if curr_mode == 2:
-            return MODE_COMFORT
+            return MODE_CONTINOUS
         if curr_mode == 3:
-            return MODE_AUTO
+            return MODE_SMART
         if curr_mode == 4:
-            return MODE_BOOST
+            return MODE_DRY
         _LOGGER.warning("Unknown mode %d", curr_mode)
-        return MODE_NORMAL
+        return MODE_SET
 
     @property
-    def min_humidity(self):
+    def min_humidity(self) -> int:
         """Return the min humidity that can be set."""
         return MIN_TARGET_HUMIDITY
 
     @property
-    def max_humidity(self):
+    def max_humidity(self) -> int:
         """Return the max humidity that can be set."""
         return MAX_TARGET_HUMIDITY
 
-    def turn_on(self, **kwargs):
+    def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
-        setattr(self.appliance.state, "running", True)
-        self.do_apply()
+        self.apply("running", True)
 
-    def turn_off(self, **kwargs):
+    def turn_off(self, **kwargs) -> None:
         """Turn the entity off."""
-        setattr(self.appliance.state, "running", False)
-        self.do_apply()
+        self.apply("running", False)
 
-    def set_mode(self, mode):
+    def set_mode(self, mode) -> None:
         """Set new target preset mode."""
-        if mode == MODE_NORMAL:
+        if mode == MODE_SET:
             curr_mode = 1
-        elif mode == MODE_COMFORT:
+        elif mode == MODE_CONTINOUS:
             curr_mode = 2
-        elif mode == MODE_AUTO:
+        elif mode == MODE_SMART:
             curr_mode = 3
-        elif mode == MODE_BOOST:
+        elif mode == MODE_DRY:
             curr_mode = 4
         else:
             _LOGGER.warning("Unsupported dehumidifer mode %s", mode)
             curr_mode = 1
-        setattr(self.appliance.state, "mode", curr_mode)
-        self.do_apply()
+        self.apply("mode", curr_mode)
 
-    def set_humidity(self, humidity):
+    def set_humidity(self, humidity) -> None:
         """Set new target humidity."""
-        setattr(self.appliance.state, "target_humidity", humidity)
-        self.do_apply()
+        self.apply("target_humidity", humidity)

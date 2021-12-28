@@ -20,6 +20,8 @@ CONF_IGNORE_APPLIANCE: Final = "ignore_appliance"
 CONF_MOBILE_APP: Final = "mobile_app"
 CONF_NETWORK_RANGE: Final = "network_range"
 CONF_TOKEN_KEY: Final = "token_key"
+CONF_USE_CLOUD: Final = "use_cloud"
+
 
 TAG_CAUSE: Final = "cause"
 TAG_ID: Final = "id"

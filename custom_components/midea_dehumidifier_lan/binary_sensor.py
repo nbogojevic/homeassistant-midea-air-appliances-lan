@@ -20,6 +20,10 @@ async def async_setup_entry(
     async_add_entities(
         TankFullSensor(c) for c in hub.coordinators if c.is_dehumidifier()
     )
+    async_add_entities(FilterSensor(c) for c in hub.coordinators if c.is_dehumidifier())
+    async_add_entities(
+        DefrostingSensor(c) for c in hub.coordinators if c.is_dehumidifier()
+    )
 
 
 class TankFullSensor(ApplianceEntity, BinarySensorEntity):
@@ -39,9 +43,65 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
         return "midea_dehumidifier_tank_full_"
 
     @property
-    def device_class(self):
+    def device_class(self) -> str:
         return "problem"
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         return getattr(self.appliance.state, "tank_full", False)
+
+
+class FilterSensor(ApplianceEntity, BinarySensorEntity):
+    """
+    Describes filter replacement binary sensors (indicated as problem)
+    """
+
+    @property
+    def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
+        return " Replace Filter"
+
+    @property
+    def unique_id_prefix(self) -> str:
+        """Prefix for entity id"""
+        return "midea_dehumidifier_filter_"
+
+    @property
+    def device_class(self) -> str:
+        return "problem"
+
+    @property
+    def is_on(self) -> bool:
+        return getattr(self.appliance.state, "filter_indicator", False)
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
+
+
+class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
+    """
+    Describes filter defrosting mode binary sensors (indicated as cold)
+    """
+
+    @property
+    def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
+        return " Defrosting"
+
+    @property
+    def unique_id_prefix(self) -> str:
+        """Prefix for entity id"""
+        return "midea_dehumidifier_defrosting_"
+
+    @property
+    def device_class(self) -> str:
+        return "cold"
+
+    @property
+    def is_on(self) -> bool:
+        return getattr(self.appliance.state, "defrosting", False)
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return False
