@@ -7,10 +7,11 @@ import asyncio
 
 from datetime import timedelta
 import logging
-from typing import Any, final
+from typing import Any, Final, final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
+    CONF_API_VERSION,
     CONF_DEVICES,
     CONF_ID,
     CONF_IP_ADDRESS,
@@ -66,7 +67,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # details
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        domain: dict = hass.data[DOMAIN]
+        domain.pop(entry.entry_id)
 
     return unload_ok
 
@@ -84,61 +86,61 @@ class Hub:
         Sets up appliances and creates an update coordinator for
         each one
         """
-        self.coordinators: list[ApplianceUpdateCoordinator] = []
         updated_conf = False
         data = {**config_entry.data}
-        self.use_cloud = bool(data.get(CONF_USE_CLOUD))
+        self.coordinators: list[ApplianceUpdateCoordinator] = []
+        self.use_cloud = data.get(CONF_USE_CLOUD, False)
         self.cloud = None
-        _LOGGER.debug("devconf: %s", data)
+        username = data[CONF_USERNAME]
+        password = data[CONF_PASSWORD]
+        appkey = data[CONF_APPKEY]
+        appid = data[CONF_APPID]
         device: dict
         for device in data[CONF_DEVICES]:
-            _LOGGER.debug("devconf: %s", device)
-            use_cloud = self.use_cloud or bool(device.get(CONF_USE_CLOUD))
+            use_cloud = device.get(CONF_USE_CLOUD, self.use_cloud)
             need_cloud = use_cloud
-            if not use_cloud and (not device[CONF_TOKEN] or not device[CONF_TOKEN_KEY]):
+            version = device.get(CONF_API_VERSION, 3)
+            need_token = version >= 3 and (
+                not device[CONF_TOKEN] or not device[CONF_TOKEN_KEY]
+            )
+            if not use_cloud and need_token:
                 _LOGGER.warn(
                     "Appliance %s has no token, trying to get it from Midea cloud API",
                     device[CONF_NAME],
                 )
                 need_cloud = True
-            if need_cloud or use_cloud:
-                if self.cloud is None:
-                    try:
-                        self.cloud = await hass.async_add_executor_job(
-                            connect_to_cloud,
-                            data[CONF_USERNAME],
-                            data[CONF_PASSWORD],
-                            data[CONF_APPKEY],
-                            data[CONF_APPID],
-                        )
-                    except AuthenticationError as ex:
-                        raise ConfigEntryAuthFailed(
-                            f"Unable to login to Midea cloud {ex}"
-                        )
+            if need_cloud and self.cloud is None:
+                try:
+                    self.cloud = await hass.async_add_executor_job(
+                        connect_to_cloud,
+                        username,
+                        password,
+                        appkey,
+                        appid,
+                    )
+                except AuthenticationError as ex:
+                    raise ConfigEntryAuthFailed(f"Unable to login to Midea cloud {ex}")
             appliance = await hass.async_add_executor_job(
                 appliance_state,
                 device[CONF_IP_ADDRESS] if not need_cloud else None,  # ip
                 device[CONF_TOKEN],  # token
                 device[CONF_TOKEN_KEY],  # key
                 self.cloud,  # cloud
-                bool(device.get(CONF_USE_CLOUD)),  # use_cloud
+                use_cloud,  # use_cloud
                 device[CONF_ID],  # id
             )
             # For each appliance create a coordinator
             if appliance is not None:
-                if (
-                    (not device[CONF_TOKEN] or not device[CONF_TOKEN_KEY])
-                    and appliance.token
-                    and appliance.key
-                ):
+                appliance.name = device[CONF_NAME]
+                if not device.get(CONF_API_VERSION):
+                    device[CONF_API_VERSION] = appliance.version
+                    updated_conf = True
+                    _LOGGER.debug("Updating version for %s", appliance)
+                if need_token and appliance.token and appliance.key:
                     device[CONF_TOKEN] = appliance.token
                     device[CONF_TOKEN_KEY] = appliance.key
                     updated_conf = True
-                    _LOGGER.debug(
-                        "Updating token for Midea dehumidifer %s",
-                        device[CONF_NAME],
-                    )
-                appliance.name = device[CONF_NAME]
+                    _LOGGER.debug("Updating token for %s", appliance)
                 coordinator = ApplianceUpdateCoordinator(hass, self, appliance)
                 self.coordinators.append(coordinator)
             else:
@@ -155,6 +157,10 @@ class Hub:
             hass.config_entries.async_update_entry(config_entry, data=data)
 
 
+# Wait half a second between successive refresh calls
+APPLIANCE_REFRESH_COOLDOWN: Final = 0.5
+
+
 class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     """Single class to retrieve data from an appliance"""
 
@@ -168,7 +174,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             request_refresh_debouncer=Debouncer(
                 hass,
                 _LOGGER,
-                cooldown=0.5,
+                cooldown=APPLIANCE_REFRESH_COOLDOWN,
                 immediate=True,
                 function=self.async_refresh,
             ),

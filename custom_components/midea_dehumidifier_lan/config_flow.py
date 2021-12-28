@@ -16,6 +16,7 @@ from homeassistant.const import (
     CONF_TOKEN,
     CONF_TYPE,
     CONF_USERNAME,
+    CONF_API_VERSION,
 )
 from homeassistant.core import HomeAssistant
 import voluptuous as vol
@@ -128,7 +129,7 @@ def connect_and_discover(flow: MideaLocalConfigFlow):
     if cloud is None:
         raise FlowException("no_cloud")
 
-    networks = flow._conf.get(CONF_NETWORK_RANGE) or []
+    networks = flow._conf.get(CONF_NETWORK_RANGE, [])
     if isinstance(networks, str):
         networks = [networks]
     appliances = find_appliances(cloud, networks=networks)
@@ -225,7 +226,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 self._conf[CONF_APPKEY] = DEFAULT_APPKEY
                 self._conf[CONF_APPID] = DEFAULT_APP_ID
-            if user_input[CONF_ADVANCED_OPTIONS]:
+            if user_input.get(CONF_ADVANCED_OPTIONS):
                 return await self.async_step_advanced_options()
 
         self._appliance_idx = -1
@@ -260,9 +261,9 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         app = DEFAULT_APP
         if user_input is not None:
             try:
-                username = user_input.get(CONF_USERNAME) or DEFAULT_USERNAME
-                password = user_input.get(CONF_PASSWORD) or DEFAULT_PASSWORD
-                app = user_input.get(CONF_MOBILE_APP) or DEFAULT_APP
+                username = user_input.get(CONF_USERNAME, username)
+                password = user_input.get(CONF_PASSWORD, password)
+                app = user_input.get(CONF_MOBILE_APP, app)
                 return await self._validate_discovery_phase(user_input)
             except FlowException as ex:
                 self._cause = ex.cause
@@ -284,20 +285,20 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict = {}
         self._cause = ""
         self._advanced_options = True
-        username = self._conf.get(CONF_USERNAME) or DEFAULT_USERNAME
-        password = self._conf.get(CONF_PASSWORD) or DEFAULT_PASSWORD
+        username = self._conf.get(CONF_USERNAME, DEFAULT_USERNAME)
+        password = self._conf.get(CONF_PASSWORD, DEFAULT_PASSWORD)
         appkey = DEFAULT_APPKEY
         appid = DEFAULT_APP_ID
         network_range = ""
-        use_cloud = False
+        use_cloud = self._conf.get(CONF_USE_CLOUD, False)
         if user_input is not None:
             try:
-                username = user_input.get(CONF_USERNAME) or username
-                password = user_input.get(CONF_PASSWORD) or password
-                appkey = user_input.get(CONF_APPKEY) or DEFAULT_APPKEY
-                appid = user_input.get(CONF_APPID) or DEFAULT_APP_ID
-                network_range = user_input.get(CONF_NETWORK_RANGE) or ""
-                use_cloud = user_input.get(CONF_USE_CLOUD) or use_cloud
+                username = user_input.get(CONF_USERNAME, username)
+                password = user_input.get(CONF_PASSWORD, password)
+                appkey = user_input.get(CONF_APPKEY, appkey)
+                appid = user_input.get(CONF_APPID, appid)
+                network_range = user_input.get(CONF_NETWORK_RANGE, network_range)
+                use_cloud = user_input.get(CONF_USE_CLOUD, use_cloud)
 
                 return await self._validate_discovery_phase(user_input)
             except FlowException as ex:
@@ -330,11 +331,11 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         appliance = self._appliances[self._appliance_idx]
 
         if user_input is not None:
-            appliance.ip = user_input.get(CONF_IP_ADDRESS) or IGNORED_IP_ADDRESS
-            appliance.name = user_input[CONF_NAME]
-            appliance.token = user_input.get(CONF_TOKEN) or ""
-            appliance.key = user_input.get(CONF_TOKEN_KEY) or ""
-            appliance._use_cloud = user_input[CONF_USE_CLOUD]
+            appliance.ip = user_input.get(CONF_IP_ADDRESS, IGNORED_IP_ADDRESS)
+            appliance.name = user_input.get(CONF_NAME, appliance.name)
+            appliance.token = user_input.get(CONF_TOKEN, "")
+            appliance.key = user_input.get(CONF_TOKEN_KEY, "")
+            appliance._use_cloud = user_input.get(CONF_USE_CLOUD, False)
             try:
                 await self.hass.async_add_executor_job(
                     validate_appliance,
@@ -390,6 +391,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_TOKEN: appliance.token,
                             CONF_TOKEN_KEY: appliance.key,
                             CONF_USE_CLOUD: appliance._use_cloud,
+                            CONF_API_VERSION: appliance.version,
                         }
                     )
             existing_entry = await self.async_set_unique_id(self._conf[CONF_USERNAME])
@@ -423,12 +425,12 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None):
         """Handle reauthorization flow."""
         errors = {}
-        username = self._conf.get(CONF_USERNAME) or DEFAULT_USERNAME
+        username = self._conf.get(CONF_USERNAME, DEFAULT_USERNAME)
         password = ""
-        appkey = self._conf.get(CONF_APPKEY) or DEFAULT_APPKEY
-        appid = self._conf.get(CONF_APPID) or DEFAULT_APP_ID
-        network_range = self._conf.get(CONF_NETWORK_RANGE) or ""
-        use_cloud = self._conf.get(CONF_USE_CLOUD) or False
+        appkey = self._conf.get(CONF_APPKEY, DEFAULT_APPKEY)
+        appid = self._conf.get(CONF_APPID, DEFAULT_APP_ID)
+        network_range = self._conf.get(CONF_NETWORK_RANGE, "")
+        use_cloud = self._conf.get(CONF_USE_CLOUD, False)
 
         if user_input is None:
             return self.async_show_form(
@@ -446,12 +448,12 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         try:
-            username = user_input.get(CONF_USERNAME) or username
-            password = user_input.get(CONF_PASSWORD) or ""
-            appkey = user_input.get(CONF_APPKEY) or DEFAULT_APPKEY
-            appid = user_input.get(CONF_APPID) or DEFAULT_APP_ID
-            network_range = user_input.get(CONF_NETWORK_RANGE) or network_range
-            use_cloud = user_input.get(CONF_USE_CLOUD) or use_cloud
+            username = user_input.get(CONF_USERNAME, username)
+            password = user_input.get(CONF_PASSWORD, "")
+            appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
+            appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
+            network_range = user_input.get(CONF_NETWORK_RANGE, network_range)
+            use_cloud = user_input.get(CONF_USE_CLOUD, use_cloud)
             return await self._validate_discovery_phase(user_input)
         except FlowException as ex:
             self._cause = ex.cause
