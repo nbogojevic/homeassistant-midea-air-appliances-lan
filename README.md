@@ -32,18 +32,26 @@ Once installed, you can add it in the Home Assistant by going to `Configuration 
 ## Known issues
 
 * If IPv4 address of dehumidifer changes, new IPv4 address will not be used until Home Assistant's restart.
-
+* If Home Assistant installation doesn't have access to physical network, the integration may not discover all appliances.
+* Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifer might use different names (e.g. Boost instead of Dry)
+* Version 2 of local network protocol has not been tested. ANY FEEDBACK IS WELCOME!
 
 ## Supported entities
 
 This custom component creates following entites for each discovered dehumidifer:
 
-* humidifier/dehumidifer
-* fan
-* sensor with current environment humidity
-* sensor with current environment temperature
-* binary sensor for full tank
-* switch for controlling ION mode (switch has no effect if dehumidifier doesn't support it)
+Platform | Description
+-- | --
+`humidifier` | Dehumidifier entity. Four modes are supported: `Set`, `Continous`, `Smart` and `Dry`.
+`fan` | Fan entity for controlling dehumidifer fan. Three preset modes are available `Silent`, `Medium` and `Turbo`. Switching fan off sets `Silent` preset and switching on sets `Medium` preset.
+`binary_sensor` | Problem sensor indicating when tank is full.
+`binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
+`binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
+`sensor` | Sensors for current relative humidity measured by dehumidifier.
+`sensor` | Sensor for current temperature measured by dehumidifier.
+`switch` | Switch ION mode on and off (_disabled by default_)
+`switch` | Switch pump on and off (_disabled by default_)
+`switch` | Switch sleep mode on and off (_disabled by default_)
 
 ## See also
 
