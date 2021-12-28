@@ -6,7 +6,7 @@ from typing import Final
 from homeassistant.const import Platform
 from midea_beautiful_dehumidifier.midea import SUPPORTED_APPS
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # Base component constants
 NAME: Final = "Midea Dehumidifier (LAN)"
