@@ -17,7 +17,8 @@
           "password": "Password",
           "appkey": "Mobile app key",
           "appid": "Mobile app id",
-          "network_range": "Appliance address or network range"
+          "network_range": "Appliance address or network range",
+          "use_cloud": "Use cloud API to poll devices"
         },
         "description": "You can provide specific Midea mobile app key and app id if the default ones don't work.\n\nYou can also specify network address (e.g. 192.0.1.2) or range (e.g. 192.0.3.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
         "title": "Advanced options"
@@ -28,7 +29,8 @@
           "name": "Device name",
           "token": "Token",
           "token_key": "Token key",
-          "ignore_appliance": "Ignore this appliance"
+          "ignore_appliance": "Ignore this appliance",
+          "use_cloud": "Use cloud API to poll this device"
         },
         "description": "We were unable to discover an appliance called {name} with the id {id} on the local network.\n\nIf you know appliance's IPv4 address, please enter it below to add it to Home Assistant.\n\nYou can also provide token and key if you have them. If not, we will obtain them from Midea cloud.",
         "title": "Appliance IPv4 address is missing"
