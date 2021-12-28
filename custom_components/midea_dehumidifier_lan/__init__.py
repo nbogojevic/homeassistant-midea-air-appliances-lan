@@ -87,12 +87,13 @@ class Hub:
         self.coordinators: list[ApplianceUpdateCoordinator] = []
         updated_conf = False
         data = {**config_entry.data}
-        self.use_cloud = data.get(CONF_USE_CLOUD) or False
+        self.use_cloud = bool(data.get(CONF_USE_CLOUD))
         self.cloud = None
         _LOGGER.debug("devconf: %s", data)
+        device: dict
         for device in data[CONF_DEVICES]:
             _LOGGER.debug("devconf: %s", device)
-            use_cloud = self.use_cloud or device.get(CONF_USE_CLOUD)
+            use_cloud = self.use_cloud or bool(device.get(CONF_USE_CLOUD))
             need_cloud = use_cloud
             if not use_cloud and (not device[CONF_TOKEN] or not device[CONF_TOKEN_KEY]):
                 _LOGGER.warn(
@@ -120,7 +121,7 @@ class Hub:
                 device[CONF_TOKEN],  # token
                 device[CONF_TOKEN_KEY],  # key
                 self.cloud,  # cloud
-                device[CONF_USE_CLOUD] or False,  # use_cloud
+                bool(device.get(CONF_USE_CLOUD)),  # use_cloud
                 device[CONF_ID],  # id
             )
             # For each appliance create a coordinator
