@@ -3,8 +3,6 @@ name: Repository validation
 on:
   push:
   pull_request:
-  schedule:
-    - cron: "3 14 * * *"
 
 jobs:
   hacs:
