@@ -1,6 +1,6 @@
 {
   "name": "Midea Dehumidifier (LAN)",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "domains": [
     "binary_sensor",
     "humidifier",
