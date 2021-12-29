@@ -5,7 +5,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan import (
+    ApplianceEntity,
+    ApplianceUpdateCoordinator,
+    Hub,
+)
 from custom_components.midea_dehumidifier_lan.const import DOMAIN
 
 
@@ -18,27 +22,47 @@ async def async_setup_entry(
 
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(IonSwitch(c) for c in hub.coordinators if c.is_dehumidifier())
-    async_add_entities(PumpSwitch(c) for c in hub.coordinators if c.is_dehumidifier())
-    async_add_entities(SleepSwitch(c) for c in hub.coordinators if c.is_dehumidifier())
+    async_add_entities(
+        MideaSwitch(c, "ion_mode", "Ion Mode", "mdi:air-purifier")
+        for c in hub.coordinators
+        if c.is_dehumidifier()
+    )
+    async_add_entities(
+        MideaSwitch(c, "pump", "Pump", "mdi:pump")
+        for c in hub.coordinators
+        if c.is_dehumidifier()
+    )
+    async_add_entities(
+        MideaSwitch(c, "sleep", "Sleep", "mdi:weather-night")
+        for c in hub.coordinators
+        if c.is_dehumidifier()
+    )
+    async_add_entities(
+        MideaSwitch(c, "beep_prompt", "Beep", "mdi:bell-check")
+        for c in hub.coordinators
+        if c.is_dehumidifier()
+    )
 
 
-class IonSwitch(ApplianceEntity, SwitchEntity):
-    """Ion mode switches"""
+class MideaSwitch(ApplianceEntity, SwitchEntity):
+    """Generic attr based switch"""
+
+    def __init__(
+        self, coordinator: ApplianceUpdateCoordinator, attr: str, suffix: str, icon: str
+    ) -> None:
+        self.attr = attr
+        self.suffix = " " + suffix
+        self.icon_name = icon
+        super().__init__(coordinator)
 
     @property
     def name_suffix(self) -> str:
         """Suffix to append to entity name"""
-        return " Ion Mode"
+        return self.suffix
 
     @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_ion_mode_"
-
-    @property
-    def icon(self) -> str:
-        return "mdi:air-purifier"
+    def icon(self):
+        return self.icon_name or super().icon
 
     @property
     def entity_registry_enabled_default(self) -> bool:
@@ -46,81 +70,13 @@ class IonSwitch(ApplianceEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, "ion_mode", False)
+        return getattr(self.appliance.state, self.attr, False)
 
     def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
 
-        self.apply("ion_mode", True)
+        self.apply(self.attr, True)
 
     def turn_off(self, **kwargs) -> None:
         """Turn the entity off."""
-        self.apply("ion_mode", False)
-
-
-class PumpSwitch(ApplianceEntity, SwitchEntity):
-    """Pump switches"""
-
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Pump"
-
-    @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_pump_"
-
-    @property
-    def icon(self) -> str:
-        return "mdi:pump"
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        return False
-
-    @property
-    def is_on(self) -> bool:
-        return getattr(self.appliance.state, "pump", False)
-
-    def turn_on(self, **kwargs) -> None:
-        """Turn the entity on."""
-        self.apply("pump", True)
-
-    def turn_off(self, **kwargs) -> None:
-        """Turn the entity off."""
-        self.apply("pump", False)
-
-
-class SleepSwitch(ApplianceEntity, SwitchEntity):
-    """Sleep mode switch"""
-
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Sleep"
-
-    @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_sleep_"
-
-    @property
-    def icon(self) -> str:
-        return "mdi:weather-night"
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        return False
-
-    @property
-    def is_on(self) -> bool:
-        return getattr(self.appliance.state, "sleep", False)
-
-    def turn_on(self, **kwargs) -> None:
-        """Turn the entity on."""
-        self.apply("sleep", False)
-
-    def turn_off(self, **kwargs) -> None:
-        """Turn the entity off."""
-        self.apply("sleep", False)
+        self.apply(self.attr, False)
