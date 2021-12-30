@@ -5,8 +5,8 @@ import ipaddress
 import logging
 from typing import Any
 
-from homeassistant import config_entries, data_entry_flow
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import data_entry_flow
+from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import (
     CONF_DEVICES,
     CONF_ID,
@@ -18,7 +18,6 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_API_VERSION,
 )
-from homeassistant.core import HomeAssistant
 import voluptuous as vol
 
 from midea_beautiful_dehumidifier import (
@@ -42,7 +41,7 @@ from midea_beautiful_dehumidifier.midea import (
 )
 
 from .const import (
-    CONF_ADVANCED_OPTIONS,
+    CONF_ADVANCED_SETTINGS,
     CONF_APPID,
     CONF_APPKEY,
     CONF_IGNORE_APPLIANCE,
@@ -64,20 +63,24 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def _unreachable_appliance_schema(name: str):
+def _unreachable_appliance_schema(
+    name: str,
+    ip: str = IGNORED_IP_ADDRESS,
+    use_cloud: bool = False,
+):
     return vol.Schema(
         {
             vol.Required(CONF_IGNORE_APPLIANCE, default=False): bool,
-            vol.Optional(CONF_IP_ADDRESS, default=IGNORED_IP_ADDRESS): str,
+            vol.Optional(CONF_IP_ADDRESS, default=ip): str,
             vol.Optional(CONF_NAME, default=name): str,
             vol.Optional(CONF_TOKEN): str,
             vol.Optional(CONF_TOKEN_KEY): str,
-            vol.Required(CONF_USE_CLOUD, default=False): bool,
+            vol.Required(CONF_USE_CLOUD, default=use_cloud): bool,
         }
     )
 
 
-def _advanced_options_schema(
+def _advanced_settings_schema(
     username: str,
     password: str,
     appkey: str,
@@ -106,7 +109,7 @@ def _user_schema(username: str, password: str, app: str):
             vol.Required(CONF_MOBILE_APP, default=app): vol.In(
                 [app for app in SUPPORTED_APPS.keys()]
             ),
-            vol.Required(CONF_ADVANCED_OPTIONS, default=False): bool,
+            vol.Required(CONF_ADVANCED_SETTINGS, default=False): bool,
         }
     )
 
@@ -121,37 +124,39 @@ def connect_and_discover(flow: MideaLocalConfigFlow):
     """Validates that cloud credentials are valid and discovers local appliances"""
 
     cloud = connect_to_cloud(
-        account=flow._conf[CONF_USERNAME],
-        password=flow._conf[CONF_PASSWORD],
-        appkey=flow._conf[CONF_APPKEY],
-        appid=flow._conf[CONF_APPID],
+        account=flow.conf[CONF_USERNAME],
+        password=flow.conf[CONF_PASSWORD],
+        appkey=flow.conf[CONF_APPKEY],
+        appid=flow.conf[CONF_APPID],
     )
     if cloud is None:
         raise FlowException("no_cloud")
 
-    networks = flow._conf.get(CONF_NETWORK_RANGE, [])
+    networks = flow.conf.get(CONF_NETWORK_RANGE, [])
     if isinstance(networks, str):
         networks = [networks]
-    appliances = find_appliances(cloud, networks=networks)
-    flow._appliances = appliances
-    flow._cloud = cloud
+    if appliances := find_appliances(cloud, networks=networks):
+        flow.devices_conf = [{} for _ in appliances]
+    else:
+        flow.devices_conf = []
+    flow.appliances = appliances
+    flow.cloud = cloud
 
 
-def validate_appliance(cloud: MideaCloud, appliance: LanDevice):
+def validate_appliance(cloud: MideaCloud, appliance: LanDevice, conf: dict):
     """
     Validates that appliance configuration is correct and matches physical
     device
     """
-    if appliance.ip == IGNORED_IP_ADDRESS or (
-        appliance.ip is None and not appliance._use_cloud
-    ):
+    use_cloud = conf.get(CONF_USE_CLOUD, False)
+    if appliance.ip == IGNORED_IP_ADDRESS or (appliance.ip is None and not use_cloud):
         _LOGGER.debug("Ignored appliance with id=%s", appliance.id)
         return
     try:
-        if appliance._use_cloud:
+        if use_cloud:
             discovered = appliance_state(
                 cloud=cloud,
-                use_cloud=appliance._use_cloud,
+                use_cloud=use_cloud,
                 id=appliance.id,
             )
         else:
@@ -176,7 +181,7 @@ def validate_appliance(cloud: MideaCloud, appliance: LanDevice):
     appliance.update(discovered)
 
 
-class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
     """
     Configuration flow for Midea dehumidifiers on local network uses discovery based on
     Midea cloud, so it first requires credentials for it.
@@ -184,30 +189,32 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     flow will prompt for additional information.
     """
 
+    VERSION = CURRENT_CONFIG_VERSION
+
     def __init__(self):
-        self._cloud_credentials: dict | None = None
-        self._cloud: MideaCloud | None = None
-        self._appliance_idx = -1
-        self._appliances: list[LanDevice] = []
-        self._devices_conf = []
-        self._conf = {}
-        self._advanced_options = False
+        self.cloud_credentials: dict = None  # type: ignore
+        self.cloud: MideaCloud = None  # type: ignore
+        self.appliance_idx = -1
+        self.appliances: list[LanDevice] = []
+        self.devices_conf: list[dict] = []
+        self.conf = {}
+        self.advanced_settings = False
 
     async def _validate_discovery_phase(self, user_input: dict[str, Any] | None):
 
-        if self._advanced_options:
-            if self._conf is not None and user_input is not None:
+        if self.advanced_settings:
+            if self.conf is not None and user_input is not None:
                 if CONF_APPKEY not in user_input or CONF_APPID not in user_input:
                     raise FlowException("invalid_appkey")
-                self._conf[CONF_APPKEY] = user_input[CONF_APPKEY]
-                self._conf[CONF_APPID] = user_input[CONF_APPID]
+                self.conf[CONF_APPKEY] = user_input[CONF_APPKEY]
+                self.conf[CONF_APPID] = user_input[CONF_APPID]
                 if network_range := user_input.get(CONF_NETWORK_RANGE):
                     try:
                         ipaddress.IPv4Network(network_range, strict=False)
                     except Exception as ex:
                         raise FlowException("invalid_ip_range", network_range) from ex
-                    self._conf[CONF_NETWORK_RANGE] = network_range
-                self._conf[CONF_USE_CLOUD] = user_input[CONF_USE_CLOUD]
+                    self.conf[CONF_NETWORK_RANGE] = network_range
+                self.conf[CONF_USE_CLOUD] = user_input[CONF_USE_CLOUD]
             else:
                 _LOGGER.error("Expected previous configuration")
                 raise FlowException("invalid_state")
@@ -215,33 +222,32 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if user_input is None:
                 _LOGGER.error("Expected user input")
                 raise FlowException("invalid_state")
-            self._conf = user_input
-            self._conf[CONF_USE_CLOUD] = False
+            self.conf = user_input
+            self.conf[CONF_USE_CLOUD] = False
             if app := user_input.get(CONF_MOBILE_APP):
-                if apps := SUPPORTED_APPS.get(app):
-                    self._conf[CONF_APPKEY] = apps[CONF_APPKEY]
-                    self._conf[CONF_APPID] = apps[CONF_APPID]
+                if app_key_id := SUPPORTED_APPS.get(app):
+                    self.conf.update(app_key_id)
                 else:
                     raise FlowException("invalid_app_name", app)
             else:
-                self._conf[CONF_APPKEY] = DEFAULT_APPKEY
-                self._conf[CONF_APPID] = DEFAULT_APP_ID
-            if user_input.get(CONF_ADVANCED_OPTIONS):
-                return await self.async_step_advanced_options()
+                self.conf[CONF_APPKEY] = DEFAULT_APPKEY
+                self.conf[CONF_APPID] = DEFAULT_APP_ID
+            if user_input.get(CONF_ADVANCED_SETTINGS):
+                return await self.async_step_advanced_settings()
 
-        self._appliance_idx = -1
+        self.appliance_idx = -1
 
         await self.hass.async_add_executor_job(connect_and_discover, self)
 
-        if self._conf[CONF_USE_CLOUD]:
-            for i, appliance in enumerate(self._appliances):
-                appliance._use_cloud = True
+        if self.conf[CONF_USE_CLOUD]:
+            for i, appliance in enumerate(self.appliances):
+                self.devices_conf[i][CONF_USE_CLOUD] = True
         else:
-            for i, appliance in enumerate(self._appliances):
+            for i, appliance in enumerate(self.appliances):
                 if not appliance.ip:
-                    self._appliance_idx = i
+                    self.appliance_idx = i
                     break
-            if self._appliance_idx >= 0:
+            if self.appliance_idx >= 0:
                 return await self.async_step_unreachable_appliance()
 
         return await self._async_add_entry()
@@ -249,12 +255,12 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> data_entry_flow.FlowResult:
-        self._advanced_options = False
+        self.advanced_settings = False
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
         errors: dict = {}
-        self._cause = ""
+        self.error_cause = ""
 
         username = DEFAULT_USERNAME
         password = DEFAULT_PASSWORD
@@ -266,10 +272,10 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 app = user_input.get(CONF_MOBILE_APP, app)
                 return await self._validate_discovery_phase(user_input)
             except FlowException as ex:
-                self._cause = ex.cause
+                self.error_cause = ex.cause
                 errors["base"] = ex.message
             except CloudAuthenticationError as ex:
-                self._cause = f"{ex.error_code} - {ex.message}"
+                self.error_cause = f"{ex.error_code} - {ex.message}"
                 errors["base"] = "invalid_auth"
 
         return self.async_show_form(
@@ -279,38 +285,40 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_advanced_options(
+    async def async_step_advanced_settings(
         self, user_input: dict[str, Any] | None = None
     ):
         errors: dict = {}
-        self._cause = ""
-        self._advanced_options = True
-        username = self._conf.get(CONF_USERNAME, DEFAULT_USERNAME)
-        password = self._conf.get(CONF_PASSWORD, DEFAULT_PASSWORD)
-        appkey = DEFAULT_APPKEY
-        appid = DEFAULT_APP_ID
-        network_range = ""
-        use_cloud = self._conf.get(CONF_USE_CLOUD, False)
-        if user_input is not None:
+        self.error_cause = ""
+        self.advanced_settings = True
+        if user_input is None:
+            user_input = {}
+        else:
             try:
-                username = user_input.get(CONF_USERNAME, username)
-                password = user_input.get(CONF_PASSWORD, password)
-                appkey = user_input.get(CONF_APPKEY, appkey)
-                appid = user_input.get(CONF_APPID, appid)
-                network_range = user_input.get(CONF_NETWORK_RANGE, network_range)
-                use_cloud = user_input.get(CONF_USE_CLOUD, use_cloud)
-
                 return await self._validate_discovery_phase(user_input)
             except FlowException as ex:
-                self._cause = ex.cause
+                self.error_cause = ex.cause
                 errors["base"] = ex.message
             except CloudAuthenticationError as ex:
-                self._cause = f"{ex.error_code} - {ex.message}"
+                self.error_cause = f"{ex.error_code} - {ex.message}"
                 errors["base"] = "invalid_auth"
 
+        username = user_input.get(
+            CONF_USERNAME, self.conf.get(CONF_USERNAME, DEFAULT_USERNAME)
+        )
+        password = user_input.get(
+            CONF_PASSWORD, self.conf.get(CONF_PASSWORD, DEFAULT_PASSWORD)
+        )
+        appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
+        appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
+        network_range = user_input.get(
+            CONF_NETWORK_RANGE, self.conf.get(CONF_NETWORK_RANGE, "")
+        )
+        use_cloud = user_input.get(CONF_USE_CLOUD, self.conf.get(CONF_USE_CLOUD, False))
+
         return self.async_show_form(
-            step_id="advanced_options",
-            data_schema=_advanced_options_schema(
+            step_id="advanced_settings",
+            data_schema=_advanced_settings_schema(
                 username=username,
                 password=password,
                 appkey=appkey,
@@ -327,35 +335,42 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ):
         """Manage the appliances that were not discovered automatically on LAN."""
         errors: dict = {}
-        self._cause = ""
-        appliance = self._appliances[self._appliance_idx]
+        self.error_cause = ""
+        appliance = self.appliances[self.appliance_idx]
+        device_conf = self.devices_conf[self.appliance_idx]
 
         if user_input is not None:
+
             appliance.ip = user_input.get(CONF_IP_ADDRESS, IGNORED_IP_ADDRESS)
             appliance.name = user_input.get(CONF_NAME, appliance.name)
             appliance.token = user_input.get(CONF_TOKEN, "")
             appliance.key = user_input.get(CONF_TOKEN_KEY, "")
-            appliance._use_cloud = user_input.get(CONF_USE_CLOUD, False)
+
+            device_conf[CONF_USE_CLOUD] = user_input.get(
+                CONF_USE_CLOUD, self.conf.get(CONF_USE_CLOUD, False)
+            )
+
             try:
                 await self.hass.async_add_executor_job(
                     validate_appliance,
-                    self._cloud,
+                    self.cloud,
                     appliance,
+                    device_conf,
                 )
                 # Find next unreachable appliance
-                self._appliance_idx = self._appliance_idx + 1
-                while self._appliance_idx < len(self._appliances):
-                    if self._appliances[self._appliance_idx].ip is None:
+                self.appliance_idx = self.appliance_idx + 1
+                while self.appliance_idx < len(self.appliances):
+                    if self.appliances[self.appliance_idx].ip is None:
                         return await self.async_step_unreachable_appliance()
-                    self._appliance_idx = self._appliance_idx + 1
+                    self.appliance_idx = self.appliance_idx + 1
 
                 # If no unreachable appliances, create entry
-                if self._appliance_idx >= len(self._appliances):
+                if self.appliance_idx >= len(self.appliances):
                     return await self._async_add_entry()
-                appliance = self._appliances[self._appliance_idx]
+                appliance = self.appliances[self.appliance_idx]
 
             except FlowException as ex:
-                self._cause = ex.cause
+                self.error_cause = ex.cause
                 errors["base"] = ex.message
 
         name = appliance.name
@@ -368,7 +383,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def placeholders(self, appliance: LanDevice = None):
         placeholders = {
-            TAG_CAUSE: self._cause or "",
+            TAG_CAUSE: self.error_cause or "",
         }
         if appliance:
             placeholders[TAG_ID] = appliance.id
@@ -376,13 +391,12 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return placeholders
 
     async def _async_add_entry(self):
-        if self._conf is not None:
-            self._devices_conf = []
-            for appliance in self._appliances:
-                if appliance._use_cloud or (
+        if self.conf is not None:
+            for i, appliance in enumerate(self.appliances):
+                if self.devices_conf[i].get(CONF_USE_CLOUD, False) or (
                     appliance.ip and appliance.ip != IGNORED_IP_ADDRESS
                 ):
-                    self._devices_conf.append(
+                    self.devices_conf[i].update(
                         {
                             CONF_IP_ADDRESS: appliance.ip,
                             CONF_ID: appliance.id,
@@ -390,16 +404,15 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             CONF_TYPE: appliance.type,
                             CONF_TOKEN: appliance.token,
                             CONF_TOKEN_KEY: appliance.key,
-                            CONF_USE_CLOUD: appliance._use_cloud,
                             CONF_API_VERSION: appliance.version,
                         }
                     )
-            existing_entry = await self.async_set_unique_id(self._conf[CONF_USERNAME])
-            self._conf[CONF_DEVICES] = self._devices_conf
+            self.conf[CONF_DEVICES] = self.devices_conf
+            existing_entry = await self.async_set_unique_id(self.conf[CONF_USERNAME])
             if existing_entry:
                 self.hass.config_entries.async_update_entry(
                     existing_entry,
-                    data=self._conf,
+                    data=self.conf,
                 )
                 # Reload the config entry otherwise devices will remain unavailable
                 self.hass.async_create_task(
@@ -410,7 +423,7 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 return self.async_create_entry(
                     title="Midea Dehumidifiers",
-                    data=self._conf,
+                    data=self.conf,
                 )
         else:
             _LOGGER.error("Configuration should have been set before reaching this!")
@@ -418,24 +431,23 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth(self, config):
         """Handle reauthorization request from Abode."""
-        self._conf = {**config}
+        self.conf = {**config}
 
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None):
         """Handle reauthorization flow."""
         errors = {}
-        username = self._conf.get(CONF_USERNAME, DEFAULT_USERNAME)
+        username = self.conf.get(CONF_USERNAME, DEFAULT_USERNAME)
         password = ""
-        appkey = self._conf.get(CONF_APPKEY, DEFAULT_APPKEY)
-        appid = self._conf.get(CONF_APPID, DEFAULT_APP_ID)
-        network_range = self._conf.get(CONF_NETWORK_RANGE, "")
-        use_cloud = self._conf.get(CONF_USE_CLOUD, False)
-
+        appkey = self.conf.get(CONF_APPKEY, DEFAULT_APPKEY)
+        appid = self.conf.get(CONF_APPID, DEFAULT_APP_ID)
+        network_range = self.conf.get(CONF_NETWORK_RANGE, "")
+        use_cloud = self.conf.get(CONF_USE_CLOUD, False)
         if user_input is None:
             return self.async_show_form(
                 step_id="reauth_confirm",
-                data_schema=_advanced_options_schema(
+                data_schema=_advanced_settings_schema(
                     username=username,
                     password="",
                     appkey=appkey,
@@ -448,24 +460,25 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         try:
-            username = user_input.get(CONF_USERNAME, username)
-            password = user_input.get(CONF_PASSWORD, "")
-            appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
-            appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
-            network_range = user_input.get(CONF_NETWORK_RANGE, network_range)
-            use_cloud = user_input.get(CONF_USE_CLOUD, use_cloud)
             return await self._validate_discovery_phase(user_input)
         except FlowException as ex:
-            self._cause = ex.cause
+            self.error_cause = ex.cause
             errors["base"] = ex.message
         except CloudAuthenticationError as ex:
-            self._cause = f"{ex.error_code} - {ex.message}"
+            self.error_cause = f"{ex.error_code} - {ex.message}"
             errors["base"] = "invalid_auth"
 
-        self._advanced_options = True
+        username = user_input.get(CONF_USERNAME, username)
+        password = user_input.get(CONF_PASSWORD, "")
+        appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
+        appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
+        network_range = user_input.get(CONF_NETWORK_RANGE, network_range)
+        use_cloud = user_input.get(CONF_USE_CLOUD, use_cloud)
+        self.advanced_settings = True
+
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=_advanced_options_schema(
+            data_schema=_advanced_settings_schema(
                 username=username,
                 password=password,
                 appkey=appkey,
@@ -476,30 +489,3 @@ class MideaLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=self.placeholders(),
             errors=errors,
         )
-
-
-async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate old config entry to new version."""
-    _LOGGER.error("Migrating from version %s", entry.version)
-
-    if entry.version < CURRENT_CONFIG_VERSION:
-
-        new = {**entry.data}
-        newdevconfs = []
-        for devconf in entry.data[CONF_DEVICES]:
-            newdevconf = {**devconf}
-            newdevconfs.append(newdevconf)
-            newdevconf[CONF_USE_CLOUD] = newdevconf.get(CONF_USE_CLOUD, False)
-        new[CONF_DEVICES] = newdevconfs
-        if not new.get(CONF_APPID) or not new.get(CONF_APPKEY):
-            new[CONF_APPKEY] = DEFAULT_APPKEY
-            new[CONF_APPID] = DEFAULT_APP_ID
-        new[CONF_NETWORK_RANGE] = new.get(CONF_NETWORK_RANGE, [])
-        new[CONF_USE_CLOUD] = new.get(CONF_USE_CLOUD, False)
-        entry.version = CURRENT_CONFIG_VERSION
-        _LOGGER.info("Migration from %s to %s", entry.data, new)
-        # hass.config_entries.async_update_entry(config_entry, data=new)
-
-    _LOGGER.info("Migration to version %s successful", entry.version)
-
-    return True
