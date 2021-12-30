@@ -7,24 +7,24 @@ This custom component for Home assistant adds support for Midea dehumidifier app
 [![hacs][hacsbadge]][hacs]
 [![GitHub Release][releases-shield]][releases]
 
-Home Assistant custom component for controlling Midea dehumidifieres on local network
+Home Assistant custom component for controlling Midea dehumidifieres on local network.
 
 ## Installation instruction
 
 ### HACS
-The easiest way to install the this integration is with [HACS](https://hacs.xyz/). First, install [HACS](https://hacs.xyz/docs/setup/download) if you don't have it yet. In Home Assistant go to `HACS -> Integrations`, click on `+ Explore & Download Repositories` and search for `Midea Dehumidifier (LAN)` and click download.
+The easiest way to install the this integration is with [HACS](https://hacs.xyz/). First, install [HACS](https://hacs.xyz/docs/setup/download) if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Dehumidifier (LAN)`, and click download.
 
-Once installed, you can add it in the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Dehumidifier (LAN)` or, using My Home Assistant service, you can click on:
+Once the integration is installed, you can add it to the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Dehumidifier (LAN)` or, using My Home Assistant service, you can click on:
 
 [![Add Midea Dehumidifier (LAN)][add-integration-badge]][add-integration]
 
-### Manual
-1. Update Home Assistant to version 2021.12 or newer
-2. Clone this repository
-3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder
+### Manual installation
+1. Update Home Assistant to version 2021.12 or newer.
+2. Clone this repository.
+3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder.
 
 ### Configuring
-1. Add `Midea Dehumidifer (LAN)` integration via UI
+1. Add `Midea Dehumidifer (LAN)` integration via UI.
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
 3. The integration will discover dehumidifiers on local network(s).
 4. If a dehumidifer is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the dehumidifier.
@@ -34,7 +34,9 @@ Once installed, you can add it in the Home Assistant by going to `Configuration 
 * If IPv4 address of dehumidifer changes, new IPv4 address will not be used until Home Assistant's restart.
 * If Home Assistant installation doesn't have access to physical network, the integration may not discover all appliances.
 * Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifer might use different names (e.g. Boost instead of Dry)
-* Version 2 of local network protocol has not been tested. ANY FEEDBACK IS WELCOME!
+* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea dehumidifier integrations in combination with this one. To avoid problems use a single integration - this one :).
+* If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
+* Some of sensors and switches are disabled by default. You need to enable them manually. See table below for more information.
 
 ## Supported entities
 
@@ -52,6 +54,7 @@ Platform | Description
 `switch` | Switch ION mode on and off (_disabled by default_)
 `switch` | Switch pump on and off (_disabled by default_)
 `switch` | Switch sleep mode on and off (_disabled by default_)
+`switch` | Switch to activate beep on action (_disabled by default_)
 
 ## See also
 
