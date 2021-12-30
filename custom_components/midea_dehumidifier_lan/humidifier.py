@@ -11,7 +11,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan import (
+    ApplianceEntity,
+    ApplianceUpdateCoordinator,
+    Hub,
+)
 from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     MAX_TARGET_HUMIDITY,
@@ -25,8 +29,12 @@ MODE_SET: Final = "Set"
 MODE_DRY: Final = "Dry"
 MODE_SMART: Final = "Smart"
 MODE_CONTINOUS: Final = "Continuous"
+MODE_PURIFIER: Final = "Purifier"
+MODE_ANTIMOULD: Final = "Antimould"
+MODE_FAN: Final = "Fan"
 
-AVAILABLE_MODES: Final = [MODE_SMART, MODE_SET, MODE_DRY, MODE_CONTINOUS]
+
+_AVAILABLE_MODES: Final = [MODE_SMART, MODE_SET, MODE_DRY, MODE_CONTINOUS]
 
 
 async def async_setup_entry(
@@ -44,6 +52,28 @@ async def async_setup_entry(
 
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     """(de)Humidifer entity for Midea appliances """
+
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        supports = getattr(coordinator.appliance.state, "supports", {})
+
+        self.modes = [MODE_SET]
+        if supports.get("auto", 0):
+            self.modes.append(MODE_SMART)
+        self.modes.append(MODE_CONTINOUS)
+        if supports.get("dry_clothes", 0):
+            self.modes.append(MODE_DRY)
+
+        more_modes = supports.get("mode", "0")
+        if more_modes == 1:
+            self.modes.append(MODE_PURIFIER)
+        elif more_modes == 2:
+            self.modes.append(MODE_ANTIMOULD)
+        elif more_modes == 3:
+            self.modes.append(MODE_PURIFIER)
+            self.modes.append(MODE_ANTIMOULD)
+        elif more_modes == 4:
+            self.modes.append(MODE_FAN)
 
     @property
     def name_suffix(self) -> str:
@@ -68,7 +98,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     @property
     def available_modes(self) -> list[str]:
-        return AVAILABLE_MODES
+        return self.modes
 
     @property
     def mode(self):
@@ -81,6 +111,10 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             return MODE_SMART
         if curr_mode == 4:
             return MODE_DRY
+        if curr_mode == 6:
+            return MODE_PURIFIER
+        if curr_mode == 7:
+            return MODE_ANTIMOULD
         _LOGGER.warning("Unknown mode %d", curr_mode)
         return MODE_SET
 
@@ -112,6 +146,10 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             curr_mode = 3
         elif mode == MODE_DRY:
             curr_mode = 4
+        elif mode == MODE_PURIFIER:
+            curr_mode = 6
+        elif mode == MODE_ANTIMOULD:
+            curr_mode = 7
         else:
             _LOGGER.warning("Unsupported dehumidifer mode %s", mode)
             curr_mode = 1

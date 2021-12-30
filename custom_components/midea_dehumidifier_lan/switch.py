@@ -1,5 +1,6 @@
 """Support for ION mode switch"""
 
+import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -23,12 +24,12 @@ async def async_setup_entry(
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
     async_add_entities(
-        MideaSwitch(c, "ion_mode", "Ion Mode", "mdi:air-purifier")
+        MideaSwitch(c, "ion_mode", "Ion Mode", "mdi:air-purifier", capability="ion")
         for c in hub.coordinators
         if c.is_dehumidifier()
     )
     async_add_entities(
-        MideaSwitch(c, "pump", "Pump", "mdi:pump")
+        MideaSwitch(c, "pump", "Pump", "mdi:pump", capability="pump")
         for c in hub.coordinators
         if c.is_dehumidifier()
     )
@@ -48,11 +49,22 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
     """Generic attr based switch"""
 
     def __init__(
-        self, coordinator: ApplianceUpdateCoordinator, attr: str, suffix: str, icon: str
+        self,
+        coordinator: ApplianceUpdateCoordinator,
+        attr: str,
+        suffix: str,
+        icon: str,
+        capability: str = None,
     ) -> None:
         self.attr = attr
         self.suffix = " " + suffix
         self.icon_name = icon
+        self.enabled_by_default = False
+        if capability:
+            supports = getattr(coordinator.appliance.state, "supports", {})
+            if supports.get(capability, 0):
+                self.enabled_by_default = True
+
         super().__init__(coordinator)
 
     @property
@@ -66,7 +78,7 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
 
     @property
     def entity_registry_enabled_default(self) -> bool:
-        return False
+        return self.enabled_by_default
 
     @property
     def is_on(self) -> bool:
