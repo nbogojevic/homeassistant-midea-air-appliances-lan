@@ -37,6 +37,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea dehumidifier integrations in combination with this one. To avoid problems use a single integration - this one :).
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See table below for more information.
+* Temperature sensor is usually under-reporting real ambient temperature. This may be due to proximity to cooling pipes of the humidifier, algorithm or electronics error. The under-reporting depends on the active mode, and higher modes may result in larger offset from real temperature.
 
 ## Supported entities
 
@@ -44,15 +45,15 @@ This custom component creates following entites for each discovered dehumidifer:
 
 Platform | Description
 -- | --
-`humidifier` | Dehumidifier entity. Four modes are supported: `Set`, `Continous`, `Smart` and `Dry`.
-`fan` | Fan entity for controlling dehumidifer fan. Three preset modes are available `Silent`, `Medium` and `Turbo`. Switching fan off sets `Silent` preset and switching on sets `Medium` preset.
+`humidifier` | Dehumidifier entity. Depending on the model following modes are supported: `Set`, `Continous`, `Smart` (_if supported_), `Dry` (_if supported_), `Antimould` (_if supported_), `Purifier` (_if supported_).
+`fan` | Fan entity for controlling dehumidifer fan. Depending on model there may be one, two or three preset modes. When three preset modes are available, they are `Silent`, `Medium` and `Turbo`. When three preset modes are supported, they are `Low` and `High`. When a single preset exists, it is `Auto`. Switching fan off sets `Silent` or `Low` preset and switching on sets `Medium` or `High` reset.
 `binary_sensor` | Problem sensor indicating when tank is full.
 `binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensors for current relative humidity measured by dehumidifier.
 `sensor` | Sensor for current temperature measured by dehumidifier.
-`switch` | Switch ION mode on and off (_disabled by default_)
-`switch` | Switch pump on and off (_disabled by default_)
+`switch` | Switch ION mode on and off (_enabled if device announces that it is supported_)
+`switch` | Switch pump on and off (_enabled if device announces that it is supported_)
 `switch` | Switch sleep mode on and off (_disabled by default_)
 `switch` | Switch to activate beep on action (_disabled by default_)
 
