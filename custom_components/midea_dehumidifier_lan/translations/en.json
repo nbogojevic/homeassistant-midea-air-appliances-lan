@@ -6,12 +6,12 @@
           "username": "Account",
           "password": "Password",
           "mobile_app": "Mobile app",
-          "advanced_options": "Advanced options"
+          "advanced_settings": "Advanced settings"
         },
         "description": "Please enter username and password that you use to connect with the selected Midea mobile application.",
         "title": "Sign-in with Midea app account"
       },
-      "advanced_options": {
+      "advanced_settings": {
         "data": {
           "username": "Account",
           "password": "Password",
@@ -21,7 +21,7 @@
           "use_cloud": "Use cloud API to poll devices"
         },
         "description": "You can provide specific Midea mobile app key and app id if the default ones don't work.\n\nYou can also specify network address (e.g. 192.0.1.2) or range (e.g. 192.0.3.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
-        "title": "Advanced options"
+        "title": "Advanced settings"
       },
       "unreachable_appliance": {
         "data": {
