@@ -1,6 +1,5 @@
 """Support for ION mode switch"""
 
-import logging
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
