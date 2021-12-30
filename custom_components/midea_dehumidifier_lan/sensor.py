@@ -5,7 +5,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan import (
+    ApplianceEntity,
+    ApplianceUpdateCoordinator,
+    Hub,
+)
 from custom_components.midea_dehumidifier_lan.const import DOMAIN
 
 
@@ -23,6 +27,9 @@ async def async_setup_entry(
     )
     async_add_entities(
         CurrentTemperatureSensor(c) for c in hub.coordinators if c.is_dehumidifier()
+    )
+    async_add_entities(
+        TankLevelSensor(c) for c in hub.coordinators if c.is_dehumidifier()
     )
 
 
@@ -52,7 +59,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
 
 
 class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
-    """Crrent environment relative temperature sensor"""
+    """Current environment relative temperature sensor"""
 
     @property
     def name_suffix(self) -> str:
@@ -74,3 +81,33 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     @property
     def state_class(self) -> str:
         return "measurement"
+
+
+class TankLevelSensor(ApplianceEntity, SensorEntity):
+    """Current tank water level sensor"""
+
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        level = getattr(coordinator.appliance.state, "tank_level", 0)
+        self.enabled_by_default = level > 0 and level < 100
+
+    @property
+    def name_suffix(self) -> str:
+        """Suffix to append to entity name"""
+        return " Water Level"
+
+    @property
+    def native_value(self):
+        return getattr(self.appliance.state, "tank_level", None)
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        return "%"
+
+    @property
+    def state_class(self) -> str:
+        return "measurement"
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        return self.enabled_by_default
