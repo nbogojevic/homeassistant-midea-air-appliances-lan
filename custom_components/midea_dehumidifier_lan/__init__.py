@@ -60,8 +60,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = hub
     await hub.start()
 
-    entry.async_on_unload(entry.add_update_listener(async_update_listener))
-
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     return True
 
@@ -77,11 +75,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-async def async_update_listener(hass: HomeAssistant, config_entry: ConfigEntry):
-    """Handle options update."""
-    pass
-
-
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old config entry to new version."""
     _LOGGER.debug("Migrating from version %s", config_entry.version)
@@ -94,10 +87,10 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
         for d in config_entry.data[CONF_DEVICES]:
             dev_conf = {**d}
-            dev_confs.append(dev_conf)
             dev_conf[CONF_USE_CLOUD] = dev_conf.get(
                 CONF_USE_CLOUD, conf[CONF_USE_CLOUD]
             )
+            dev_confs.append(dev_conf)
 
         conf[CONF_DEVICES] = dev_confs
         if not conf.get(CONF_APPID) or not conf.get(CONF_APPKEY):
