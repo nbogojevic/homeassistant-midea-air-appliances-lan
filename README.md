@@ -33,11 +33,22 @@ Once the integration is installed, you can add it to the Home Assistant by going
 
 * If IPv4 address of dehumidifer changes, new IPv4 address will not be used until Home Assistant's restart.
 * If Home Assistant installation doesn't have access to physical network, the integration may not discover all appliances.
-* Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifer might use different names (e.g. Boost instead of Dry)
-* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea dehumidifier integrations in combination with this one. To avoid problems use a single integration - this one :).
+* Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifer might use different names (e.g. `Boost` instead of `Dry`)
+* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea dehumidifier integrations in combination with this one. To avoid problems use a single integration - this one 🙂.
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See table below for more information.
-* Temperature sensor is usually under-reporting real ambient temperature. This may be due to proximity to cooling pipes of the humidifier, algorithm or electronics error. The under-reporting depends on the active mode, and higher modes may result in larger offset from real temperature.
+* Temperature sensor is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
+
+## Supported appliances
+
+* Comfee MDDF-16DEN7-WF or MDDF-20DEN7-WF (tested with 20L version)
+* Inventor EVA ΙΟΝ Pro Wi-Fi (EP3-WiFi 16L/20L) (tested with 20L version)
+* Inventor Eva II Pro Wi-Fi (EVP-WF16L/20L)
+* Pro Breeze 30L Smart Dehumidifier with Wifi / App Control
+* Midea SmartDry dehumidifers (22, 35, 50 pint models )
+* Midea Cube dehumidiefers (20, 35, 50 pint models)
+
+Supported are V3 and V2 protocols that allow local network access. V3 protocol requires one connection to Midea cloud to get token and key needed for local network access. Some old models use V1 XML based protocol which is not supported.
 
 ## Supported entities
 
@@ -52,7 +63,8 @@ Platform | Description
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensors for current relative humidity measured by dehumidifier.
 `sensor` | Sensor for current temperature measured by dehumidifier.
-`switch` | Switch ION mode on and off (_enabled if device announces that it is supported_)
+`sensor` | Sensor for water level in the tank  (_enabled if device announces that water level is not 0% or 100%_).
+`switch` | Switch ion mode on and off (_enabled if device announces that it is supported_)
 `switch` | Switch pump on and off (_enabled if device announces that it is supported_)
 `switch` | Switch sleep mode on and off (_disabled by default_)
 `switch` | Switch to activate beep on action (_disabled by default_)
