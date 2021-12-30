@@ -51,11 +51,6 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         return ""
 
     @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_"
-
-    @property
     def is_on(self) -> bool:
         return getattr(self.appliance.state, "running", False)
 

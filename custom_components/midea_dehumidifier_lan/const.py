@@ -13,7 +13,7 @@ NAME: Final = "Midea Dehumidifier (LAN)"
 DOMAIN: Final = "midea_dehumidifier_lan"
 ISSUE_URL: Final = "https://github.com/nbogojevic/midea-dehumidifier-lan/issues"
 
-CONF_ADVANCED_OPTIONS: Final = "advanced_options"
+CONF_ADVANCED_SETTINGS: Final = "advanced_settings"
 CONF_APPID: Final = "appid"
 CONF_APPKEY: Final = "appkey"
 CONF_IGNORE_APPLIANCE: Final = "ignore_appliance"
@@ -30,7 +30,7 @@ TAG_NAME: Final = "name"
 MAX_TARGET_HUMIDITY: Final = 85
 MIN_TARGET_HUMIDITY: Final = 35
 
-CURRENT_CONFIG_VERSION: Final = 2
+CURRENT_CONFIG_VERSION: Final = 1
 
 PLATFORMS: Final = [
     Platform.FAN,

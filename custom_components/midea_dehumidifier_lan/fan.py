@@ -53,12 +53,8 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         return " Fan"
 
     @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_fan_"
-
-    @property
     def is_on(self) -> bool:
+        """Assume fan is off when in silent mode"""
         speed = getattr(self.appliance.state, "fan_speed", 0)
         return speed > 40
 
@@ -109,9 +105,9 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         self.apply("fan_speed", speed)
 
     def turn_on(self, **kwargs) -> None:
-        """Turn the entity on."""
+        """Turns fan to medium speed."""
         self.set_preset_mode(MODE_MEDIUM)
 
     def turn_off(self, **kwargs) -> None:
-        """Turn the entity off."""
+        """Turns fan to silent speed."""
         self.set_preset_mode(MODE_SILENT)

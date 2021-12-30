@@ -35,11 +35,6 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
         return " Humidity"
 
     @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_humidity_"
-
-    @property
     def device_class(self) -> str:
         return "humidity"
 
@@ -63,11 +58,6 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     def name_suffix(self) -> str:
         """Suffix to append to entity name"""
         return " Temperature"
-
-    @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_temperature_"
 
     @property
     def device_class(self) -> str:

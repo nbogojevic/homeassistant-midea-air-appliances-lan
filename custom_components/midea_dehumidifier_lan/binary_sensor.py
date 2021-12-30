@@ -38,11 +38,6 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
         return " Tank Full"
 
     @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_tank_full_"
-
-    @property
     def device_class(self) -> str:
         return "problem"
 
@@ -81,18 +76,13 @@ class FilterSensor(ApplianceEntity, BinarySensorEntity):
 
 class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
     """
-    Describes filter defrosting mode binary sensors (indicated as cold)
+    Describes defrosting mode binary sensors (indicated as cold)
     """
 
     @property
     def name_suffix(self) -> str:
         """Suffix to append to entity name"""
         return " Defrosting"
-
-    @property
-    def unique_id_prefix(self) -> str:
-        """Prefix for entity id"""
-        return "midea_dehumidifier_defrosting_"
 
     @property
     def device_class(self) -> str:
