@@ -1,14 +1,14 @@
-"""Adds humidity sensors for each dehumidifer appliance."""
+"""Adds sensors for each appliance."""
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 from homeassistant.const import (
     DEVICE_CLASS_HUMIDITY,
     DEVICE_CLASS_TEMPERATURE,
     PERCENTAGE,
     TEMP_CELSIUS,
 )
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan import (
@@ -16,7 +16,7 @@ from custom_components.midea_dehumidifier_lan import (
     ApplianceUpdateCoordinator,
     Hub,
 )
-from custom_components.midea_dehumidifier_lan.const import DOMAIN
+from custom_components.midea_dehumidifier_lan.const import DOMAIN, UNIQUE_CLIMATE_PREFIX
 
 
 async def async_setup_entry(
@@ -28,6 +28,7 @@ async def async_setup_entry(
 
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
+    # Dehumidifier sensors
     async_add_entities(
         CurrentHumiditySensor(c) for c in hub.coordinators if c.is_dehumidifier()
     )
@@ -37,83 +38,64 @@ async def async_setup_entry(
     async_add_entities(
         TankLevelSensor(c) for c in hub.coordinators if c.is_dehumidifier()
     )
+    # Climate sensors
+    async_add_entities(
+        OutsideTemperatureSensor(c) for c in hub.coordinators if c.is_climate()
+    )
 
 
 class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
     """Crrent environment humidity sensor"""
 
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Humidity"
-
-    @property
-    def device_class(self) -> str:
-        return DEVICE_CLASS_HUMIDITY
+    _attr_device_class = DEVICE_CLASS_HUMIDITY
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _name_suffix = " Humidity"
 
     @property
     def native_value(self):
         return getattr(self.appliance.state, "current_humidity", None)
 
-    @property
-    def native_unit_of_measurement(self) -> str:
-        return PERCENTAGE
-
-    @property
-    def state_class(self) -> str:
-        return "measurement"
-
 
 class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
-    """Current environment relative temperature sensor"""
+    """Current environment temperature sensor"""
 
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Temperature"
-
-    @property
-    def device_class(self) -> str:
-        return DEVICE_CLASS_TEMPERATURE
+    _attr_device_class = DEVICE_CLASS_TEMPERATURE
+    _attr_native_unit_of_measurement = TEMP_CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _name_suffix = " Temperature"
 
     @property
     def native_value(self):
         return getattr(self.appliance.state, "current_temperature", None)
 
-    @property
-    def native_unit_of_measurement(self) -> str:
-        return TEMP_CELSIUS
-
-    @property
-    def state_class(self) -> str:
-        return "measurement"
-
 
 class TankLevelSensor(ApplianceEntity, SensorEntity):
     """Current tank water level sensor"""
 
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _name_suffix = " Water Level"
+
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
         level = getattr(coordinator.appliance.state, "tank_level", 0)
-        self.enabled_by_default = level > 0 and level < 100
-
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Water Level"
+        self._attr_entity_registry_enabled_default = level > 0 and level < 100
 
     @property
     def native_value(self):
         return getattr(self.appliance.state, "tank_level", None)
 
-    @property
-    def native_unit_of_measurement(self) -> str:
-        return PERCENTAGE
+
+class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
+    """Current outside temperature sensor"""
+
+    _attr_device_class = DEVICE_CLASS_TEMPERATURE
+    _attr_native_unit_of_measurement = TEMP_CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _unique_id_prefx = UNIQUE_CLIMATE_PREFIX
+    _name_suffix = " Outside Temperature"
 
     @property
-    def state_class(self) -> str:
-        return "measurement"
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        return self.enabled_by_default
+    def native_value(self):
+        return getattr(self.appliance.state, "outside_temperature", None)

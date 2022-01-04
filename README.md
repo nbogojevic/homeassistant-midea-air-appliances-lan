@@ -1,4 +1,4 @@
-This custom component for Home assistant adds support for Midea dehumidifier appliances via the local area network.
+This custom component for Home assistant adds support for Midea air conditioner and dehumidifier appliances via the local area network.
 
 # homeassistant-midea-dehumidifier-lan
 
@@ -7,7 +7,7 @@ This custom component for Home assistant adds support for Midea dehumidifier app
 [![hacs][hacsbadge]][hacs]
 [![GitHub Release][releases-shield]][releases]
 
-Home Assistant custom component for controlling Midea dehumidifiers on local network.
+Home Assistant custom component for controlling Midea appliance on local network.
 
 ## Installation instruction
 
@@ -26,15 +26,15 @@ Once the integration is installed, you can add it to the Home Assistant by going
 ### Configuring
 1. Add `Midea dehumidifier (LAN)` integration via UI.
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
-3. The integration will discover dehumidifiers on local network(s).
-4. If a dehumidifier is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the dehumidifier.
+3. The integration will discover appliance on local network(s).
+4. If a appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the dehumidifier.
 
 ## Known issues
 
-* If IPv4 address of dehumidifier changes, new IPv4 address will not be used until Home Assistant's restart.
+* If IPv4 address of appliance changes, new IPv4 address will not be used until Home Assistant's restart.
 * If Home Assistant installation doesn't have access to physical network, the integration may not discover all appliances.
 * Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifier might use different names (e.g. `Boost` instead of `Dry`)
-* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea dehumidifier integrations in combination with this one. To avoid problems use a single integration - this one 🙂.
+* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea appliance integrations in combination with this one. To avoid problems use a single integration - this one 🙂.
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See table below for more information.
 * Temperature sensor is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
@@ -48,7 +48,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * Midea SmartDry dehumidifiers (22, 35, 50 pint models )
 * Midea Cube dehumidifiers (20, 35, 50 pint models)
 
-Supported are V3 and V2 protocols that allow local network access. V3 protocol requires one connection to Midea cloud to get token and key needed for local network access. Some old models use V1 XML based protocol which is not supported.
+Supported are V3 and V2 protocols that allow local network access. V3 protocol requires one connection to Midea cloud to get token and key needed for local network access. Some old models use V1 XML based protocol which is not supported. Some newer models use Tuya protocol.
 
 ## Supported entities
 
@@ -57,7 +57,7 @@ This custom component creates following entities for each discovered dehumidifie
 Platform | Description
 -- | --
 `humidifier` | Dehumidifier entity. Depending on the model following modes are supported: `Set`, `Continuos`, `Smart` (_if supported_), `Dry` (_if supported_), `Antimould` (_if supported_), `Purifier` (_if supported_).
-`fan` | Fan entity for controlling dehumidifier fan. Depending on model there may be one, two or three preset modes. When three preset modes are available, they are `Silent`, `Medium` and `Turbo`. When three preset modes are supported, they are `Low` and `High`. When a single preset exists, it is `Auto`. Switching fan off sets `Silent` or `Low` preset and switching on sets `Medium` or `High` reset.
+`fan` | Fan entity for controlling dehumidifier fan. Depending on model there may be one, two or three preset modes. When three preset modes are available, they are `Silent`, `Medium` and `Turbo`. When three preset modes are supported, they are `Low` and `High`. When a single preset exists, it is `Auto`. Switching fan off sets `Silent` or `Low` preset and switching it on sets `Medium` or `High` reset.
 `binary_sensor` | Problem sensor indicating when tank is full.
 `binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
@@ -71,7 +71,7 @@ Platform | Description
 
 ## See also
 
-https://github.com/nbogojevic/midea-beautiful-dehumidifier
+https://github.com/nbogojevic/midea-beautiful-air
 
 [add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=midea_dehumidifier_lan
 [add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg

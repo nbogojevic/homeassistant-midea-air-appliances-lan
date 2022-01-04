@@ -41,6 +41,11 @@ MIN_TARGET_TEMPERATURE: Final = 16
 
 CURRENT_CONFIG_VERSION: Final = 1
 
+# Wait half a second between successive refresh calls
+APPLIANCE_REFRESH_COOLDOWN: Final = 0.5
+APPLIANCE_REFRESH_INTERVAL: Final = 60
+
+ATTR_FAN_SPEED: Final = "fan_speed"
 ATTR_RUNNING: Final = "running"
 
 PLATFORMS: Final = [

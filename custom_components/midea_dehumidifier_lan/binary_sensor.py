@@ -1,4 +1,4 @@
-"""Adds tank full binary sensors for each dehumidifer appliance."""
+"""Adds binary sensors for appliances."""
 
 from homeassistant.components.binary_sensor import (
     DEVICE_CLASS_COLD,
@@ -10,7 +10,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
-from custom_components.midea_dehumidifier_lan.const import UNIQUE_ID_PRE_PREFIX, DOMAIN
+from custom_components.midea_dehumidifier_lan.const import (
+    DOMAIN,
+    UNIQUE_DEHUMIDIFIER_PREFIX,
+)
 
 
 async def async_setup_entry(
@@ -18,13 +21,16 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Sets up full tank binary sensors"""
+    """Sets up appliance binary sensors"""
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
+    # Dehumidifier sensors
     async_add_entities(
         TankFullSensor(c) for c in hub.coordinators if c.is_dehumidifier()
     )
-    async_add_entities(FilterSensor(c) for c in hub.coordinators if c.is_dehumidifier())
+    async_add_entities(
+        FilterReplacementSensor(c) for c in hub.coordinators if c.is_dehumidifier()
+    )
     async_add_entities(
         DefrostingSensor(c) for c in hub.coordinators if c.is_dehumidifier()
     )
@@ -36,46 +42,31 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
     dehumidifier from operating)
     """
 
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Tank Full"
-
-    @property
-    def device_class(self) -> str:
-        return DEVICE_CLASS_PROBLEM
+    _attr_device_class = DEVICE_CLASS_PROBLEM
+    _name_suffix = " Tank Full"
 
     @property
     def is_on(self) -> bool:
         return getattr(self.appliance.state, "tank_full", False)
 
 
-class FilterSensor(ApplianceEntity, BinarySensorEntity):
+class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
     """
     Describes filter replacement binary sensors (indicated as problem)
     """
 
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Replace Filter"
+    _attr_device_class = DEVICE_CLASS_PROBLEM
+    _attr_entity_registry_enabled_default = False
+    _name_suffix = " Replace Filter"
 
     @property
     def unique_id_prefix(self) -> str:
         """Prefix for entity id"""
-        return f"{UNIQUE_ID_PRE_PREFIX}filter_"
-
-    @property
-    def device_class(self) -> str:
-        return DEVICE_CLASS_PROBLEM
+        return f"{UNIQUE_DEHUMIDIFIER_PREFIX}filter_"
 
     @property
     def is_on(self) -> bool:
         return getattr(self.appliance.state, "filter_indicator", False)
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        return False
 
 
 class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
@@ -83,19 +74,10 @@ class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
     Describes defrosting mode binary sensors (indicated as cold)
     """
 
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return " Defrosting"
-
-    @property
-    def device_class(self) -> str:
-        return DEVICE_CLASS_COLD
+    _attr_device_class = DEVICE_CLASS_COLD
+    _attr_entity_registry_enabled_default = False
+    _name_suffix = " Defrosting"
 
     @property
     def is_on(self) -> bool:
         return getattr(self.appliance.state, "defrosting", False)
-
-    @property
-    def entity_registry_enabled_default(self) -> bool:
-        return False

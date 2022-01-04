@@ -1,5 +1,5 @@
 """
-The custom component for local network access to Midea Dehumidifier
+The custom component for local network access to Midea appliances
 """
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import asyncio
 
 from datetime import timedelta
 import logging
-from typing import Any, Final, final
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -32,20 +32,22 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import slugify
 
 from midea_beautiful import appliance_state, connect_to_cloud
-from midea_beautiful.appliance import DehumidifierAppliance
+from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import AuthenticationError, MideaError
 from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
 from .const import (
+    APPLIANCE_REFRESH_COOLDOWN,
+    APPLIANCE_REFRESH_INTERVAL,
     CONF_APPID,
     CONF_APPKEY,
     CONF_NETWORK_RANGE,
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD,
     CURRENT_CONFIG_VERSION,
-    UNIQUE_ID_PRE_PREFIX,
+    UNIQUE_DEHUMIDIFIER_PREFIX,
     DOMAIN,
     PLATFORMS,
 )
@@ -84,21 +86,19 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
         conf = {**config_entry.data}
         dev_confs = []
-        conf[CONF_USE_CLOUD] = conf.get(CONF_USE_CLOUD, False)
+        conf.setdefault(CONF_USE_CLOUD, False)
 
         for d in config_entry.data[CONF_DEVICES]:
             dev_conf = {**d}
-            dev_conf[CONF_USE_CLOUD] = dev_conf.get(
-                CONF_USE_CLOUD, conf[CONF_USE_CLOUD]
-            )
+            dev_conf.setdefault(CONF_USE_CLOUD, conf[CONF_USE_CLOUD])
             dev_confs.append(dev_conf)
 
         conf[CONF_DEVICES] = dev_confs
         if not conf.get(CONF_APPID) or not conf.get(CONF_APPKEY):
             conf[CONF_APPKEY] = DEFAULT_APPKEY
             conf[CONF_APPID] = DEFAULT_APP_ID
-        conf[CONF_NETWORK_RANGE] = conf.get(CONF_NETWORK_RANGE, [])
-        conf[CONF_USE_CLOUD] = conf.get(CONF_USE_CLOUD, False)
+        conf.setdefault(CONF_NETWORK_RANGE, [])
+        conf.setdefault(CONF_USE_CLOUD, False)
 
         config_entry.version = CURRENT_CONFIG_VERSION
         _LOGGER.debug("Migrating configuration from %s to %s", config_entry.data, conf)
@@ -206,10 +206,6 @@ class Hub:
         return updated_conf
 
 
-# Wait half a second between successive refresh calls
-APPLIANCE_REFRESH_COOLDOWN: Final = 0.5
-
-
 class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     """Single class to retrieve data from an appliance"""
 
@@ -225,7 +221,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name="Midea appliance",
             update_method=self._async_appliance_refresh,
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(seconds=APPLIANCE_REFRESH_INTERVAL),
             request_refresh_debouncer=Debouncer(
                 hass,
                 _LOGGER,
@@ -276,25 +272,30 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             self.wait_for_update = False
         return self.appliance
 
-    def is_air_conditioner(self) -> bool:
-        return DehumidifierAppliance.supported(self.appliance.type)
+    def is_climate(self) -> bool:
+        return AirConditionerAppliance.supported(self.appliance.type)
 
     def is_dehumidifier(self) -> bool:
         return DehumidifierAppliance.supported(self.appliance.type)
 
-    async def async_apply(self, attr, value) -> None:
-        self.updating[attr] = value
+    async def async_apply(self, args: dict) -> None:
+        for key, value in args.items():
+            self.updating[key] = value
         await self.async_request_refresh()
 
 
 class ApplianceEntity(CoordinatorEntity):
     """Represents an appliance that gets data from a coordinator"""
 
+    _unique_id_prefx = UNIQUE_DEHUMIDIFIER_PREFIX
+    _name_suffix = ""
+
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
         self.coordinator = coordinator
         self.appliance = coordinator.appliance
-        self._unique_id = f"{self.unique_id_prefix}{self.appliance.id}"
+        self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.id}"
+        self._attr_name = str(self.appliance.name or self.unique_id) + self.name_suffix
         self._applying = False
 
     async def async_added_to_hass(self) -> None:
@@ -302,42 +303,30 @@ class ApplianceEntity(CoordinatorEntity):
         await super().async_added_to_hass()
         self.async_on_remove(self.coordinator.async_add_listener(self._updated_data))
 
-    @property
-    @final
-    def unique_id(self) -> str:
-        """Return the unique id."""
-        return self._unique_id
-
-    @property
-    @final
-    def name(self) -> str:
-        """Return the unique id."""
-        return (
-            str(getattr(self.appliance.state, "name", self.unique_id))
-            + self.name_suffix
-        )
-
     @callback
     def _updated_data(self):
+        """Called when data has been updated by coordinator"""
         self.appliance = self.coordinator.appliance
+        self._attr_available = self.appliance.online
+        self.process_update()
+
+    def process_update(self):
+        """Allows additional processing after the coordinator updates data"""
+        pass
 
     @property
     def name_suffix(self) -> str:
         """Suffix to append to entity name"""
-        return ""
+        return self._name_suffix
 
     @property
     def unique_id_prefix(self) -> str:
         """Prefix for entity id"""
         strip = self.name_suffix.strip()
         if len(strip) == 0:
-            return UNIQUE_ID_PRE_PREFIX
+            return self._unique_id_prefx
         slug = slugify(strip)
-        return f"{UNIQUE_ID_PRE_PREFIX}{slug}_"
-
-    @property
-    def available(self) -> bool:
-        return self.appliance.online
+        return f"{self._unique_id_prefx}{slug}_"
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -350,7 +339,14 @@ class ApplianceEntity(CoordinatorEntity):
             sw_version=self.appliance.firmware_version,
         )
 
-    def apply(self, attr: str, value: Any) -> None:
+    def apply(self, *args, **kwargs) -> None:
+        if len(args) % 2 != 0:
+            raise ValueError(f"Expecting attribute/value pairs, had {len(args)} items")
+        aargs = {}
+        for i in range(0, len(args), 2):
+            aargs[args[i]] = args[i + 1]
+        for k, v in kwargs.items():
+            aargs[k] = v
         asyncio.run_coroutine_threadsafe(
-            self.coordinator.async_apply(attr, value), self.hass.loop
+            self.coordinator.async_apply(aargs), self.hass.loop
         ).result()

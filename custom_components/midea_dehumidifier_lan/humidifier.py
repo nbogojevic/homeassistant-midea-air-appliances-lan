@@ -4,9 +4,7 @@ import logging
 from typing import Final
 
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
-from homeassistant.components.humidifier.const import (
-    SUPPORT_MODES,
-)
+from homeassistant.components.humidifier.const import SUPPORT_MODES
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -17,11 +15,11 @@ from custom_components.midea_dehumidifier_lan import (
     Hub,
 )
 from custom_components.midea_dehumidifier_lan.const import (
+    ATTR_RUNNING,
     DOMAIN,
     MAX_TARGET_HUMIDITY,
     MIN_TARGET_HUMIDITY,
 )
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,8 +30,6 @@ MODE_CONTINOUS: Final = "Continuous"
 MODE_PURIFIER: Final = "Purifier"
 MODE_ANTIMOULD: Final = "Antimould"
 MODE_FAN: Final = "Fan"
-
-_ATTR_RUNNING: Final = "running"
 
 
 async def async_setup_entry(
@@ -52,52 +48,41 @@ async def async_setup_entry(
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     """(de)Humidifer entity for Midea appliances """
 
+    _attr_device_class = HumidifierDeviceClass.DEHUMIDIFIER
+    _attr_max_humidity = MAX_TARGET_HUMIDITY
+    _attr_min_humidity = MIN_TARGET_HUMIDITY
+    _attr_supported_features = SUPPORT_MODES
+    _name_suffix = ""
+
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
         supports = getattr(coordinator.appliance.state, "supports", {})
 
-        self.modes = [MODE_SET]
+        self._attr_available_modes = [MODE_SET]
         if supports.get("auto", 0):
-            self.modes.append(MODE_SMART)
-        self.modes.append(MODE_CONTINOUS)
+            self._attr_available_modes.append(MODE_SMART)
+        self._attr_available_modes.append(MODE_CONTINOUS)
         if supports.get("dry_clothes", 0):
-            self.modes.append(MODE_DRY)
+            self._attr_available_modes.append(MODE_DRY)
 
         more_modes = supports.get("mode", "0")
         if more_modes == 1:
-            self.modes.append(MODE_PURIFIER)
+            self._attr_available_modes.append(MODE_PURIFIER)
         elif more_modes == 2:
-            self.modes.append(MODE_ANTIMOULD)
+            self._attr_available_modes.append(MODE_ANTIMOULD)
         elif more_modes == 3:
-            self.modes.append(MODE_PURIFIER)
-            self.modes.append(MODE_ANTIMOULD)
+            self._attr_available_modes.append(MODE_PURIFIER)
+            self._attr_available_modes.append(MODE_ANTIMOULD)
         elif more_modes == 4:
-            self.modes.append(MODE_FAN)
-
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return ""
+            self._attr_available_modes.append(MODE_FAN)
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, _ATTR_RUNNING, False)
-
-    @property
-    def device_class(self) -> str:
-        return HumidifierDeviceClass.DEHUMIDIFIER
+        return getattr(self.appliance.state, ATTR_RUNNING, False)
 
     @property
     def target_humidity(self) -> int:
         return int(getattr(self.appliance.state, "target_humidity", 0))
-
-    @property
-    def supported_features(self) -> int:
-        return SUPPORT_MODES
-
-    @property
-    def available_modes(self) -> list[str]:
-        return self.modes
 
     @property
     def mode(self):
@@ -117,23 +102,13 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         _LOGGER.warning("Unknown mode %d", curr_mode)
         return MODE_SET
 
-    @property
-    def min_humidity(self) -> int:
-        """Return the min humidity that can be set."""
-        return MIN_TARGET_HUMIDITY
-
-    @property
-    def max_humidity(self) -> int:
-        """Return the max humidity that can be set."""
-        return MAX_TARGET_HUMIDITY
-
     def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
-        self.apply(_ATTR_RUNNING, True)
+        self.apply(ATTR_RUNNING, True)
 
     def turn_off(self, **kwargs) -> None:
         """Turn the entity off."""
-        self.apply(_ATTR_RUNNING, False)
+        self.apply(ATTR_RUNNING, False)
 
     def set_mode(self, mode) -> None:
         """Set new target preset mode."""

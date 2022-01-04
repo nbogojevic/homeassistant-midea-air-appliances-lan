@@ -28,7 +28,7 @@ from homeassistant.components.climate.const import (
     SWING_VERTICAL,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import ATTR_TEMPERATURE, PRECISION_HALVES
+from homeassistant.const import ATTR_TEMPERATURE, PRECISION_HALVES, TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -94,6 +94,9 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     _attr_max_temp = MAX_TARGET_TEMPERATURE
     _attr_min_temp = MIN_TARGET_TEMPERATURE
     _attr_precision = PRECISION_HALVES
+    _attr_temperature_unit = TEMP_CELSIUS
+
+    _name_suffix = ""
 
     _attr_supported_features = (
         SUPPORT_TARGET_TEMPERATURE
@@ -104,11 +107,6 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
-
-    @property
-    def name_suffix(self) -> str:
-        """Suffix to append to entity name"""
-        return ""
 
     @property
     def is_on(self) -> bool:
@@ -215,34 +213,34 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
 
     def set_swing_mode(self, mode: str):
         if mode == SWING_VERTICAL:
-            self.apply_multi(vertical_swing=True, horizontal_swing=False)
+            self.apply(vertical_swing=True, horizontal_swing=False)
         elif mode == SWING_HORIZONTAL:
-            self.apply_multi(vertical_swing=False, horizontal_swing=True)
+            self.apply(vertical_swing=False, horizontal_swing=True)
         elif mode == SWING_BOTH:
-            self.apply_multi(vertical_swing=True, horizontal_swing=True)
+            self.apply(vertical_swing=True, horizontal_swing=True)
         else:
-            self.apply_multi(vertical_swing=False, horizontal_swing=False)
+            self.apply(vertical_swing=False, horizontal_swing=False)
 
     def set_fan_mode(self, mode: str):
         if mode == FAN_AUTO:
-            self.apply_multi(fan_speed=102)
+            self.apply(fan_speed=102)
         elif mode == FAN_FULL:
-            self.apply_multi(fan_speed=100)
+            self.apply(fan_speed=100)
         elif mode == FAN_HIGH:
-            self.apply_multi(fan_speed=80)
+            self.apply(fan_speed=80)
         elif mode == FAN_MEDIUM:
-            self.apply_multi(fan_speed=60)
+            self.apply(fan_speed=60)
         elif mode == FAN_LOW:
-            self.apply_multi(fan_speed=40)
+            self.apply(fan_speed=40)
         else:
-            self.apply_multi(fan_speed=20)
+            self.apply(fan_speed=20)
 
     def set_preset_mode(self, mode: str):
         if mode == PRESET_BOOST:
-            self.apply_multi(turbo=True, eco_mode=False, comfort_sleep=False)
+            self.apply(turbo=True, eco_mode=False, comfort_sleep=False)
         elif mode == PRESET_ECO:
-            self.apply_multi(turbo=False, eco_mode=True, comfort_sleep=False)
+            self.apply(turbo=False, eco_mode=True, comfort_sleep=False)
         elif mode == PRESET_SLEEP:
-            self.apply_multi(turbo=False, eco_mode=False, comfort_sleep=True)
+            self.apply(turbo=False, eco_mode=False, comfort_sleep=True)
         else:
-            self.apply_multi(turbo=False, eco_mode=False, comfort_sleep=False)
+            self.apply(turbo=False, eco_mode=False, comfort_sleep=False)

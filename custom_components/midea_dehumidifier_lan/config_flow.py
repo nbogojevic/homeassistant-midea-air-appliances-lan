@@ -8,6 +8,7 @@ from typing import Any
 from homeassistant import data_entry_flow
 from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import (
+    CONF_API_VERSION,
     CONF_DEVICES,
     CONF_ID,
     CONF_IP_ADDRESS,
@@ -16,16 +17,11 @@ from homeassistant.const import (
     CONF_TOKEN,
     CONF_TYPE,
     CONF_USERNAME,
-    CONF_API_VERSION,
 )
-from midea_beautiful.appliance import DehumidifierAppliance
 import voluptuous as vol
 
-from midea_beautiful import (
-    connect_to_cloud,
-    find_appliances,
-    appliance_state,
-)
+from midea_beautiful import appliance_state, connect_to_cloud, find_appliances
+from midea_beautiful.appliance import DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import (
     AuthenticationError,
@@ -35,11 +31,7 @@ from midea_beautiful.exceptions import (
     ProtocolError,
 )
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import (
-    DEFAULT_APP_ID,
-    DEFAULT_APPKEY,
-    SUPPORTED_APPS,
-)
+from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY, SUPPORTED_APPS
 
 from .const import (
     CONF_ADVANCED_SETTINGS,
