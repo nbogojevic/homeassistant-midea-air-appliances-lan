@@ -4,13 +4,14 @@ from __future__ import annotations
 from typing import Final
 
 from homeassistant.const import Platform
-from midea_beautiful_dehumidifier.midea import SUPPORTED_APPS
+from midea_beautiful.midea import SUPPORTED_APPS
 
 __version__ = "0.5.0"
 
 # Base component constants
 NAME: Final = "Midea Dehumidifier (LAN)"
-DOMAIN: Final = "midea_dehumidifier_lan"
+UNIQUE_ID_PRE_PREFIX: Final = "midea_dehumidifier_"
+DOMAIN: Final = f"{UNIQUE_ID_PRE_PREFIX}lan"
 ISSUE_URL: Final = (
     "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan"
     "/issues/new/choose"
@@ -24,7 +25,7 @@ CONF_MOBILE_APP: Final = "mobile_app"
 CONF_NETWORK_RANGE: Final = "network_range"
 CONF_TOKEN_KEY: Final = "token_key"
 CONF_USE_CLOUD: Final = "use_cloud"
-
+CONF_DETECT_AC_APPLIANCES: Final = "detect_ac_appliances"
 
 TAG_CAUSE: Final = "cause"
 TAG_ID: Final = "id"

@@ -3,6 +3,12 @@
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.const import (
+    DEVICE_CLASS_HUMIDITY,
+    DEVICE_CLASS_TEMPERATURE,
+    PERCENTAGE,
+    TEMP_CELSIUS,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan import (
@@ -43,7 +49,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
 
     @property
     def device_class(self) -> str:
-        return "humidity"
+        return DEVICE_CLASS_HUMIDITY
 
     @property
     def native_value(self):
@@ -51,7 +57,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self) -> str:
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self) -> str:
@@ -68,7 +74,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
 
     @property
     def device_class(self) -> str:
-        return "temperature"
+        return DEVICE_CLASS_TEMPERATURE
 
     @property
     def native_value(self):
@@ -76,7 +82,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self) -> str:
-        return "°C"
+        return TEMP_CELSIUS
 
     @property
     def state_class(self) -> str:
@@ -102,7 +108,7 @@ class TankLevelSensor(ApplianceEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self) -> str:
-        return "%"
+        return PERCENTAGE
 
     @property
     def state_class(self) -> str:

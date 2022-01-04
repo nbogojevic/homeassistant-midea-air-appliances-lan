@@ -18,7 +18,8 @@
           "appkey": "Mobile app key",
           "appid": "Mobile app id",
           "network_range": "Appliance address or network range",
-          "use_cloud": "Use cloud API to poll devices"
+          "use_cloud": "Use cloud API to poll devices",
+          "detect_ac_appliances": "Detect air conditioner appliances"
         },
         "description": "You can provide specific Midea mobile app key and app id if the default ones don't work.\n\nYou can also specify network address (e.g. 192.0.1.2) or range (e.g. 192.0.3.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
         "title": "Advanced settings"

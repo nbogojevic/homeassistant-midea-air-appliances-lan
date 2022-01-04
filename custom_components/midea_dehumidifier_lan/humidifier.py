@@ -33,8 +33,7 @@ MODE_PURIFIER: Final = "Purifier"
 MODE_ANTIMOULD: Final = "Antimould"
 MODE_FAN: Final = "Fan"
 
-
-_AVAILABLE_MODES: Final = [MODE_SMART, MODE_SET, MODE_DRY, MODE_CONTINOUS]
+_ATTR_RUNNING: Final = "running"
 
 
 async def async_setup_entry(
@@ -82,7 +81,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, "running", False)
+        return getattr(self.appliance.state, _ATTR_RUNNING, False)
 
     @property
     def device_class(self) -> str:
@@ -130,11 +129,11 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
-        self.apply("running", True)
+        self.apply(_ATTR_RUNNING, True)
 
     def turn_off(self, **kwargs) -> None:
         """Turn the entity off."""
-        self.apply("running", False)
+        self.apply(_ATTR_RUNNING, False)
 
     def set_mode(self, mode) -> None:
         """Set new target preset mode."""

@@ -18,23 +18,24 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_API_VERSION,
 )
+from midea_beautiful.appliance import DehumidifierAppliance
 import voluptuous as vol
 
-from midea_beautiful_dehumidifier import (
+from midea_beautiful import (
     connect_to_cloud,
     find_appliances,
     appliance_state,
 )
-from midea_beautiful_dehumidifier.cloud import MideaCloud
-from midea_beautiful_dehumidifier.exceptions import (
+from midea_beautiful.cloud import MideaCloud
+from midea_beautiful.exceptions import (
     AuthenticationError,
     CloudAuthenticationError,
     MideaError,
     MideaNetworkError,
     ProtocolError,
 )
-from midea_beautiful_dehumidifier.lan import LanDevice
-from midea_beautiful_dehumidifier.midea import (
+from midea_beautiful.lan import LanDevice
+from midea_beautiful.midea import (
     DEFAULT_APP_ID,
     DEFAULT_APPKEY,
     SUPPORTED_APPS,
@@ -44,6 +45,7 @@ from .const import (
     CONF_ADVANCED_SETTINGS,
     CONF_APPID,
     CONF_APPKEY,
+    CONF_DETECT_AC_APPLIANCES,
     CONF_IGNORE_APPLIANCE,
     CONF_MOBILE_APP,
     CONF_NETWORK_RANGE,
@@ -61,6 +63,11 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _supported_appliance(appliance: LanDevice) -> bool:
+    """Checks if appliance is supported by integration"""
+    return DehumidifierAppliance.supported(appliance.type)
 
 
 def _unreachable_appliance_schema(
@@ -96,6 +103,7 @@ def _advanced_settings_schema(
             vol.Required(CONF_APPID, default=appid): int,
             vol.Optional(CONF_NETWORK_RANGE, default=network_range): str,
             vol.Required(CONF_USE_CLOUD, default=use_cloud): bool,
+            vol.Required(CONF_DETECT_AC_APPLIANCES, default=False): bool,
         }
     )
 
@@ -120,30 +128,7 @@ class FlowException(Exception):
         self.cause = cause
 
 
-def connect_and_discover(flow: MideaLocalConfigFlow):
-    """Validates that cloud credentials are valid and discovers local appliances"""
-
-    cloud = connect_to_cloud(
-        account=flow.conf[CONF_USERNAME],
-        password=flow.conf[CONF_PASSWORD],
-        appkey=flow.conf[CONF_APPKEY],
-        appid=flow.conf[CONF_APPID],
-    )
-    if cloud is None:
-        raise FlowException("no_cloud")
-
-    networks = flow.conf.get(CONF_NETWORK_RANGE, [])
-    if isinstance(networks, str):
-        networks = [networks]
-    if appliances := find_appliances(cloud, networks=networks):
-        flow.devices_conf = [{} for _ in appliances]
-    else:
-        flow.devices_conf = []
-    flow.appliances = appliances
-    flow.cloud = cloud
-
-
-def validate_appliance(cloud: MideaCloud, appliance: LanDevice, conf: dict):
+def _validate_appliance(cloud: MideaCloud, appliance: LanDevice, conf: dict):
     """
     Validates that appliance configuration is correct and matches physical
     device
@@ -200,6 +185,28 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
         self.conf = {}
         self.advanced_settings = False
 
+    def _connect_and_discover(self: MideaLocalConfigFlow):
+        """Validates that cloud credentials are valid and discovers local appliances"""
+
+        cloud = connect_to_cloud(
+            account=self.conf[CONF_USERNAME],
+            password=self.conf[CONF_PASSWORD],
+            appkey=self.conf[CONF_APPKEY],
+            appid=self.conf[CONF_APPID],
+        )
+        if cloud is None:
+            raise FlowException("no_cloud")
+
+        networks = self.conf.get(CONF_NETWORK_RANGE, [])
+        if isinstance(networks, str):
+            networks = [networks]
+        if appliances := find_appliances(cloud, networks=networks):
+            self.devices_conf = [{} for _ in appliances]
+        else:
+            self.devices_conf = []
+        self.appliances = appliances
+        self.cloud = cloud
+
     async def _validate_discovery_phase(self, user_input: dict[str, Any] | None):
 
         if self.advanced_settings:
@@ -237,16 +244,17 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
 
         self.appliance_idx = -1
 
-        await self.hass.async_add_executor_job(connect_and_discover, self)
+        await self.hass.async_add_executor_job(self._connect_and_discover)
 
         if self.conf[CONF_USE_CLOUD]:
             for i, appliance in enumerate(self.appliances):
                 self.devices_conf[i][CONF_USE_CLOUD] = True
         else:
             for i, appliance in enumerate(self.appliances):
-                if not appliance.ip:
-                    self.appliance_idx = i
-                    break
+                if _supported_appliance(appliance):
+                    if not appliance.ip:
+                        self.appliance_idx = i
+                        break
             if self.appliance_idx >= 0:
                 return await self.async_step_unreachable_appliance()
 
@@ -352,7 +360,7 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
 
             try:
                 await self.hass.async_add_executor_job(
-                    validate_appliance,
+                    _validate_appliance,
                     self.cloud,
                     appliance,
                     device_conf,
@@ -360,8 +368,9 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
                 # Find next unreachable appliance
                 self.appliance_idx = self.appliance_idx + 1
                 while self.appliance_idx < len(self.appliances):
-                    if self.appliances[self.appliance_idx].ip is None:
-                        return await self.async_step_unreachable_appliance()
+                    if _supported_appliance(appliance):
+                        if self.appliances[self.appliance_idx].ip is None:
+                            return await self.async_step_unreachable_appliance()
                     self.appliance_idx = self.appliance_idx + 1
 
                 # If no unreachable appliances, create entry
@@ -393,6 +402,8 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_add_entry(self):
         if self.conf is not None:
             for i, appliance in enumerate(self.appliances):
+                if not _supported_appliance(appliance):
+                    continue
                 if self.devices_conf[i].get(CONF_USE_CLOUD, False) or (
                     appliance.ip and appliance.ip != IGNORED_IP_ADDRESS
                 ):

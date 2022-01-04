@@ -31,12 +31,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import slugify
 
-from midea_beautiful_dehumidifier import appliance_state, connect_to_cloud
-from midea_beautiful_dehumidifier.appliance import DehumidifierAppliance
-from midea_beautiful_dehumidifier.cloud import MideaCloud
-from midea_beautiful_dehumidifier.exceptions import AuthenticationError, MideaError
-from midea_beautiful_dehumidifier.lan import LanDevice
-from midea_beautiful_dehumidifier.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
+from midea_beautiful import appliance_state, connect_to_cloud
+from midea_beautiful.appliance import DehumidifierAppliance
+from midea_beautiful.cloud import MideaCloud
+from midea_beautiful.exceptions import AuthenticationError, MideaError
+from midea_beautiful.lan import LanDevice
+from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
 from .const import (
     CONF_APPID,
@@ -45,6 +45,7 @@ from .const import (
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD,
     CURRENT_CONFIG_VERSION,
+    UNIQUE_ID_PRE_PREFIX,
     DOMAIN,
     PLATFORMS,
 )
@@ -168,15 +169,25 @@ class Hub:
                 )
             except AuthenticationError as ex:
                 raise ConfigEntryAuthFailed(f"Unable to login to Midea cloud {ex}")
-        appliance = await self.hass.async_add_executor_job(
-            appliance_state,
-            device[CONF_IP_ADDRESS] if not need_cloud else None,  # ip
-            device[CONF_TOKEN],  # token
-            device[CONF_TOKEN_KEY],  # key
-            self.cloud,  # cloud
-            use_cloud,  # use_cloud
-            device[CONF_ID],  # id
-        )
+        try:
+            appliance = await self.hass.async_add_executor_job(
+                appliance_state,
+                device[CONF_IP_ADDRESS] if not need_cloud else None,  # ip
+                device[CONF_TOKEN],  # token
+                device[CONF_TOKEN_KEY],  # key
+                self.cloud,  # cloud
+                use_cloud,  # use_cloud
+                device[CONF_ID],  # id
+            )
+        except MideaError as err:
+            _LOGGER.error(
+                "Error while setting appliance id=%s ip=%s: %s",
+                device[CONF_ID],
+                device[CONF_IP_ADDRESS],
+                err,
+                exc_info=True,
+            )
+            appliance = None
         # For each appliance create a coordinator
         if appliance is not None:
             appliance.name = device[CONF_NAME]
@@ -191,12 +202,6 @@ class Hub:
                 _LOGGER.debug("Updating token for %s", appliance)
             coordinator = ApplianceUpdateCoordinator(self.hass, self, appliance, device)
             self.coordinators.append(coordinator)
-        else:
-            _LOGGER.error(
-                "Unable to get appliance %s at %s",
-                device[CONF_NAME],
-                device[CONF_IP_ADDRESS],
-            )
 
         return updated_conf
 
@@ -271,6 +276,9 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             self.wait_for_update = False
         return self.appliance
 
+    def is_air_conditioner(self) -> bool:
+        return DehumidifierAppliance.supported(self.appliance.type)
+
     def is_dehumidifier(self) -> bool:
         return DehumidifierAppliance.supported(self.appliance.type)
 
@@ -323,9 +331,9 @@ class ApplianceEntity(CoordinatorEntity):
         """Prefix for entity id"""
         strip = self.name_suffix.strip()
         if len(strip) == 0:
-            return "midea_dehumidifier_"
+            return UNIQUE_ID_PRE_PREFIX
         slug = slugify(strip)
-        return f"midea_dehumidifier_{slug}_"
+        return f"{UNIQUE_ID_PRE_PREFIX}{slug}_"
 
     @property
     def available(self) -> bool:

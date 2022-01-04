@@ -1,12 +1,16 @@
 """Adds tank full binary sensors for each dehumidifer appliance."""
 
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import (
+    DEVICE_CLASS_COLD,
+    DEVICE_CLASS_PROBLEM,
+    BinarySensorEntity,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan import ApplianceEntity, Hub
-from custom_components.midea_dehumidifier_lan.const import DOMAIN
+from custom_components.midea_dehumidifier_lan.const import UNIQUE_ID_PRE_PREFIX, DOMAIN
 
 
 async def async_setup_entry(
@@ -39,7 +43,7 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def device_class(self) -> str:
-        return "problem"
+        return DEVICE_CLASS_PROBLEM
 
     @property
     def is_on(self) -> bool:
@@ -59,11 +63,11 @@ class FilterSensor(ApplianceEntity, BinarySensorEntity):
     @property
     def unique_id_prefix(self) -> str:
         """Prefix for entity id"""
-        return "midea_dehumidifier_filter_"
+        return f"{UNIQUE_ID_PRE_PREFIX}filter_"
 
     @property
     def device_class(self) -> str:
-        return "problem"
+        return DEVICE_CLASS_PROBLEM
 
     @property
     def is_on(self) -> bool:
@@ -86,7 +90,7 @@ class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def device_class(self) -> str:
-        return "cold"
+        return DEVICE_CLASS_COLD
 
     @property
     def is_on(self) -> bool:
