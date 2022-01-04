@@ -10,8 +10,10 @@ __version__ = "0.5.0"
 
 # Base component constants
 NAME: Final = "Midea Dehumidifier (LAN)"
-UNIQUE_ID_PRE_PREFIX: Final = "midea_dehumidifier_"
-DOMAIN: Final = f"{UNIQUE_ID_PRE_PREFIX}lan"
+UNIQUE_ID_PRE_PREFIX: Final = "midea_"
+UNIQUE_DEHUMIDIFIER_PREFIX: Final = "midea_dehumidifier_"
+UNIQUE_CLIMATE_PREFIX: Final = "midea_climate_"
+DOMAIN: Final = f"{UNIQUE_DEHUMIDIFIER_PREFIX}lan"
 ISSUE_URL: Final = (
     "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan"
     "/issues/new/choose"
@@ -34,12 +36,18 @@ TAG_NAME: Final = "name"
 MAX_TARGET_HUMIDITY: Final = 85
 MIN_TARGET_HUMIDITY: Final = 35
 
+MAX_TARGET_TEMPERATURE: Final = 32
+MIN_TARGET_TEMPERATURE: Final = 16
+
 CURRENT_CONFIG_VERSION: Final = 1
 
+ATTR_RUNNING: Final = "running"
+
 PLATFORMS: Final = [
+    Platform.BINARY_SENSOR,
+    Platform.CLIMATE,
     Platform.FAN,
     Platform.HUMIDIFIER,
-    Platform.BINARY_SENSOR,
     Platform.SENSOR,
     Platform.SWITCH,
 ]
