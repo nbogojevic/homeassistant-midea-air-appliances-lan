@@ -7,7 +7,7 @@ import asyncio
 
 from datetime import timedelta
 import logging
-from typing import Any
+from typing import Any, cast, final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -31,12 +31,12 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.util import slugify
 
-from midea_beautiful import appliance_state, connect_to_cloud
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import AuthenticationError, MideaError
 from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
+import midea_beautiful as midea_beautiful_api
 
 from .const import (
     APPLIANCE_REFRESH_COOLDOWN,
@@ -53,6 +53,56 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class MideaClient:
+    """Delegate to midea API"""
+
+    def connect_to_cloud(  # pylint: disable=no-self-use
+        self, account: str, password: str, appkey=DEFAULT_APPKEY, appid=DEFAULT_APP_ID
+    ):
+        """Delegate to midea_beautiful_api.connect_to_cloud"""
+        return midea_beautiful_api.connect_to_cloud(
+            account=account, password=password, appkey=appkey, appid=appid
+        )
+
+    def appliance_state(  # pylint: disable=too-many-arguments,no-self-use
+        self,
+        address: str | None = None,
+        token: str | None = None,
+        key: str | None = None,
+        cloud: MideaCloud = None,
+        use_cloud: bool = False,
+        appliance_id: str | None = None,
+    ):
+        """Delegate to midea_beautiful_api.appliance_state"""
+        return midea_beautiful_api.appliance_state(
+            address=address,
+            token=token,
+            key=key,
+            cloud=cloud,
+            use_cloud=use_cloud,
+            appliance_id=appliance_id,
+        )
+
+    def find_appliances(  # pylint: disable=too-many-arguments,no-self-use
+        self,
+        cloud: MideaCloud | None = None,
+        appkey: str | None = None,
+        account: str = None,
+        password: str = None,
+        appid: str = None,
+        networks: list[str] = None,
+    ) -> list[LanDevice]:
+        """Delegate to midea_beautiful_api.find_appliances"""
+        return midea_beautiful_api.find_appliances(
+            cloud=cloud,
+            appkey=appkey,
+            account=account,
+            password=password,
+            appid=appid,
+            networks=networks,
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -88,8 +138,8 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         dev_confs = []
         conf.setdefault(CONF_USE_CLOUD, False)
 
-        for d in config_entry.data[CONF_DEVICES]:
-            dev_conf = {**d}
+        for dev_data in config_entry.data[CONF_DEVICES]:
+            dev_conf = {**dev_data}
             dev_conf.setdefault(CONF_USE_CLOUD, conf[CONF_USE_CLOUD])
             dev_confs.append(dev_conf)
 
@@ -114,7 +164,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     return False
 
 
-class Hub:
+class Hub:  # pylint: disable=too-few-public-methods
     """Central class for interacting with appliances"""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
@@ -123,6 +173,7 @@ class Hub:
         self.cloud: MideaCloud | None = None
         self.hass = hass
         self.entry = config_entry
+        self.client = MideaClient()
 
     async def start(self) -> None:
         """
@@ -153,7 +204,7 @@ class Hub:
             not device[CONF_TOKEN] or not device[CONF_TOKEN_KEY]
         )
         if not use_cloud and need_token:
-            _LOGGER.warn(
+            _LOGGER.warning(
                 "Appliance %s has no token, trying to get it from Midea cloud API",
                 device[CONF_NAME],
             )
@@ -161,17 +212,19 @@ class Hub:
         if need_cloud and self.cloud is None:
             try:
                 self.cloud = await self.hass.async_add_executor_job(
-                    connect_to_cloud,
+                    self.client.connect_to_cloud,
                     data[CONF_USERNAME],
                     data[CONF_PASSWORD],
                     data[CONF_APPKEY],
                     data[CONF_APPID],
                 )
             except AuthenticationError as ex:
-                raise ConfigEntryAuthFailed(f"Unable to login to Midea cloud {ex}")
+                raise ConfigEntryAuthFailed(
+                    f"Unable to login to Midea cloud {ex}"
+                ) from ex
         try:
             appliance = await self.hass.async_add_executor_job(
-                appliance_state,
+                self.client.appliance_state,
                 device[CONF_IP_ADDRESS] if not need_cloud else None,  # ip
                 device[CONF_TOKEN],  # token
                 device[CONF_TOKEN_KEY],  # key
@@ -273,12 +326,15 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         return self.appliance
 
     def is_climate(self) -> bool:
+        """True if appliance is air conditioner"""
         return AirConditionerAppliance.supported(self.appliance.type)
 
     def is_dehumidifier(self) -> bool:
+        """True if appliance is dehumidifier"""
         return DehumidifierAppliance.supported(self.appliance.type)
 
     async def async_apply(self, args: dict) -> None:
+        """Applies changes to device"""
         for key, value in args.items():
             self.updating[key] = value
         await self.async_request_refresh()
@@ -294,7 +350,7 @@ class ApplianceEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self.coordinator = coordinator
         self.appliance = coordinator.appliance
-        self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.id}"
+        self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.appliance_id}"
         self._attr_name = str(self.appliance.name or self.unique_id) + self.name_suffix
         self._applying = False
 
@@ -312,7 +368,16 @@ class ApplianceEntity(CoordinatorEntity):
 
     def process_update(self):
         """Allows additional processing after the coordinator updates data"""
-        pass
+
+    @final
+    def dehumidifier(self) -> DehumidifierAppliance:
+        """Returns state as dehumidifier"""
+        return cast(DehumidifierAppliance, self.appliance.state)
+
+    @final
+    def airconditioner(self) -> AirConditionerAppliance:
+        """Returns state as air conditioner"""
+        return cast(AirConditionerAppliance, self.appliance.state)
 
     @property
     def name_suffix(self) -> str:
@@ -330,7 +395,7 @@ class ApplianceEntity(CoordinatorEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        identifier = str(self.appliance.sn or self.appliance.id)
+        identifier = str(self.appliance.serial_number or self.appliance.appliance_id)
         return DeviceInfo(
             identifiers={(DOMAIN, str(identifier))},
             name=self.appliance.name,
@@ -340,13 +405,14 @@ class ApplianceEntity(CoordinatorEntity):
         )
 
     def apply(self, *args, **kwargs) -> None:
+        """Applies changes to device"""
         if len(args) % 2 != 0:
             raise ValueError(f"Expecting attribute/value pairs, had {len(args)} items")
         aargs = {}
         for i in range(0, len(args), 2):
             aargs[args[i]] = args[i + 1]
-        for k, v in kwargs.items():
-            aargs[k] = v
+        for key, value in kwargs.items():
+            aargs[key] = value
         asyncio.run_coroutine_threadsafe(
             self.coordinator.async_apply(aargs), self.hass.loop
         ).result()

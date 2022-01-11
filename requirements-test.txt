@@ -1,0 +1,5 @@
+asynctest~=0.13
+pytest-aiohttp~=0.3
+pytest~=6.2
+pytest-cov~=2.12
+pytest-homeassistant-custom-component>=0.5.11

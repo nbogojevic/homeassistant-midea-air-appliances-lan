@@ -54,7 +54,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return getattr(self.appliance.state, "current_humidity", None)
+        return self.dehumidifier().current_humidity
 
 
 class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
@@ -67,7 +67,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return getattr(self.appliance.state, "current_temperature", None)
+        return self.dehumidifier().current_temperature
 
 
 class TankLevelSensor(ApplianceEntity, SensorEntity):
@@ -79,12 +79,12 @@ class TankLevelSensor(ApplianceEntity, SensorEntity):
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
-        level = getattr(coordinator.appliance.state, "tank_level", 0)
-        self._attr_entity_registry_enabled_default = level > 0 and level < 100
+        level = self.dehumidifier().tank_level
+        self._attr_entity_registry_enabled_default = 0 < level < 100
 
     @property
     def native_value(self):
-        return getattr(self.appliance.state, "tank_level", None)
+        return self.dehumidifier().tank_level
 
 
 class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
@@ -94,8 +94,8 @@ class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
     _attr_native_unit_of_measurement = TEMP_CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _unique_id_prefx = UNIQUE_CLIMATE_PREFIX
-    _name_suffix = " Outside Temperature"
+    _name_suffix = " Outdoor Temperature"
 
     @property
     def native_value(self):
-        return getattr(self.appliance.state, "outside_temperature", None)
+        return self.airconditioner().outdoor_temperature

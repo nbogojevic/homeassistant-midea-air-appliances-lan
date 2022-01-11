@@ -21,7 +21,7 @@ from custom_components.midea_dehumidifier_lan.const import (
 
 
 @dataclass
-class MideaSwitchDescriptor:
+class _MideaSwitchDescriptor:
     attr: str
     name: str
     icon: str
@@ -31,28 +31,28 @@ class MideaSwitchDescriptor:
 
 _DISABLED_BY_DEFAULT: Final = ""
 
-ION_MODE_SWITCH: Final = MideaSwitchDescriptor(
+ION_MODE_SWITCH: Final = _MideaSwitchDescriptor(
     attr="ion_mode",
     name="Ion Mode",
     icon="mdi:air-purifier",
     capability="ion",
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-PUMP_SWITCH: Final = MideaSwitchDescriptor(
+PUMP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="pump",
     name="Pump",
     icon="mdi:pump",
     capability="pump",
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-SLEEP_SWITCH: Final = MideaSwitchDescriptor(
+SLEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="sleep",
     name="Sleep",
     icon="mdi:weather-night",
     capability=_DISABLED_BY_DEFAULT,
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-DEHUMIDIFIER_BEEP_SWITCH: Final = MideaSwitchDescriptor(
+DEHUMIDIFIER_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="beep_prompt",
     name="Beep",
     icon="mdi:bell-check",
@@ -66,42 +66,42 @@ DEHIMIDIFER_SWITCHES: Final = [
     SLEEP_SWITCH,
 ]
 # Climate
-CLIMATE_BEEP_SWITCH: Final = MideaSwitchDescriptor(
+CLIMATE_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="beep_prompt",
     name="Beep",
     icon="mdi:bell-check",
     capability=_DISABLED_BY_DEFAULT,
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
-FAHRENHEIT_SWITCH: Final = MideaSwitchDescriptor(
+FAHRENHEIT_SWITCH: Final = _MideaSwitchDescriptor(
     attr="fahrenheit",
     name="Fahrenheit",
     icon="mdi:temperature-fahrenheit",
     capability="fahrenheit",
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
-DRYER_SWITCH: Final = MideaSwitchDescriptor(
+DRYER_SWITCH: Final = _MideaSwitchDescriptor(
     attr="dryer",
     name="Dry Mode",
     icon="mdi:water-opacity",
     capability="_DISABLED_BY_DEFAULT",
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
-PURIFIER_SWITCH: Final = MideaSwitchDescriptor(
+PURIFIER_SWITCH: Final = _MideaSwitchDescriptor(
     attr="purifier",
     name="Purifier",
     icon="mdi:air-purifier",
     capability="anion",
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
-TURBO_FAN_SWITCH: Final = MideaSwitchDescriptor(
+TURBO_FAN_SWITCH: Final = _MideaSwitchDescriptor(
     attr="turbo_fan",
     name="Turbo Fan",
     icon="mdi:fan-alert",
     capability="strong_fan",
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
-SCREEN_SWITCH: Final = MideaSwitchDescriptor(
+SCREEN_SWITCH: Final = _MideaSwitchDescriptor(
     attr="show_screen",
     name="Show Screen",
     icon="mdi:clock-digital",
@@ -132,25 +132,28 @@ async def async_setup_entry(
 
     switches = []
     # Dehumidifier sensors
-    for s in DEHIMIDIFER_SWITCHES:
-        for c in hub.coordinators:
-            if c.is_dehumidifier():
-                switches.append(MideaSwitch(c, s))
+    for switch in DEHIMIDIFER_SWITCHES:
+        for coord in hub.coordinators:
+            if coord.is_dehumidifier():
+                switches.append(MideaSwitch(coord, switch))
 
     # Air conditioner entities
-    for s in CLIMATE_SWITCHES:
-        for c in hub.coordinators:
-            if c.is_climate():
-                switches.append(MideaSwitch(c, s))
+    for switch in CLIMATE_SWITCHES:
+        for coord in hub.coordinators:
+            if coord.is_climate():
+                switches.append(MideaSwitch(coord, switch))
 
     async_add_entities(switches)
 
 
+# pylint: disable=too-many-ancestors
 class MideaSwitch(ApplianceEntity, SwitchEntity):
     """Generic attr based switch"""
 
     def __init__(
-        self, coordinator: ApplianceUpdateCoordinator, descriptor: MideaSwitchDescriptor
+        self,
+        coordinator: ApplianceUpdateCoordinator,
+        descriptor: _MideaSwitchDescriptor,
     ) -> None:
         self._unique_id_prefix = descriptor.prefix
         self.attr = descriptor.attr

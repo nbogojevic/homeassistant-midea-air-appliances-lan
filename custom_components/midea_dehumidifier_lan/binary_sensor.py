@@ -47,7 +47,7 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, "tank_full", False)
+        return self.dehumidifier().tank_full
 
 
 class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
@@ -66,7 +66,7 @@ class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, "filter_indicator", False)
+        return self.dehumidifier().filter_indicator
 
 
 class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
@@ -80,4 +80,4 @@ class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, "defrosting", False)
+        return self.dehumidifier().defrosting

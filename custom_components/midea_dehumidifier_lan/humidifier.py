@@ -7,7 +7,9 @@ from homeassistant.components.humidifier import HumidifierDeviceClass, Humidifie
 from homeassistant.components.humidifier.const import SUPPORT_MODES
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import async_get_registry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from custom_components.midea_dehumidifier_lan import (
     ApplianceEntity,
@@ -31,6 +33,8 @@ MODE_PURIFIER: Final = "Purifier"
 MODE_ANTIMOULD: Final = "Antimould"
 MODE_FAN: Final = "Fan"
 
+ENTITY_ID_FORMAT = DOMAIN + ".{}"
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -40,11 +44,22 @@ async def async_setup_entry(
     """Sets up dehumidifier entites"""
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    async_add_entities(
+    dehumidifiers = [
         DehumidifierEntity(c) for c in hub.coordinators if c.is_dehumidifier()
-    )
+    ]
+    entity_registry = await async_get_registry(hass)
+    for dehumidifier in dehumidifiers:
+        old_humidifier_entity_id = "humidifier.{}".format(slugify(dehumidifier.name))
+        old_entity = entity_registry.async_get(old_humidifier_entity_id)
+        _LOGGER.error(
+            "Old entities is: %s %s",
+            old_humidifier_entity_id,
+            old_entity,
+        )
+    async_add_entities(dehumidifiers)
 
 
+# pylint: disable=too-many-ancestors
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     """(de)Humidifer entity for Midea appliances """
 
@@ -78,56 +93,45 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     @property
     def is_on(self) -> bool:
-        return getattr(self.appliance.state, ATTR_RUNNING, False)
+        return self.dehumidifier().running
 
     @property
     def target_humidity(self) -> int:
-        return int(getattr(self.appliance.state, "target_humidity", 0))
+        return self.dehumidifier().target_humidity
+
+    _MODES = [
+        (1, MODE_SET),
+        (2, MODE_CONTINOUS),
+        (3, MODE_SMART),
+        (4, MODE_DRY),
+        (6, MODE_PURIFIER),
+        (7, MODE_ANTIMOULD),
+    ]
 
     @property
     def mode(self):
-        curr_mode = getattr(self.appliance.state, "mode", 1)
-        if curr_mode == 1:
+        curr_mode = self.dehumidifier().mode
+        mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
+        if mode is None:
+            _LOGGER.warning("Unknown mode %d", curr_mode)
             return MODE_SET
-        if curr_mode == 2:
-            return MODE_CONTINOUS
-        if curr_mode == 3:
-            return MODE_SMART
-        if curr_mode == 4:
-            return MODE_DRY
-        if curr_mode == 6:
-            return MODE_PURIFIER
-        if curr_mode == 7:
-            return MODE_ANTIMOULD
-        _LOGGER.warning("Unknown mode %d", curr_mode)
-        return MODE_SET
+        return mode
 
-    def turn_on(self, **kwargs) -> None:
+    def turn_on(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """Turn the entity on."""
         self.apply(ATTR_RUNNING, True)
 
-    def turn_off(self, **kwargs) -> None:
+    def turn_off(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """Turn the entity off."""
         self.apply(ATTR_RUNNING, False)
 
     def set_mode(self, mode) -> None:
         """Set new target preset mode."""
-        if mode == MODE_SET:
-            curr_mode = 1
-        elif mode == MODE_CONTINOUS:
-            curr_mode = 2
-        elif mode == MODE_SMART:
-            curr_mode = 3
-        elif mode == MODE_DRY:
-            curr_mode = 4
-        elif mode == MODE_PURIFIER:
-            curr_mode = 6
-        elif mode == MODE_ANTIMOULD:
-            curr_mode = 7
-        else:
+        midea_mode = next((i[0] for i in self._MODES if i[1] == mode), None)
+        if midea_mode is None:
             _LOGGER.warning("Unsupported dehumidifer mode %s", mode)
-            curr_mode = 1
-        self.apply("mode", curr_mode)
+            midea_mode = 1
+        self.apply("mode", midea_mode)
 
     def set_humidity(self, humidity) -> None:
         """Set new target humidity."""

@@ -1,10 +1,11 @@
 {
-  "name": "Midea Dehumidifier (LAN)",
+  "name": "Midea Appliance (LAN)",
   "version": "0.5.0",
   "domains": [
     "binary_sensor",
-    "humidifier",
+    "climate",
     "fan",
+    "humidifier",
     "sensor",
     "switch"
   ],

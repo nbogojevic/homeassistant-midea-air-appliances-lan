@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# custom components dummy module file
+custom_components/__init__.py
