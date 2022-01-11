@@ -1,12 +1,13 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
 	"image": "ludeeus/container:integration-debian",
-	"name": "Midea Dehumidifer (LAN) integration development",
-	"context": "..",
+	"name": "Midea Appliance (LAN) integration development",
 	"appPort": [
 		"9123:8123"
 	],
-	"postCreateCommand": "container install",
+	"postCreateCommand": [
+		"./.devcontainer/postCreateCommand.sh"
+	],
 	"extensions": [
 		"ms-python.python",
 		"github.vscode-pull-request-github",
@@ -16,7 +17,12 @@
 	"settings": {
 		"files.eol": "\n",
 		"editor.tabSize": 4,
-		"terminal.integrated.shell.linux": "/bin/bash",
+		"terminal.integrated.defaultProfile.linux": "bash",
+		"terminal.integrated.profiles.linux": {
+			"bash": {
+				"path": "/bin/bash"
+			}
+		},
 		"python.pythonPath": "/usr/bin/python3",
 		"python.analysis.autoSearchPaths": false,
 		"python.linting.pylintEnabled": true,
