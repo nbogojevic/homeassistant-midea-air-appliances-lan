@@ -16,7 +16,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     CONF_APPKEY,
     CONF_DETECT_AC_APPLIANCES,
     CONF_MOBILE_APP,
-    CONF_NETWORK_RANGE,
+    CONF_BROADCAST_ADDRESS,
     CONF_USE_CLOUD,
     DEFAULT_APP,
     DOMAIN,
@@ -115,7 +115,7 @@ async def test_advanced_settings_config_flow(hass: HomeAssistant):
     assert values[CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
     assert values[CONF_APPID] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPID]
     assert values[CONF_APPKEY] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPKEY]
-    assert values[CONF_NETWORK_RANGE] == ""
+    assert values[CONF_BROADCAST_ADDRESS] == ""
     assert not values[CONF_DETECT_AC_APPLIANCES]
     assert not values[CONF_USE_CLOUD]
 
@@ -168,7 +168,7 @@ async def test_advanced_settings_config_flow_success_network(
         CONF_USERNAME: "test_username",
         CONF_PASSWORD: "test_password",
         CONF_APPKEY: "test_appkey",
-        CONF_NETWORK_RANGE: "192.0.128.0/28",
+        CONF_BROADCAST_ADDRESS: "192.0.128.0/28",
         CONF_APPID: 1000,
     }
     result = await hass.config_entries.flow.async_configure(
@@ -182,7 +182,7 @@ async def test_advanced_settings_config_flow_success_network(
     assert result["data"][CONF_APPKEY] == "test_appkey"
     assert result["data"][CONF_APPID] == 1000
     assert not result["data"][CONF_USE_CLOUD]
-    assert result["data"][CONF_NETWORK_RANGE] == "192.0.128.0/28"
+    assert result["data"][CONF_BROADCAST_ADDRESS] == "192.0.128.0/28"
     assert len(result["data"]["devices"]) == 1
     assert result["result"]
 
@@ -200,7 +200,7 @@ async def test_advanced_settings_config_invalid_network(hass: HomeAssistant):
     user_input = {
         CONF_USERNAME: "test_username",
         CONF_PASSWORD: "test_password",
-        CONF_NETWORK_RANGE: "655.123.123.333",
+        CONF_BROADCAST_ADDRESS: "655.123.123.333",
     }
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input=user_input
@@ -212,7 +212,7 @@ async def test_advanced_settings_config_invalid_network(hass: HomeAssistant):
     assert values[CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
     assert values[CONF_APPID] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPID]
     assert values[CONF_APPKEY] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPKEY]
-    assert values[CONF_NETWORK_RANGE] == "655.123.123.333"
+    assert values[CONF_BROADCAST_ADDRESS] == "655.123.123.333"
     assert result["description_placeholders"]
     assert result["description_placeholders"].get("cause") == "655.123.123.333"
     assert not values[CONF_DETECT_AC_APPLIANCES]

@@ -7,9 +7,7 @@ from homeassistant.components.humidifier import HumidifierDeviceClass, Humidifie
 from homeassistant.components.humidifier.const import SUPPORT_MODES
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import async_get_registry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import slugify
 
 from custom_components.midea_dehumidifier_lan import (
     ApplianceEntity,
@@ -44,19 +42,9 @@ async def async_setup_entry(
     """Sets up dehumidifier entites"""
     hub: Hub = hass.data[DOMAIN][config_entry.entry_id]
 
-    dehumidifiers = [
+    async_add_entities(
         DehumidifierEntity(c) for c in hub.coordinators if c.is_dehumidifier()
-    ]
-    entity_registry = await async_get_registry(hass)
-    for dehumidifier in dehumidifiers:
-        old_humidifier_entity_id = "humidifier.{}".format(slugify(dehumidifier.name))
-        old_entity = entity_registry.async_get(old_humidifier_entity_id)
-        _LOGGER.error(
-            "Old entities is: %s %s",
-            old_humidifier_entity_id,
-            old_entity,
-        )
-    async_add_entities(dehumidifiers)
+    )
 
 
 # pylint: disable=too-many-ancestors

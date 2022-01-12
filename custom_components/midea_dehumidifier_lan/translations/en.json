@@ -17,7 +17,7 @@
           "password": "Password",
           "appkey": "Mobile app key",
           "appid": "Mobile app id",
-          "network_range": "Appliance address or network range",
+          "broadcast_address": "Appliance or network broadcast address",
           "use_cloud": "Use cloud API to poll devices",
           "detect_ac_appliances": "Detect air conditioner appliances"
         },
@@ -30,11 +30,10 @@
           "name": "Device name",
           "token": "Token",
           "token_key": "Token key",
-          "ignore_appliance": "Ignore this appliance",
-          "use_cloud": "Use cloud API to poll this device"
+          "appliance_action": "Choose action"
         },
-        "description": "We were unable to discover an appliance called {name} with the id {id} on the local network.\n\nIf you know appliance's IPv4 address, please enter it below to add it to Home Assistant.\n\nYou can also provide token and key if you have them. If not, we will obtain them from Midea cloud.",
-        "title": "Appliance IPv4 address is missing"
+        "description": "We were unable to discover an appliance called {name} with the serial number {id} on the local network.\n\nPlease choose if you want to enter its IPv4 address, poll cloud API or ignore this appliance.\n\nYou can also provide token and key if you have them. If not, we will try to obtain them from Midea cloud.",
+        "title": "Appliance not found"
       },
       "reauth_confirm": {
         "data": {
@@ -42,20 +41,18 @@
           "password": "Password",
           "appkey": "Mobile app key",
           "appid": "Mobile app id",
-          "network_range": "Appliance address or network range"
+          "broadcast_address": "Appliance or network broadcast address"
         },
         "title": "[%key:common::config_flow::title::reauth%]",
         "description": "The Midea dehumidifier (LAN) integration needs to re-authenticate your account"
       }
     },
     "error": {
-      "cannot_connect": "Unnable to connect to appliance ({cause}).",
+      "cannot_connect": "Unable to connect to appliance ({cause}).",
       "connection_error": "Connection error ({cause}).",
-      "invalid_app_name": "Unsupported application name ({cause}). See log for more information.",
       "invalid_auth": "Invalid username or password ({cause})",
       "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.1.2)",
-      "invalid_ip_range": "Invalid IPv4 network address or network range ({cause}). Expected formats are 192.0.1.2 or 192.0.3.4/24",
-      "invalid_state": "Unexpected state of configuration flow. See log for more information.",
+      "invalid_ip_broadcast": "Invalid IPv4 appliance or broadcast address ({cause}), please enter a valid IPv4 address (e.g. 192.0.1.2 or 255.255.255.255)",
       "no_cloud": "Unable to connect to Midea cloud API",
       "not_discovered": "Unable to find appliance at specified IPv4 address.",
       "midea_client": "An error in communication with Midea API has occurred. See log for more information.",

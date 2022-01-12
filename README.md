@@ -96,6 +96,7 @@ https://github.com/nbogojevic/midea-beautiful-air
 Following Lovelace cards work well with this integration:
 
 https://github.com/MiguelCosta/Dehumidifier_Comfee_Card
+
 https://github.com/sicknesz/midea-inventor-card
 
 [add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=midea_dehumidifier_lan

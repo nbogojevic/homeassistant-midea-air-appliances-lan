@@ -71,6 +71,7 @@ Platform | Description
 ## UI
 
 You may look at following Lovelace cards:
+
 https://github.com/MiguelCosta/Dehumidifier_Comfee_Card
 
 https://github.com/sicknesz/midea-inventor-card

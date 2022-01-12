@@ -16,6 +16,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_TOKEN,
     CONF_TYPE,
+    CONF_UNIQUE_ID,
     CONF_USERNAME,
 )
 import voluptuous as vol
@@ -41,11 +42,11 @@ from .const import (  # pylint: disable=unused-import
     CONF_APPID,
     CONF_APPKEY,
     CONF_DETECT_AC_APPLIANCES,
-    CONF_IGNORE_APPLIANCE,
     CONF_MOBILE_APP,
-    CONF_NETWORK_RANGE,
+    CONF_BROADCAST_ADDRESS,
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD,
+    CONF_WHAT_TO_DO,
     CURRENT_CONFIG_VERSION,
     DEFAULT_APP,
     DEFAULT_PASSWORD,
@@ -59,20 +60,30 @@ from .const import (  # pylint: disable=unused-import
 
 _LOGGER = logging.getLogger(__name__)
 
+IGNORE = "IGNORE"
+USE_CLOUD = "CLOUD"
+LAN = "LAN"
+
 
 def _unreachable_appliance_schema(
     name: str,
-    address: str = IGNORED_IP_ADDRESS,
-    use_cloud: bool = False,
 ):
     return vol.Schema(
         {
-            vol.Required(CONF_IGNORE_APPLIANCE, default=False): bool,
-            vol.Optional(CONF_IP_ADDRESS, default=address): str,
+            vol.Optional(CONF_WHAT_TO_DO, default=LAN): vol.In(
+                {
+                    IGNORE: "Ignore appliance",
+                    LAN: "Provide appliance's IPv4 address",
+                    USE_CLOUD: "Use cloud API to poll devices",
+                }
+            ),
+            vol.Optional(
+                CONF_IP_ADDRESS,
+                description={"suggested_value": IGNORED_IP_ADDRESS},
+            ): str,
             vol.Optional(CONF_NAME, default=name): str,
             vol.Optional(CONF_TOKEN): str,
             vol.Optional(CONF_TOKEN_KEY): str,
-            vol.Required(CONF_USE_CLOUD, default=use_cloud): bool,
         }
     )
 
@@ -83,7 +94,7 @@ def _advanced_settings_schema(
     password: str,
     appkey: str,
     appid: int,
-    network_range: str,
+    broadcast_address: str,
     use_cloud: bool,
 ):
     return vol.Schema(
@@ -92,7 +103,7 @@ def _advanced_settings_schema(
             vol.Required(CONF_PASSWORD, default=password): str,
             vol.Required(CONF_APPKEY, default=appkey): str,
             vol.Required(CONF_APPID, default=appid): int,
-            vol.Optional(CONF_NETWORK_RANGE, default=network_range): str,
+            vol.Optional(CONF_BROADCAST_ADDRESS, default=broadcast_address): str,
             vol.Required(CONF_USE_CLOUD, default=use_cloud): bool,
             vol.Required(CONF_DETECT_AC_APPLIANCES, default=False): bool,
         }
@@ -119,9 +130,7 @@ def _user_schema(username: str, password: str, app: str):
         {
             vol.Required(CONF_USERNAME, default=username): str,
             vol.Required(CONF_PASSWORD, default=password): str,
-            vol.Required(CONF_MOBILE_APP, default=app): vol.In(
-                app for app in SUPPORTED_APPS
-            ),
+            vol.Optional(CONF_MOBILE_APP, default=app): vol.In(SUPPORTED_APPS.keys()),
             vol.Required(CONF_ADVANCED_SETTINGS, default=False): bool,
         }
     )
@@ -213,10 +222,10 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
             appkey=self.conf[CONF_APPKEY],
             appid=self.conf[CONF_APPID],
         )
-        networks = self.conf.get(CONF_NETWORK_RANGE, [])
-        if isinstance(networks, str):
-            networks = [networks]
-        if appliances := self.client.find_appliances(cloud, networks=networks):
+        addresses = self.conf.get(CONF_BROADCAST_ADDRESS, [])
+        if isinstance(addresses, str):
+            addresses = [addresses]
+        if appliances := self.client.find_appliances(cloud, addresses=addresses):
             self.devices_conf = [{} for _ in appliances]
         else:
             self.devices_conf = []
@@ -229,12 +238,12 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
             assert self.conf is not None
             self.conf[CONF_APPKEY] = user_input[CONF_APPKEY]
             self.conf[CONF_APPID] = user_input[CONF_APPID]
-            if network_range := user_input.get(CONF_NETWORK_RANGE):
+            if address := user_input.get(CONF_BROADCAST_ADDRESS):
                 try:
-                    ipaddress.IPv4Network(network_range, strict=False)
+                    ipaddress.IPv4Address(address)
                 except Exception as ex:
-                    raise _FlowException("invalid_ip_range", network_range) from ex
-                self.conf[CONF_NETWORK_RANGE] = network_range
+                    raise _FlowException("invalid_ip_address", address) from ex
+                self.conf[CONF_BROADCAST_ADDRESS] = address
             self.conf[CONF_USE_CLOUD] = user_input[CONF_USE_CLOUD]
             self.conf[CONF_DETECT_AC_APPLIANCES] = user_input[CONF_DETECT_AC_APPLIANCES]
         else:
@@ -341,8 +350,8 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
         appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
-        network_range = user_input.get(
-            CONF_NETWORK_RANGE, self.conf.get(CONF_NETWORK_RANGE, "")
+        broadcast_address = user_input.get(
+            CONF_BROADCAST_ADDRESS, self.conf.get(CONF_BROADCAST_ADDRESS, "")
         )
         use_cloud = user_input.get(CONF_USE_CLOUD, self.conf.get(CONF_USE_CLOUD, False))
 
@@ -353,7 +362,7 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
                 password=password,
                 appkey=appkey,
                 appid=appid,
-                network_range=network_range,
+                broadcast_address=broadcast_address,
                 use_cloud=use_cloud,
             ),
             description_placeholders=self._placeholders(),
@@ -370,15 +379,17 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
         device_conf = self.devices_conf[self.appliance_idx]
 
         if user_input is not None:
-
-            appliance.address = user_input.get(CONF_IP_ADDRESS, IGNORED_IP_ADDRESS)
+            what_to_do = user_input.get(CONF_WHAT_TO_DO, LAN)
+            appliance.address = (
+                user_input.get(CONF_IP_ADDRESS, IGNORED_IP_ADDRESS)
+                if what_to_do == LAN
+                else IGNORED_IP_ADDRESS
+            )
             appliance.name = user_input.get(CONF_NAME, appliance.name)
             appliance.token = user_input.get(CONF_TOKEN, "")
             appliance.key = user_input.get(CONF_TOKEN_KEY, "")
 
-            device_conf[CONF_USE_CLOUD] = user_input.get(
-                CONF_USE_CLOUD, self.conf.get(CONF_USE_CLOUD, False)
-            )
+            device_conf[CONF_USE_CLOUD] = what_to_do == USE_CLOUD
 
             try:
                 await self.hass.async_add_executor_job(
@@ -416,7 +427,7 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
             TAG_CAUSE: self.error_cause or "",
         }
         if appliance:
-            placeholders[TAG_ID] = appliance.appliance_id
+            placeholders[TAG_ID] = appliance.unique_id
             placeholders[TAG_NAME] = appliance.name
 
         return placeholders
@@ -432,6 +443,7 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
                 self.devices_conf[i].update(
                     {
                         CONF_IP_ADDRESS: appliance.address,
+                        CONF_UNIQUE_ID: appliance.unique_id,
                         CONF_ID: appliance.appliance_id,
                         CONF_NAME: appliance.name,
                         CONF_TYPE: appliance.type,
@@ -445,7 +457,7 @@ class MideaLocalConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if existing_entry:
             self.hass.config_entries.async_update_entry(
-                existing_entry,
+                entry=existing_entry,
                 data=self.conf,
             )
             # Reload the config entry otherwise devices will remain unavailable
