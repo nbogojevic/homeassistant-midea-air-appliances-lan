@@ -7,4 +7,5 @@ sed 's/git:/https:/' -i /usr/share/container/upgrade
 touch custom_components/__init__.py
 
 # Install home assistant
-container install
+# container install
+pip install -r requirements-test.txt

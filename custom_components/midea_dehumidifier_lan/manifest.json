@@ -11,5 +11,8 @@
   "requirements": [
     "midea-beautiful-air==0.8.6"
   ],
+  "dependencies": [
+    "network"
+  ],
   "iot_class": "local_polling"
 }
