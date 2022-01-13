@@ -140,7 +140,9 @@ async def async_discover_midea_devices(hass: HomeAssistant) -> bool:
     return len(result) > 0
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+async def async_setup(
+    hass: HomeAssistant, config: ConfigType  # pylint: disable=unused-argument
+) -> bool:
     """Set up the Midea Appliances component."""
     hass.data[DOMAIN] = {}
 
