@@ -1,3 +1,4 @@
+"""Test integration configuration flow"""
 # pylint: disable=unused-argument
 from typing import Any
 from unittest.mock import patch
@@ -168,7 +169,7 @@ async def test_advanced_settings_config_flow_success_network(
         CONF_USERNAME: "test_username",
         CONF_PASSWORD: "test_password",
         CONF_APPKEY: "test_appkey",
-        CONF_BROADCAST_ADDRESS: "192.0.128.0/28",
+        CONF_BROADCAST_ADDRESS: "192.0.128.255",
         CONF_APPID: 1000,
     }
     result = await hass.config_entries.flow.async_configure(
@@ -182,7 +183,7 @@ async def test_advanced_settings_config_flow_success_network(
     assert result["data"][CONF_APPKEY] == "test_appkey"
     assert result["data"][CONF_APPID] == 1000
     assert not result["data"][CONF_USE_CLOUD]
-    assert result["data"][CONF_BROADCAST_ADDRESS] == "192.0.128.0/28"
+    assert result["data"][CONF_BROADCAST_ADDRESS] == "192.0.128.255"
     assert len(result["data"]["devices"]) == 1
     assert result["result"]
 

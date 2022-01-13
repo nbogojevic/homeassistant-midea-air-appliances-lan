@@ -1,12 +1,14 @@
 # pylint: disable=protected-access,redefined-outer-name
+# pylint: disable=unused-argument
 """Global fixtures for integration."""
 
 from unittest.mock import Mock, patch
 
 import pytest
 
-from custom_components.midea_dehumidifier_lan import MideaClient
 from midea_beautiful.exceptions import CloudAuthenticationError, MideaError
+
+from custom_components.midea_dehumidifier_lan import MideaClient
 
 pytest_plugins = "pytest_homeassistant_custom_component"  # pylint: disable=invalid-name
 
