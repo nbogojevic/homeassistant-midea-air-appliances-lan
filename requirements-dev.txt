@@ -1,1 +1,1 @@
-midea-beautiful-air>=0.8
+git+https://github.com/home-assistant/home-assistant.git@dev
