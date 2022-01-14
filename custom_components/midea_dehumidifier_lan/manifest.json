@@ -9,9 +9,9 @@
     "@nbogojevic"
   ],
   "requirements": [
-    "midea-beautiful-air==0.8.6"
+    "midea-beautiful-air==0.8.11"
   ],
-  "dependencies": [
+  "after_dependencies": [
     "network"
   ],
   "iot_class": "local_polling"
