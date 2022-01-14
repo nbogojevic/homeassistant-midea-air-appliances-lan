@@ -8,24 +8,26 @@ import asyncio
 from datetime import timedelta
 import logging
 from typing import Any, cast, final
-from homeassistant import config_entries
 
 from homeassistant.components.network import async_get_ipv4_broadcast_addresses
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_API_VERSION,
     CONF_DEVICES,
+    CONF_EXCLUDE,
     CONF_ID,
     CONF_IP_ADDRESS,
     CONF_NAME,
     CONF_PASSWORD,
     CONF_TOKEN,
+    CONF_TYPE,
     CONF_UNIQUE_ID,
     CONF_USERNAME,
     EVENT_HOMEASSISTANT_STARTED,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.debounce import Debouncer
 from homeassistant.helpers.event import async_track_time_interval
@@ -36,23 +38,31 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 from homeassistant.util import slugify
+import voluptuous as vol
+
 
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
-from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import AuthenticationError, MideaError
 from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
-import midea_beautiful as midea_beautiful_api
 
+from custom_components.midea_dehumidifier_lan.api import (
+    MideaClient,
+    is_climate,
+    is_dehumidifier,
+    supported_appliance,
+)
 from custom_components.midea_dehumidifier_lan.const import (
     APPLIANCE_REFRESH_COOLDOWN,
     APPLIANCE_REFRESH_INTERVAL,
     CONF_APPID,
     CONF_APPKEY,
     CONF_BROADCAST_ADDRESS,
+    CONF_DETECT_AC_APPLIANCES,
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD,
     CURRENT_CONFIG_VERSION,
+    UNKNOWN_IP,
     UNIQUE_DEHUMIDIFIER_PREFIX,
     DOMAIN,
     PLATFORMS,
@@ -61,97 +71,123 @@ from custom_components.midea_dehumidifier_lan.const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-DISCOVERY_INTERVAL = timedelta(minutes=15)
+DISCOVERY_INTERVAL = timedelta(minutes=2)
 
 
-class MideaClient:
-    """Delegate to midea API"""
+APPLIANCES_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_UNIQUE_ID): cv.string,
+        vol.Required(CONF_ID): cv.string,
+        vol.Required(CONF_TYPE): cv.string,
+        vol.Required(CONF_NAME): cv.string,
+        vol.Required(CONF_IP_ADDRESS, default=UNKNOWN_IP): cv.string,
+        vol.Required(CONF_API_VERSION, default=3): int,
+        vol.Optional(CONF_TOKEN): cv.string,
+        vol.Optional(CONF_TOKEN_KEY): cv.string,
+        vol.Optional(CONF_EXCLUDE, default=False): bool,
+        vol.Optional(CONF_USE_CLOUD, default=False): bool,
+    }
+)
 
-    def connect_to_cloud(  # pylint: disable=no-self-use
-        self, account: str, password: str, appkey=DEFAULT_APPKEY, appid=DEFAULT_APP_ID
-    ):
-        """Delegate to midea_beautiful_api.connect_to_cloud"""
-        return midea_beautiful_api.connect_to_cloud(
-            account=account, password=password, appkey=appkey, appid=appid
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Optional(CONF_USERNAME): cv.string,
+                vol.Optional(CONF_PASSWORD): cv.string,
+                vol.Optional(CONF_APPKEY): cv.string,
+                vol.Optional(CONF_APPID): cv.string,
+                vol.Optional(CONF_USE_CLOUD): bool,
+                vol.Optional(CONF_DETECT_AC_APPLIANCES, default=False): bool,
+                vol.Optional(CONF_BROADCAST_ADDRESS, default=[]): vol.All(
+                    cv.ensure_list, [cv.string]
+                ),
+                vol.Optional(CONF_DEVICES): vol.All(
+                    cv.ensure_list, [APPLIANCES_SCHEMA]
+                ),
+            }
         )
-
-    def appliance_state(  # pylint: disable=too-many-arguments,no-self-use
-        self,
-        address: str | None = None,
-        token: str | None = None,
-        key: str | None = None,
-        cloud: MideaCloud = None,
-        use_cloud: bool = False,
-        appliance_id: str | None = None,
-    ):
-        """Delegate to midea_beautiful_api.appliance_state"""
-        return midea_beautiful_api.appliance_state(
-            address=address,
-            token=token,
-            key=key,
-            cloud=cloud,
-            use_cloud=use_cloud,
-            appliance_id=appliance_id,
-        )
-
-    def find_appliances(  # pylint: disable=too-many-arguments,no-self-use
-        self,
-        cloud: MideaCloud | None = None,
-        appkey: str | None = None,
-        account: str = None,
-        password: str = None,
-        appid: str = None,
-        addresses: list[str] = None,
-    ) -> list[LanDevice]:
-        """Delegate to midea_beautiful_api.find_appliances"""
-        return midea_beautiful_api.find_appliances(
-            cloud=cloud,
-            appkey=appkey,
-            account=account,
-            password=password,
-            appid=appid,
-            addresses=addresses,
-        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 
-@callback
-def async_trigger_discovery(
-    hass: HomeAssistant,
+async def async_trigger_discovery(
+    hass: HomeAssistant, devices: list[LanDevice]
 ) -> None:
     """Trigger config flows for discovered devices."""
-    hass.async_create_task(
-        hass.config_entries.flow.async_init(
-            DOMAIN,
-            context={"source": config_entries.SOURCE_DISCOVERY},
-            data={},
-        )
-    )
+    for config_entry_id, value in hass.data[DOMAIN].items():
+        config_entry = hass.config_entries.async_get_entry(config_entry_id)
+        if not config_entry:
+            _LOGGER.error(
+                "Unable to load config entry %s for %s", config_entry_id, DOMAIN
+            )
+            break
+        hub = cast(Hub, value)
+        new_devices = []
+        conf = {**config_entry.data}
+        dev_confs = []
+        for dev_data in config_entry.data[CONF_DEVICES]:
+            dev_conf = {**dev_data}
+            dev_conf.setdefault(CONF_USE_CLOUD, conf[CONF_USE_CLOUD])
+            dev_confs.append(dev_conf)
+        conf[CONF_DEVICES] = dev_confs
+
+        for device in devices:
+            for coord in hub.coordinators:
+                _LOGGER.warning("SN %r %r", coord.appliance, device)
+                if coord.appliance.serial_number == device.serial_number:
+                    break
+            else:
+                _LOGGER.error("Discovered device %r", device)
+                if supported_appliance(conf, device):
+                    new_devices.append(device)
+                else:
+                    _LOGGER.error("Ignored device %s", device)
+        break
+    # hass.async_create_task(
+    #     hass.config_entries.flow.async_init(
+    #         DOMAIN,
+    #         context={"source": config_entries.SOURCE_DISCOVERY},
+    #         data={},
+    #     )
+    # )
 
 
-async def async_discover_midea_devices(hass: HomeAssistant) -> bool:
+ADDITIONAL_ADDRESSES: list[list[str]] = [
+    [],
+    ["10.0.4.210"],
+    ["10.0.7.130"],
+    ["10.0.7.130"],
+    ["10.0.7.130"],
+    [],
+]
+discovery_iteration: int = 0
+
+
+async def async_discover_midea_devices(hass: HomeAssistant) -> list[LanDevice]:
     """Discover Midea Appliances on configured network interfaces."""
+    global discovery_iteration
     broadcast_addresses = await async_get_ipv4_broadcast_addresses(hass)
     addresses = [str(address) for address in broadcast_addresses]
-    _LOGGER.debug("Broadcast discovery to addresses %s", addresses)
+    addresses.extend(ADDITIONAL_ADDRESSES[discovery_iteration])
+    discovery_iteration = (discovery_iteration + 1) % len(ADDITIONAL_ADDRESSES)
 
-    result = MideaClient().find_appliances(addresses=addresses)
-    _LOGGER.debug("Discovery result %s", result)
+    result = MideaClient().find_appliances(addresses=addresses, retries=1)
 
-    return len(result) > 0
+    return result
 
 
 async def async_setup(
     hass: HomeAssistant, config: ConfigType  # pylint: disable=unused-argument
 ) -> bool:
     """Set up the Midea Appliances component."""
-    hass.data[DOMAIN] = {}
-
-    if await async_discover_midea_devices(hass):
-        async_trigger_discovery(hass)
+    _LOGGER.error(config)
+    hass.data.setdefault(DOMAIN, {})
 
     async def _async_discovery(*_: Any) -> None:
-        if await async_discover_midea_devices(hass):
-            async_trigger_discovery(hass)
+        if result := await async_discover_midea_devices(hass):
+            await async_trigger_discovery(hass, result)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _async_discovery)
     async_track_time_interval(hass, _async_discovery, DISCOVERY_INTERVAL)
@@ -196,6 +232,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         for dev_data in config_entry.data[CONF_DEVICES]:
             dev_conf = {**dev_data}
             dev_conf.setdefault(CONF_USE_CLOUD, conf[CONF_USE_CLOUD])
+            dev_conf.setdefault(CONF_EXCLUDE, False)
             dev_confs.append(dev_conf)
 
         conf[CONF_DEVICES] = dev_confs
@@ -226,7 +263,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         self.coordinators: list[ApplianceUpdateCoordinator] = []
         self.use_cloud = config_entry.data.get(CONF_USE_CLOUD, False)
 
-        self.cloud: MideaCloud | None = None
+        self.cloud = None
         self.hass = hass
         self.entry = config_entry
         self.client = MideaClient()
@@ -255,7 +292,14 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             raise ConfigEntryNotReady(str(self.errors))
 
     async def _process_appliance(self, data: dict, device: dict):
+        if device.get(CONF_EXCLUDE, False):
+            _LOGGER.debug("Excluded appliance %s", dict)
+            return
         use_cloud = device.get(CONF_USE_CLOUD, self.use_cloud)
+        # We are waiting for appliance to come online
+        if not use_cloud and device.get(CONF_IP_ADDRESS) == UNKNOWN_IP:
+            _LOGGER.debug("Waiting for appliance discovery %s", dict)
+            return
         need_cloud = use_cloud
         version = device.get(CONF_API_VERSION, 3)
         need_token = (
@@ -287,6 +331,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             except Exception as ex:  # pylint: disable=broad-except
                 self.errors[device[CONF_UNIQUE_ID]] = str(ex)
                 return
+
         try:
             appliance = await self.hass.async_add_executor_job(
                 self.client.appliance_state,
@@ -355,7 +400,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         self.wait_for_update = False
         self.use_cloud: bool = config.get(CONF_USE_CLOUD, False)
 
-    def _cloud(self) -> MideaCloud | None:
+    def _cloud(self):
         if self.use_cloud or self.hub.use_cloud:
             if not self.hub.cloud:
                 raise UpdateFailed("Midea cloud API was not initialized")
@@ -393,11 +438,11 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
 
     def is_climate(self) -> bool:
         """True if appliance is air conditioner"""
-        return AirConditionerAppliance.supported(self.appliance.type)
+        return is_climate(self.appliance)
 
     def is_dehumidifier(self) -> bool:
         """True if appliance is dehumidifier"""
-        return DehumidifierAppliance.supported(self.appliance.type)
+        return is_dehumidifier(self.appliance)
 
     async def async_apply(self, args: dict) -> None:
         """Applies changes to device"""
