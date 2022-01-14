@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from midea_beautiful.midea import SUPPORTED_APPS
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from custom_components.midea_dehumidifier_lan.config_flow import MideaLocalConfigFlow
+from custom_components.midea_dehumidifier_lan.config_flow import MideaConfigFlow
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_ADVANCED_SETTINGS,
     CONF_APPID,
@@ -32,7 +32,7 @@ MOCK_BASIC_CONFIG_PAGE = {
 
 async def test_show_form(hass):
     """Test that the form is served with no input."""
-    flow = MideaLocalConfigFlow()
+    flow = MideaConfigFlow()
     flow.hass = hass
 
     result: data_entry_flow.FlowResult = await flow.async_step_user(user_input=None)

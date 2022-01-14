@@ -32,8 +32,8 @@
           "token_key": "Token key",
           "appliance_action": "Choose action"
         },
-        "description": "We were unable to discover an appliance called {name} with the serial number {id} on the local network.\n\nPlease choose if you want to enter its IPv4 address, poll cloud API or ignore this appliance.\n\nYou can also provide token and key if you have them. If not, we will try to obtain them from Midea cloud.",
-        "title": "Appliance not found"
+        "description": "We were unable to discover an appliance called {name} with the serial number {id}.\n\nPlease choose if you want to exclude appliance, search for it later, use cloud API to poll it, or provide its IPv4 address if you know it.\n\nYou can also provide token and key if you have them. If not, we will try to obtain them from Midea cloud.",
+        "title": "Unable to discover appliance"
       },
       "reauth_confirm": {
         "data": {
@@ -63,6 +63,26 @@
       "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea dehumidifier (LAN).",
       "reauth_successful": "Re-authentication was successful",
       "no_configured_devices": "Nothing to configure"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Appliance {current_index} of {appliance_count}",
+        "data": {
+          "exclude": "Ignore checked appliances"
+        }
+      },
+      "appliance": {
+        "description": "Appliance {current_index} of {appliance_count}",
+        "data": {
+          "ip_address": "IPv4 address",
+          "name": "Device name",
+          "token": "Token",
+          "token_key": "Token key",
+          "appliance_action": "Choose action"
+        }
+      }
     }
   }
 }
