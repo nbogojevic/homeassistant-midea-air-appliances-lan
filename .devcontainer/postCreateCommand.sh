@@ -8,4 +8,4 @@ touch custom_components/__init__.py
 
 # Install home assistant
 # container install
-pip install -r requirements-test.txt
+pip install -r requirements-dev.txt
