@@ -57,7 +57,7 @@ PLATFORMS: Final = [
     Platform.SWITCH,
 ]
 
-IGNORED_IP_ADDRESS: Final = "0.0.0.0"
+UNKNOWN_IP: Final = "0.0.0.0"
 
 DEFAULT_APP: Final = next(app for app in SUPPORTED_APPS)
 
