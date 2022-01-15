@@ -8,7 +8,7 @@ import pytest
 
 from midea_beautiful.exceptions import CloudAuthenticationError, MideaError
 
-from custom_components.midea_dehumidifier_lan import MideaClient
+from custom_components.midea_dehumidifier_lan.api import MideaClient
 
 pytest_plugins = "pytest_homeassistant_custom_component"  # pylint: disable=invalid-name
 

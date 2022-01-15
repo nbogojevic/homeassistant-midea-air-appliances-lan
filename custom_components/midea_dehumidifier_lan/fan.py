@@ -12,11 +12,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan import (
-    ApplianceEntity,
-    Hub,
-)
 from custom_components.midea_dehumidifier_lan.const import ATTR_FAN_SPEED, DOMAIN
+from custom_components.midea_dehumidifier_lan.hub import ApplianceEntity, Hub
 
 _LOGGER = logging.getLogger(__name__)
 

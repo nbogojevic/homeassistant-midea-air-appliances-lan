@@ -32,16 +32,13 @@ from homeassistant.const import ATTR_TEMPERATURE, PRECISION_HALVES, TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan import (
-    ApplianceEntity,
-    Hub,
-)
 from custom_components.midea_dehumidifier_lan.const import (
     ATTR_RUNNING,
     DOMAIN,
     MAX_TARGET_TEMPERATURE,
     MIN_TARGET_TEMPERATURE,
 )
+from custom_components.midea_dehumidifier_lan.hub import ApplianceEntity, Hub
 
 _LOGGER = logging.getLogger(__name__)
 

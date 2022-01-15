@@ -304,7 +304,12 @@ async def test_config_flow_no_devices(hass: HomeAssistant, midea_no_appliances):
 
 async def test_step_reauth(hass: HomeAssistant, midea_no_appliances):
     """Test the reauth flow."""
-    conf = {CONF_USERNAME: "user@example.com", CONF_PASSWORD: "password"}
+    conf = {
+        CONF_USERNAME: "user@example.com",
+        CONF_PASSWORD: "password",
+        CONF_APPKEY: "test-appkey",
+        CONF_APPID: 1000,
+    }
     MockConfigEntry(
         domain=DOMAIN,
         unique_id=conf[CONF_USERNAME],
@@ -326,14 +331,19 @@ async def test_step_reauth(hass: HomeAssistant, midea_no_appliances):
             user_input={CONF_PASSWORD: "password"},
         )
         assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
-        assert result["reason"] == "reauth_successful"
+        assert result["reason"] == "no_configured_devices"
 
     assert len(hass.config_entries.async_entries()) == 1
 
 
 async def test_step_reauth_invalid_password(hass: HomeAssistant, midea_invalid_auth):
     """Test the reauth flow."""
-    conf = {CONF_USERNAME: "user@example.com", CONF_PASSWORD: "password"}
+    conf = {
+        CONF_USERNAME: "user@example.com",
+        CONF_PASSWORD: "password",
+        CONF_APPKEY: "test-appkey",
+        CONF_APPID: 1000,
+    }
     MockConfigEntry(
         domain=DOMAIN,
         unique_id=conf[CONF_USERNAME],

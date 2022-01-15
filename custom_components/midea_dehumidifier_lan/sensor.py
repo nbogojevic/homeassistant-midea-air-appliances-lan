@@ -11,12 +11,12 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan import (
+from custom_components.midea_dehumidifier_lan.const import DOMAIN, UNIQUE_CLIMATE_PREFIX
+from custom_components.midea_dehumidifier_lan.hub import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
     Hub,
 )
-from custom_components.midea_dehumidifier_lan.const import DOMAIN, UNIQUE_CLIMATE_PREFIX
 
 
 async def async_setup_entry(
