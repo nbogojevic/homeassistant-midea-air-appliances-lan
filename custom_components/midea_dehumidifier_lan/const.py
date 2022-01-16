@@ -52,6 +52,7 @@ PLATFORMS: Final = [
 ]
 
 UNKNOWN_IP: Final = "0.0.0.0"
+LOCAL_BROADCAST: Final = "255.255.255.255"
 
 # What to do with configured appliance
 DISCOVERY_IGNORE = "IGNORE"

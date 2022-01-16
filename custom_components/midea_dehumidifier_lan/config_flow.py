@@ -74,7 +74,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_LAN,
     DISCOVERY_WAIT,
     DOMAIN,
-    MIN_SCAN_INTERVAL,
+    LOCAL_BROADCAST,
     UNKNOWN_IP,
 )
 
@@ -103,7 +103,7 @@ def _unreachable_appliance_schema(
                 CONF_IP_ADDRESS,
                 default=address or UNKNOWN_IP,
             ): cv.string,
-            vol.Optional(CONF_NAME, default=name): cv.string,
+            vol.Required(CONF_NAME, default=name): cv.string,
             vol.Optional(CONF_TOKEN, default=token or ""): cv.string,
             vol.Optional(CONF_TOKEN_KEY, default=token_key or ""): cv.string,
         }
@@ -127,16 +127,19 @@ def _advanced_settings_schema(
             vol.Required(CONF_APPKEY, default=appkey): cv.string,
             vol.Required(CONF_APPID, default=appid): cv.positive_int,
             vol.Optional(CONF_BROADCAST_ADDRESS, default=broadcast_address): cv.string,
-            vol.Optional(
-                CONF_SCAN_INTERVAL, default=2, description={"suffix": "minutes"}
-            ): vol.All(
-                vol.Coerce(int),
-                vol.Clamp(
-                    min=MIN_SCAN_INTERVAL,
-                    msg=f"Scan interval should be at least {MIN_SCAN_INTERVAL} minutes",
-                ),
+            vol.Required(CONF_SCAN_INTERVAL, default=2): vol.In(
+                {
+                    2: "2 minutes",
+                    5: "5 minutes",
+                    10: "10 minutes",
+                    15: "15 minutes",
+                    30: "30 minutes",
+                    60: "1 hour",
+                    360: "6 hours",
+                    1440: "24 hours",
+                }
             ),
-            vol.Optional(CONF_INCLUDE, default=appliances): vol.All(
+            vol.Required(CONF_INCLUDE, default=appliances): vol.All(
                 cv.multi_select(
                     {
                         APPLIANCE_TYPE_AIRCON: "Air conditioner",
@@ -413,13 +416,17 @@ class _MideaFlow(FlowHandler):
         return placeholders
 
 
-def _get_broadcast_addresses(user_input):
+def _get_broadcast_addresses(user_input: dict[str, Any]):
     address_entry = str(user_input.get(CONF_BROADCAST_ADDRESS, ""))
-    addresses = [addr.strip() for addr in address_entry.split(",") if addr.strip()]
-    for addr in addresses:
+    addresses = [LOCAL_BROADCAST]
+    specified_addresses = [
+        addr.strip() for addr in address_entry.split(",") if addr.strip()
+    ]
+    for addr in specified_addresses:
         _LOGGER.warning("Trying IPv4 %s", addr)
         try:
-            ipaddress.IPv4Address(addr)
+            ipaddress.IPv4Network(addr)
+            addresses.append(addr)
         except Exception as ex:
             _LOGGER.warning("Invalid IP address %s", addr, exc_info=True)
             raise _FlowException("invalid_ip_address", addr) from ex
@@ -571,8 +578,8 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         )
         appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
         appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
-        broadcast_address = user_input.get(
-            CONF_BROADCAST_ADDRESS, self.conf.get(CONF_BROADCAST_ADDRESS, "")
+        broadcast_addresses = user_input.get(
+            CONF_BROADCAST_ADDRESS, ",".join(self.conf.get(CONF_BROADCAST_ADDRESS, []))
         )
 
         return self.async_show_form(
@@ -582,7 +589,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
                 password=password,
                 appkey=appkey,
                 appid=appid,
-                broadcast_address=broadcast_address,
+                broadcast_address=broadcast_addresses,
             ),
             description_placeholders=self._placeholders(),
             errors=self.errors,

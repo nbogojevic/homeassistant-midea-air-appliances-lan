@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 
 from datetime import timedelta
+import ipaddress
 import itertools
 import logging
 from typing import Any, Final, Iterator, Tuple, cast, final
@@ -62,6 +63,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_WAIT,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
+    LOCAL_BROADCAST,
     UNKNOWN_IP,
     UNIQUE_DEHUMIDIFIER_PREFIX,
     DOMAIN,
@@ -89,19 +91,19 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
     """Central class for interacting with appliances"""
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-        self.coordinators: list[ApplianceUpdateCoordinator] = []
-
-        self.cloud = None
-        self.hass = hass
-        self.config_entry = config_entry
-        self.data = {}
+        self.address_iterator: Iterator[list[str]] | None = None
+        self.broadcast_addresses: list[str] = []
         self.client = MideaClient()
+        self.cloud = None
+        self.conf_addresses: list[str] = []
+        self.config_entry = config_entry
+        self.coordinators: list[ApplianceUpdateCoordinator] = []
+        self.data = {}
         self.errors = []
         self.failed_setup = []
-        self._updated_conf = False
+        self.hass = hass
         self.remove_discovery: CALLBACK_TYPE | None = None
-        self.address_iterator: Iterator[list[str]] = iter([])
-        self.broadcast_addresses: list[str] = []
+        self.updated_conf = False
 
     async def _setup_discovery(self) -> None:
         """Startup-time setup"""
@@ -110,7 +112,12 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             self.remove_discovery()
             self.remove_discovery = None
 
-        self.broadcast_addresses: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
+        self.conf_addresses: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
+        self.broadcast_addresses = []
+        for addr in self.conf_addresses:
+            net = ipaddress.IPv4Network(addr)
+            self.broadcast_addresses.append(str(net.broadcast_address))
+
         _LOGGER.debug("Using broadcast address %s", self.broadcast_addresses)
         has_waiting = any(
             device
@@ -120,22 +127,22 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         if has_waiting and self.broadcast_addresses:
 
             def ip_iteration():
-
-                for addr in self.broadcast_addresses:
-                    if addr == "255.255.255.255":
+                """One block of ip addresses to scan"""
+                for addr in self.conf_addresses:
+                    if addr == LOCAL_BROADCAST:
                         continue
-                    if addr[-4:] == ".255":
-                        base = addr[:-3]
-                        _LOGGER.debug("Scanning IPv4 addresses %s0-%s254", base, base)
-                        for i in range(0, 254, _NUMBER_OF_BROADCASTS):
-                            yield [
-                                base + str(j)
-                                for j in range(i, i + _NUMBER_OF_BROADCASTS)
-                            ]
+                    net = ipaddress.IPv4Network(addr)
+                    if net.num_addresses > 1:
+                        result = []
+                        count = _NUMBER_OF_BROADCASTS
+                        while nxt := next(net.hosts(), None) and count > 0:
+                            count -= 1
+                            result.append(nxt)
+                        yield result
 
             self.address_iterator = itertools.cycle(ip_iteration())
         else:
-            self.address_iterator = iter([])
+            self.address_iterator = None
         scan_interval = self.data.get(CONF_SCAN_INTERVAL, APPLIANCE_SCAN_INTERVAL)
         _LOGGER.debug("Scan interval %s minute(s)", scan_interval)
         if scan_interval:
@@ -150,7 +157,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         """
         self.data = {**self.config_entry.data}
         self.errors = {}
-        self._updated_conf = False
+        self.updated_conf = False
 
         devices = []
         for device_conf in self.data[CONF_DEVICES]:
@@ -162,7 +169,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         for coordinator in self.coordinators:
             await coordinator.async_config_entry_first_refresh()
 
-        if self._updated_conf:
+        if self.updated_conf:
             self.hass.config_entries.async_update_entry(
                 self.config_entry, data=self.data
             )
@@ -176,8 +183,9 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         """Discover Midea Appliances on configured network interfaces."""
         addresses = []
         addresses.extend([str(address) for address in self.broadcast_addresses])
-        if new_addresses := next(self.address_iterator, None):
-            addresses.extend(new_addresses)
+        if self.address_iterator:
+            if new_addresses := next(self.address_iterator, None):
+                addresses.extend(new_addresses)
         if not addresses:
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses.extend([str(address) for address in iface_broadcast])
@@ -214,7 +222,6 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                             CONF_API_VERSION: new.version,
                             CONF_ID: new.appliance_id,
                             CONF_IP_ADDRESS: new.address,
-                            CONF_NAME: new.name,
                             CONF_TOKEN_KEY: new.key,
                             CONF_TOKEN: new.token,
                             CONF_TYPE: new.type,
@@ -358,12 +365,12 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         appliance.name = device[CONF_NAME]
         if not device.get(CONF_API_VERSION):
             device[CONF_API_VERSION] = appliance.version
-            self._updated_conf = True
+            self.updated_conf = True
             _LOGGER.debug("Updating version for %s", appliance)
         if need_token and appliance.token and appliance.key:
             device[CONF_TOKEN] = appliance.token
             device[CONF_TOKEN_KEY] = appliance.key
-            self._updated_conf = True
+            self.updated_conf = True
             _LOGGER.debug("Updating token for %s", appliance)
         coordinator = ApplianceUpdateCoordinator(self.hass, self, appliance, device)
         self.coordinators.append(coordinator)
