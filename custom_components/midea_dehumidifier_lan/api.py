@@ -6,15 +6,26 @@ import midea_beautiful as midea_beautiful_api
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import APPLIANCE_TYPE_AIRCON, DEFAULT_APP_ID, DEFAULT_APPKEY
+from midea_beautiful.midea import (
+    APPLIANCE_TYPE_AIRCON,
+    APPLIANCE_TYPE_DEHUMIDIFIER,
+    DEFAULT_APP_ID,
+    DEFAULT_APPKEY,
+)
+
+_SUPPORTABLE_APPLIANCES = {
+    APPLIANCE_TYPE_AIRCON: AirConditionerAppliance.supported,
+    APPLIANCE_TYPE_DEHUMIDIFIER: DehumidifierAppliance.supported,
+}
 
 
 def supported_appliance(conf: dict, appliance: LanDevice) -> bool:
     """Checks if appliance is supported by integration"""
-    aircon = False
-    if APPLIANCE_TYPE_AIRCON in conf.get(CONF_INCLUDE, []):
-        aircon = AirConditionerAppliance.supported(appliance.type)
-    return aircon or DehumidifierAppliance.supported(appliance.type)
+    included = conf.get(CONF_INCLUDE, [])
+    for appliance_type, appliance_check in _SUPPORTABLE_APPLIANCES.items():
+        if appliance_type in included and appliance_check(appliance_type):
+            return True
+    return False
 
 
 class MideaClient:
