@@ -41,7 +41,6 @@ from custom_components.midea_dehumidifier_lan.const import (
     UNKNOWN_IP,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
-from custom_components.midea_dehumidifier_lan.util import domain
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,10 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up platform from a ConfigEntry."""
     hass.data.setdefault(DOMAIN, {})
 
-    if (hub := domain(hass).get(entry.entry_id)) is None:
+    if (hub := hass.data[DOMAIN].get(entry.entry_id)) is None:
         hub = Hub(hass, entry)
-        domain(hass)[entry.entry_id] = hub
-
+        hass.data[DOMAIN][entry.entry_id] = hub
     await hub.async_setup()
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
@@ -64,8 +62,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if unload_ok and domain(hass):
-        domain(hass).pop(entry.entry_id)
+    if unload_ok:
+        hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
 
