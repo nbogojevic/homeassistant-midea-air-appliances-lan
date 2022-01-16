@@ -9,6 +9,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from midea_beautiful.midea import ERROR_CODE_P2
+
 from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     UNIQUE_DEHUMIDIFIER_PREFIX,
@@ -27,6 +29,12 @@ async def async_setup_entry(
     # Dehumidifier sensors
     async_add_entities(
         TankFullSensor(c) for c in hub.coordinators if c.is_dehumidifier()
+    )
+    # Add tank removed sensor if pump is supported
+    async_add_entities(
+        TankRemovedSensor(c)
+        for c in hub.coordinators
+        if c.is_dehumidifier() and c.dehumidifier().supports.get("pump", False)
     )
     async_add_entities(
         FilterReplacementSensor(c) for c in hub.coordinators if c.is_dehumidifier()
@@ -47,7 +55,24 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return self.dehumidifier().tank_full
+        return (
+            self.dehumidifier().tank_full
+            or self.dehumidifier().error_code == ERROR_CODE_P2
+        )
+
+
+class TankRemovedSensor(ApplianceEntity, BinarySensorEntity):
+    """
+    Describes tank has been removed binary sensors (indicated as problem as it prevents
+    dehumidifier from operating)
+    """
+
+    _attr_device_class = DEVICE_CLASS_PROBLEM
+    _name_suffix = " Tank Removed"
+
+    @property
+    def is_on(self) -> bool:
+        return self.dehumidifier().error_code == 37
 
 
 class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
