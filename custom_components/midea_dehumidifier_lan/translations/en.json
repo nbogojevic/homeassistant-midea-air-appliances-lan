@@ -58,6 +58,9 @@
       "midea_client": "An error in communication with Midea API has occurred. See log for more information.",
       "unknown": "An unknown error has occurred. See log for more information."
     },
+    "create_entry": {
+      "default": "Successfully configured Midea appliance (LAN)."
+    },
     "abort": {
       "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea dehumidifier (LAN).",
       "reauth_successful": "Re-authentication was successful",
