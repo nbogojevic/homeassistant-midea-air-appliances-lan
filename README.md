@@ -7,16 +7,16 @@ This custom component for Home assistant adds support for Midea air conditioner 
 [![hacs][hacsbadge]][hacs]
 [![GitHub Release][releases-shield]][releases]
 
-Home Assistant custom component for controlling Midea appliance on local network.
+Home Assistant custom component for controlling Midea Dehumidifier on local network.
 
 ## Installation instruction
 
 ### HACS
-The easiest way to install the this integration is with [HACS](https://hacs.xyz/). First, install [HACS](https://hacs.xyz/docs/setup/download) if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Appliance (LAN)`, and click download.
+The easiest way to install the this integration is with [HACS](https://hacs.xyz/). First, install [HACS](https://hacs.xyz/docs/setup/download) if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Dehumidifier (LAN)`, and click download.
 
-Once the integration is installed, you can add it to the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Appliance (LAN)` or, using My Home Assistant service, you can click on:
+Once the integration is installed, and you have restarted, you can add it to Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Dehumidifier (LAN)` or, using My Home Assistant service, you can click on:
 
-[![Add Midea Appliance (LAN)][add-integration-badge]][add-integration]
+[![Add Midea Dehumidifier (LAN)][add-integration-badge]][add-integration]
 
 ### Manual installation
 1. Update Home Assistant to version 2021.12 or newer.
@@ -24,10 +24,10 @@ Once the integration is installed, you can add it to the Home Assistant by going
 3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder.
 
 ### Configuring
-1. Add `Midea Appliance (LAN)` integration via UI.
+1. Add `Midea Dehumidifier (LAN)` integration via UI.
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
 3. The integration will discover appliance on local network(s).
-4. If a appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
+4. If an appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
 
 ## Known issues
 
