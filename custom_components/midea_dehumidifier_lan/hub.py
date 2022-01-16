@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 
 from datetime import timedelta
+import itertools
 import logging
 from typing import Any, Iterator, cast, final
 
@@ -97,13 +98,37 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         self._updated_conf = False
         self.remove_discovery: CALLBACK_TYPE | None = None
         self.address_iterator: Iterator[list[str]] = iter([])
+        self.broadcast_addresses: list[str] = []
 
     async def _setup_discovery(self) -> None:
         """Startup-time setup"""
 
-        broadcast_address: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
-        _LOGGER.debug("broadcast_address=%s", broadcast_address)
-        self.address_iterator = iter([broadcast_address])
+        if self.remove_discovery:
+            self.remove_discovery()
+            self.remove_discovery = None
+
+        self.broadcast_addresses: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
+        _LOGGER.debug("broadcast_address=%s", self.broadcast_addresses)
+        has_waiting = any(
+            device
+            for device in self.data[CONF_DEVICES]
+            if device[CONF_DISCOVERY] == DISCOVERY_WAIT
+        )
+        directed_addresses = []
+        if has_waiting and self.broadcast_addresses:
+            for addr in self.broadcast_addresses:
+                if addr == "255.255.255.255":
+                    continue
+                if addr[-4:] == ".255":
+                    base = addr[:-3]
+
+                    def ip_block():
+                        for i in range(0, 254, 32):
+                            yield [base + str(j) for j in range(i, i + 32)]
+
+                    directed_addresses.append(ip_block())
+
+        self.address_iterator = itertools.chain(*directed_addresses)
         scan_interval = self.data.get(CONF_SCAN_INTERVAL, APPLIANCE_SCAN_INTERVAL)
         _LOGGER.debug("scan_interval=%s", scan_interval)
         if scan_interval:
@@ -120,8 +145,6 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         self.errors = {}
         self._updated_conf = False
 
-        await self._setup_discovery()
-
         devices = []
         for device_conf in self.data[CONF_DEVICES]:
             device = {**device_conf}
@@ -137,19 +160,25 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 self.config_entry, data=self.data
             )
 
+        await self._setup_discovery()
+
         if self.errors:
             raise ConfigEntryNotReady(str(self.errors))
 
     async def _async_discover(self, *_: Any) -> None:
         """Discover Midea Appliances on configured network interfaces."""
+        _LOGGER.debug("Discovery started")
         addresses = []
+        addresses.extend([str(address) for address in self.broadcast_addresses])
         if new_addresses := next(self.address_iterator, None):
             addresses.extend(new_addresses)
         if not addresses:
-            broadcast_addresses = await async_get_ipv4_broadcast_addresses(self.hass)
-            addresses.extend([str(address) for address in broadcast_addresses])
+            iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
+            addresses.extend([str(address) for address in iface_broadcast])
+        _LOGGER.debug("Discovery %s", addresses)
         if result := self.client.find_appliances(addresses=addresses, retries=1):
             await self._async_trigger_discovery(result)
+        _LOGGER.debug("Discovery ednded")
 
     async def _async_trigger_discovery(self, devices: list[LanDevice]) -> None:
         """Trigger config flows for discovered devices."""
@@ -177,14 +206,16 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             if existing:
                 # If address changed, we need to handle it
                 if device.address != existing.appliance.address:
-                    _LOGGER.error("Discovered changed device %r", device)
+                    _LOGGER.warning("DEV: Discovered changed device %r", device)
                     changed_devices.append((device, existing))
             else:
-                _LOGGER.error("Discovered device %r", device)
+                _LOGGER.warning("DEV: Discovered device %r", device)
                 if supported_appliance(conf, device):
                     new_devices.append(device)
                 else:
-                    _LOGGER.error("Ignored device %s", device)
+                    _LOGGER.warning("DEV: Ignored device %s", device)
+        _LOGGER.warning("New addresses: %s", changed_devices)
+        _LOGGER.warning("New devices: %s", new_devices)
         # hass.async_create_task(
         #     hass.config_entries.flow.async_init(
         #         DOMAIN,
@@ -194,6 +225,8 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         # )
 
     async def _process_appliance(self, device: dict):
+        _LOGGER.debug("conf=%s", self.data)
+        _LOGGER.debug("device=%s", device)
         if device.get(CONF_EXCLUDE, False):
             _LOGGER.debug("Excluded appliance %s", dict)
             return
