@@ -22,8 +22,8 @@ _SUPPORTABLE_APPLIANCES = {
 def supported_appliance(conf: dict, appliance: LanDevice) -> bool:
     """Checks if appliance is supported by integration"""
     included = conf.get(CONF_INCLUDE, [])
-    for appliance_type, appliance_check in _SUPPORTABLE_APPLIANCES.items():
-        if appliance_type in included and appliance_check(appliance_type):
+    for type_id, check in _SUPPORTABLE_APPLIANCES.items():
+        if type_id in included and check(appliance.type):
             return True
     return False
 
