@@ -59,13 +59,15 @@ Platform | Description
 `humidifier` | Dehumidifier entity. Depending on the model following modes are supported: `Set`, `Continuos`, `Smart` (_if supported_), `Dry` (_if supported_), `Antimould` (_if supported_), `Purifier` (_if supported_).
 `fan` | Fan entity for controlling dehumidifier fan. Three preset modes are available: `Low`, `Medium` and `High`.
 `binary_sensor` | Problem sensor indicating when tank is full.
-`binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
+`binary_sensor` | Problem sensor indicating when tank is removed  (_created if device announces that pump is supported_).
+`binary_sensor` | Problem sensor indicating when filter needs cleaning (_created if device announces that filter is supported_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensors for current relative humidity measured by dehumidifier.
 `sensor` | Sensor for current temperature measured by dehumidifier.
-`sensor` | Sensor for water level in the tank  (_enabled if device announces that water level is not 0% or 100%_).
-`switch` | Switch ion mode on and off (_enabled if device announces that it is supported_)
-`switch` | Switch pump on and off (_enabled if device announces that it is supported_)
+`sensor` | Sensor for water level in the tank (_created if device announces that water level is supported_).
+`sensor` | Sensor with value of error code of the appliance (_disabled by default_).
+`switch` | Switch ion mode on and off (_created if device announces that (an)ion mode is supported_)
+`switch` | Switch pump on and off (_created if device announces that pump is supported_)
 `switch` | Switch sleep mode on and off (_disabled by default_)
 `switch` | Switch to activate beep on action (_disabled by default_)
 
@@ -79,6 +81,7 @@ Platform | Description
 `binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensor for outside temperature measured by air conditioner.
+`sensor` | Sensor with value of error code of the appliance (_disabled by default_).
 `switch` | Switch purifier mode on and off (_enabled if device announces that it is supported_)
 `switch` | Switch dryer mode on and off (_disabled by default_)
 `switch` | Switch sleep mode on and off (_disabled by default_)
