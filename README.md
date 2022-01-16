@@ -101,6 +101,10 @@ https://github.com/MiguelCosta/Dehumidifier_Comfee_Card
 
 https://github.com/sicknesz/midea-inventor-card
 
+## Notice
+
+Midea, Inventor, Comfee', Pro Breeze, and other names are trademarks of their respective owners.
+
 [add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=midea_dehumidifier_lan
 [add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
 [hacs]: https://github.com/custom-components/hacs
