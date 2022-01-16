@@ -119,7 +119,7 @@ async def test_advanced_settings_config_flow(hass: HomeAssistant):
     assert values[CONF_APPID] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPID]
     assert values[CONF_APPKEY] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPKEY]
     assert values[CONF_BROADCAST_ADDRESS] == ""
-    assert not values[CONF_INCLUDE]
+    assert values[CONF_INCLUDE] == ["0xa1"]
 
 
 async def test_advanced_settings_config_flow_success(
@@ -175,6 +175,7 @@ async def test_advanced_settings_config_flow_success_network(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input=user_input
     )
+    print(result)
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["title"] == "Midea Dehumidifiers"
     assert result["data"]
@@ -182,7 +183,7 @@ async def test_advanced_settings_config_flow_success_network(
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
     assert result["data"][CONF_APPKEY] == "test_appkey"
     assert result["data"][CONF_APPID] == 1000
-    assert result["data"][CONF_BROADCAST_ADDRESS] == "192.0.2.255"
+    assert result["data"][CONF_BROADCAST_ADDRESS] == ["192.0.2.255"]
     assert len(result["data"]["devices"]) == 1
     assert result["result"]
 
@@ -215,7 +216,7 @@ async def test_advanced_settings_config_invalid_network(hass: HomeAssistant):
     assert values[CONF_BROADCAST_ADDRESS] == "655.123.123.333"
     assert result["description_placeholders"]
     assert result["description_placeholders"].get("cause") == "655.123.123.333"
-    assert not values[CONF_INCLUDE]
+    assert values[CONF_INCLUDE] == ["0xa1"]
 
 
 async def test_advanced_settings_config_flow_success_use_cloud(
