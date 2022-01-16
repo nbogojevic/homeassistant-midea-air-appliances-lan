@@ -13,12 +13,15 @@ from homeassistant.components.network import async_get_ipv4_broadcast_addresses
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_API_VERSION,
+    CONF_BROADCAST_ADDRESS,
     CONF_DEVICES,
+    CONF_DISCOVERY,
     CONF_EXCLUDE,
     CONF_ID,
     CONF_IP_ADDRESS,
     CONF_NAME,
     CONF_PASSWORD,
+    CONF_SCAN_INTERVAL,
     CONF_TOKEN,
     CONF_UNIQUE_ID,
     CONF_USERNAME,
@@ -49,20 +52,21 @@ from custom_components.midea_dehumidifier_lan.api import (
 from custom_components.midea_dehumidifier_lan.const import (
     APPLIANCE_REFRESH_COOLDOWN,
     APPLIANCE_REFRESH_INTERVAL,
+    APPLIANCE_SCAN_INTERVAL,
     CONF_APPID,
     CONF_APPKEY,
     CONF_TOKEN_KEY,
-    CONF_USE_CLOUD,
+    DISCOVERY_CLOUD,
+    DISCOVERY_WAIT,
+    DISCOVERY_IGNORE,
+    DISCOVERY_LAN,
     UNKNOWN_IP,
     UNIQUE_DEHUMIDIFIER_PREFIX,
     DOMAIN,
 )
-from custom_components.midea_dehumidifier_lan.util import domain
+
 
 _LOGGER = logging.getLogger(__name__)
-
-
-DISCOVERY_INTERVAL = timedelta(minutes=2)
 
 
 ADDITIONAL_ADDRESSES = iter(
@@ -82,53 +86,61 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         self.coordinators: list[ApplianceUpdateCoordinator] = []
-        self.use_cloud = config_entry.data.get(CONF_USE_CLOUD, False)
 
         self.cloud = None
         self.hass = hass
-        self.entry = config_entry
+        self.config_entry = config_entry
+        self.data = {}
         self.client = MideaClient()
         self.errors = []
         self.failed_setup = []
         self._updated_conf = False
         self.remove_discovery: CALLBACK_TYPE | None = None
-        self.address_iterator: Iterator[list[str]] = iter([["255.255.255.255"]])
+        self.address_iterator: Iterator[list[str]] = iter([])
 
-    async def async_startup(self) -> None:
+    async def _setup_discovery(self) -> None:
         """Startup-time setup"""
 
-        async def _async_discovery(*_: Any) -> None:
-            if result := await self._async_discover():
-                await self._async_trigger_discovery(result)
-
-        self.remove_discovery = async_track_time_interval(
-            self.hass, _async_discovery, DISCOVERY_INTERVAL
-        )
-        self.address_iterator = ADDITIONAL_ADDRESSES
+        broadcast_address: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
+        _LOGGER.debug("broadcast_address=%s", broadcast_address)
+        self.address_iterator = iter([broadcast_address])
+        scan_interval = self.data.get(CONF_SCAN_INTERVAL, APPLIANCE_SCAN_INTERVAL)
+        _LOGGER.debug("scan_interval=%s", scan_interval)
+        if scan_interval:
+            self.remove_discovery = async_track_time_interval(
+                self.hass, self._async_discover, timedelta(minutes=scan_interval)
+            )
 
     async def async_setup(self) -> None:
         """
         Sets up appliances and creates an update coordinator for
         each one
         """
-        data = {**self.entry.data}
+        self.data = {**self.config_entry.data}
         self.errors = {}
         self._updated_conf = False
 
-        # TODO Support unloading of when device change
-        for device in data[CONF_DEVICES]:
-            await self._process_appliance(data, device)
+        await self._setup_discovery()
+
+        devices = []
+        for device_conf in self.data[CONF_DEVICES]:
+            device = {**device_conf}
+            await self._process_appliance(device)
+            devices.append(device)
+        self.data[CONF_DEVICES] = devices
 
         for coordinator in self.coordinators:
             await coordinator.async_config_entry_first_refresh()
 
         if self._updated_conf:
-            self.hass.config_entries.async_update_entry(self.entry, data=data)
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=self.data
+            )
 
         if self.errors:
             raise ConfigEntryNotReady(str(self.errors))
 
-    async def _async_discover(self) -> list[LanDevice]:
+    async def _async_discover(self, *_: Any) -> None:
         """Discover Midea Appliances on configured network interfaces."""
         addresses = []
         if new_addresses := next(self.address_iterator, None):
@@ -136,49 +148,43 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         if not addresses:
             broadcast_addresses = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses.extend([str(address) for address in broadcast_addresses])
-        return self.client.find_appliances(addresses=addresses, retries=1)
+        if result := self.client.find_appliances(addresses=addresses, retries=1):
+            await self._async_trigger_discovery(result)
 
     async def _async_trigger_discovery(self, devices: list[LanDevice]) -> None:
         """Trigger config flows for discovered devices."""
-        for config_entry_id, value in domain(self.hass).items():
-            config_entry = self.hass.config_entries.async_get_entry(config_entry_id)
-            if not config_entry:
-                _LOGGER.error(
-                    "Unable to load config entry %s for %s", config_entry_id, DOMAIN
-                )
-                break
-            hub = cast(Hub, value)
-            conf = {**config_entry.data}
-            dev_confs = []
-            for dev_data in config_entry.data[CONF_DEVICES]:
-                dev_conf = {**dev_data}
-                dev_conf.setdefault(CONF_USE_CLOUD, conf[CONF_USE_CLOUD])
-                dev_confs.append(dev_conf)
-            conf[CONF_DEVICES] = dev_confs
-            new_devices = []
-            changed_devices = []
 
-            for device in devices:
-                existing = next(
-                    (
-                        coord
-                        for coord in hub.coordinators
-                        if coord.appliance.serial_number == device.serial_number
-                    ),
-                    None,
-                )
-                if existing:
-                    # If address changed, we need to handle it
-                    if device.address != existing.appliance.address:
-                        _LOGGER.error("Discovered changed device %r", device)
-                        changed_devices.append((device, existing))
+        conf = self.data
+        dev_confs = []
+        for dev_data in conf[CONF_DEVICES]:
+            dev_conf = {**dev_data}
+            dev_conf.setdefault(CONF_DISCOVERY, DISCOVERY_LAN)
+            dev_conf.setdefault(CONF_IP_ADDRESS, UNKNOWN_IP)
+            dev_confs.append(dev_conf)
+        conf[CONF_DEVICES] = dev_confs
+        new_devices = []
+        changed_devices = []
+
+        for device in devices:
+            existing = next(
+                (
+                    coord
+                    for coord in self.coordinators
+                    if coord.appliance.serial_number == device.serial_number
+                ),
+                None,
+            )
+            if existing:
+                # If address changed, we need to handle it
+                if device.address != existing.appliance.address:
+                    _LOGGER.error("Discovered changed device %r", device)
+                    changed_devices.append((device, existing))
+            else:
+                _LOGGER.error("Discovered device %r", device)
+                if supported_appliance(conf, device):
+                    new_devices.append(device)
                 else:
-                    _LOGGER.error("Discovered device %r", device)
-                    if supported_appliance(conf, device):
-                        new_devices.append(device)
-                    else:
-                        _LOGGER.error("Ignored device %s", device)
-            break
+                    _LOGGER.error("Ignored device %s", device)
         # hass.async_create_task(
         #     hass.config_entries.flow.async_init(
         #         DOMAIN,
@@ -187,23 +193,24 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         #     )
         # )
 
-    async def _process_appliance(self, data: dict, device: dict):
+    async def _process_appliance(self, device: dict):
         if device.get(CONF_EXCLUDE, False):
             _LOGGER.debug("Excluded appliance %s", dict)
             return
-        use_cloud = device.get(CONF_USE_CLOUD, self.use_cloud)
+        discovery_mode = device.get(CONF_DISCOVERY)
         # We are waiting for appliance to come online
-        if not use_cloud and device.get(CONF_IP_ADDRESS) == UNKNOWN_IP:
-            _LOGGER.debug("Waiting for appliance discovery %s", dict)
+        if discovery_mode == DISCOVERY_WAIT:
+            _LOGGER.debug("Waiting for appliance discovery %s", device)
             return
-        need_cloud = use_cloud
+        need_cloud = discovery_mode == DISCOVERY_CLOUD
+        lan_mode = discovery_mode == DISCOVERY_LAN
         version = device.get(CONF_API_VERSION, 3)
         need_token = (
-            not use_cloud
+            discovery_mode == DISCOVERY_LAN
             and version >= 3
             and (not device.get(CONF_TOKEN) or not device.get(CONF_TOKEN_KEY))
         )
-        if not use_cloud and need_token:
+        if need_token:
             _LOGGER.warning(
                 "Appliance %s, id=%s has no token,"
                 " trying to obtain it from Midea cloud API",
@@ -215,10 +222,10 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             try:
                 self.cloud = await self.hass.async_add_executor_job(
                     self.client.connect_to_cloud,
-                    data[CONF_USERNAME],
-                    data[CONF_PASSWORD],
-                    data[CONF_APPKEY],
-                    data[CONF_APPID],
+                    self.data[CONF_USERNAME],
+                    self.data[CONF_PASSWORD],
+                    self.data[CONF_APPKEY],
+                    self.data[CONF_APPID],
                 )
             except AuthenticationError as ex:
                 raise ConfigEntryAuthFailed(
@@ -231,11 +238,11 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         try:
             appliance = await self.hass.async_add_executor_job(
                 self.client.appliance_state,
-                device[CONF_IP_ADDRESS] if not need_cloud else None,  # ip
+                device[CONF_IP_ADDRESS] if lan_mode else None,  # ip
                 device.get(CONF_TOKEN),  # token
                 device.get(CONF_TOKEN_KEY),  # key
                 self.cloud,  # cloud
-                use_cloud,  # use_cloud
+                need_cloud,  # use_cloud
                 device[CONF_ID],  # id
             )
             if appliance is not None:
@@ -294,10 +301,11 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         self.appliance = appliance
         self.updating = {}
         self.wait_for_update = False
-        self.use_cloud: bool = config.get(CONF_USE_CLOUD, False)
+        self.discovery_mode = config.get(CONF_DISCOVERY, DISCOVERY_IGNORE)
+        self.use_cloud: bool = self.discovery_mode == DISCOVERY_CLOUD
 
     def _cloud(self):
-        if self.use_cloud or self.hub.use_cloud:
+        if self.use_cloud:
             if not self.hub.cloud:
                 raise UpdateFailed("Midea cloud API was not initialized")
             return self.hub.cloud
@@ -339,6 +347,16 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     def is_dehumidifier(self) -> bool:
         """True if appliance is dehumidifier"""
         return is_dehumidifier(self.appliance)
+
+    @final
+    def dehumidifier(self) -> DehumidifierAppliance:
+        """Returns state as dehumidifier"""
+        return cast(DehumidifierAppliance, self.appliance.state)
+
+    @final
+    def airconditioner(self) -> AirConditionerAppliance:
+        """Returns state as air conditioner"""
+        return cast(AirConditionerAppliance, self.appliance.state)
 
     async def async_apply(self, args: dict) -> None:
         """Applies changes to device"""

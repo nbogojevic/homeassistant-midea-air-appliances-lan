@@ -9,7 +9,9 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_API_VERSION,
+    CONF_BROADCAST_ADDRESS,
     CONF_DEVICES,
+    CONF_DISCOVERY,
     CONF_EXCLUDE,
     CONF_ID,
     CONF_IP_ADDRESS,
@@ -21,66 +23,28 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv
-import voluptuous as vol
-
 
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_APPID,
     CONF_APPKEY,
-    CONF_BROADCAST_ADDRESS,
-    CONF_DETECT_AC_APPLIANCES,
     CONF_TOKEN_KEY,
-    CONF_USE_CLOUD,
+    CONF_USE_CLOUD_OBSOLETE,
     CURRENT_CONFIG_VERSION,
-    UNKNOWN_IP,
+    DISCOVERY_CLOUD,
+    DISCOVERY_IGNORE,
+    DISCOVERY_LAN,
+    DISCOVERY_WAIT,
     DOMAIN,
     PLATFORMS,
+    UNKNOWN_IP,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 from custom_components.midea_dehumidifier_lan.util import domain
 
+
 _LOGGER = logging.getLogger(__name__)
-
-
-APPLIANCES_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_UNIQUE_ID): cv.string,
-        vol.Required(CONF_ID): cv.string,
-        vol.Required(CONF_TYPE): cv.string,
-        vol.Required(CONF_NAME): cv.string,
-        vol.Required(CONF_IP_ADDRESS, default=UNKNOWN_IP): cv.string,
-        vol.Required(CONF_API_VERSION, default=3): int,
-        vol.Optional(CONF_TOKEN): cv.string,
-        vol.Optional(CONF_TOKEN_KEY): cv.string,
-        vol.Optional(CONF_EXCLUDE, default=False): bool,
-        vol.Optional(CONF_USE_CLOUD, default=False): bool,
-    }
-)
-
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: vol.Schema(
-            {
-                vol.Optional(CONF_USERNAME): cv.string,
-                vol.Optional(CONF_PASSWORD): cv.string,
-                vol.Optional(CONF_APPKEY): cv.string,
-                vol.Optional(CONF_APPID): cv.string,
-                vol.Optional(CONF_USE_CLOUD): bool,
-                vol.Optional(CONF_DETECT_AC_APPLIANCES, default=False): bool,
-                vol.Optional(CONF_BROADCAST_ADDRESS, default=[]): vol.All(
-                    cv.ensure_list, [cv.string]
-                ),
-                vol.Optional(CONF_DEVICES): vol.All(
-                    cv.ensure_list, [APPLIANCES_SCHEMA]
-                ),
-            }
-        )
-    },
-    extra=vol.ALLOW_EXTRA,
-)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -91,7 +55,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hub = Hub(hass, entry)
         domain(hass)[entry.entry_id] = hub
 
-        await hub.async_startup()
     await hub.async_setup()
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
@@ -112,27 +75,53 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     _LOGGER.debug("Migrating from version %s", config_entry.version)
 
     if config_entry.version < CURRENT_CONFIG_VERSION:
+        old_conf = config_entry.data
+        new_conf = {
+            CONF_APPKEY: old_conf.get(CONF_APPKEY),
+            CONF_APPID: old_conf.get(CONF_APPID),
+            CONF_BROADCAST_ADDRESS: old_conf.get(CONF_BROADCAST_ADDRESS),
+            CONF_USERNAME: old_conf.get(CONF_USERNAME),
+            CONF_PASSWORD: old_conf.get(CONF_PASSWORD),
+        }
+        if not new_conf.get(CONF_APPID) or not new_conf.get(CONF_APPKEY):
+            new_conf[CONF_APPKEY] = DEFAULT_APPKEY
+            new_conf[CONF_APPID] = DEFAULT_APP_ID
+        new_conf.setdefault(CONF_BROADCAST_ADDRESS, [])
 
-        conf = {**config_entry.data}
-        dev_confs = []
-        conf.setdefault(CONF_USE_CLOUD, False)
+        new_devices = []
+        new_conf[CONF_DEVICES] = new_devices
 
-        for dev_data in config_entry.data[CONF_DEVICES]:
-            dev_conf = {**dev_data}
-            dev_conf.setdefault(CONF_USE_CLOUD, conf[CONF_USE_CLOUD])
-            dev_conf.setdefault(CONF_EXCLUDE, False)
-            dev_confs.append(dev_conf)
-
-        conf[CONF_DEVICES] = dev_confs
-        if not conf.get(CONF_APPID) or not conf.get(CONF_APPKEY):
-            conf[CONF_APPKEY] = DEFAULT_APPKEY
-            conf[CONF_APPID] = DEFAULT_APP_ID
-        conf.setdefault(CONF_BROADCAST_ADDRESS, [])
-        conf.setdefault(CONF_USE_CLOUD, False)
+        old: dict
+        for old in config_entry.data[CONF_DEVICES]:
+            new = {
+                CONF_API_VERSION: old.get(CONF_API_VERSION),
+                CONF_DISCOVERY: old.get(CONF_DISCOVERY),
+                CONF_ID: old.get(CONF_ID),
+                CONF_IP_ADDRESS: old.get(CONF_IP_ADDRESS),
+                CONF_NAME: old.get(CONF_NAME),
+                CONF_TOKEN: old.get(CONF_TOKEN),
+                CONF_TOKEN_KEY: old.get(CONF_TOKEN_KEY),
+                CONF_TYPE: old.get(CONF_TYPE),
+                CONF_UNIQUE_ID: old.get(CONF_UNIQUE_ID),
+            }
+            if not new.get(CONF_DISCOVERY):
+                if old.get(CONF_USE_CLOUD_OBSOLETE):
+                    new[CONF_DISCOVERY] = DISCOVERY_CLOUD
+                elif old.get(CONF_EXCLUDE):
+                    new[CONF_DISCOVERY] = DISCOVERY_IGNORE
+                elif old.get(CONF_IP_ADDRESS) == UNKNOWN_IP:
+                    new[CONF_DISCOVERY] = DISCOVERY_WAIT
+                else:
+                    new[CONF_DISCOVERY] = DISCOVERY_LAN
+            if not new.get(CONF_IP_ADDRESS):
+                new[CONF_IP_ADDRESS] = UNKNOWN_IP
+            new_devices.append(new)
 
         config_entry.version = CURRENT_CONFIG_VERSION
-        _LOGGER.debug("Migrating configuration from %s to %s", config_entry.data, conf)
-        if hass.config_entries.async_update_entry(config_entry, data=conf):
+        _LOGGER.debug(
+            "Migrating configuration from %s to %s", config_entry.data, new_conf
+        )
+        if hass.config_entries.async_update_entry(config_entry, data=new_conf):
             _LOGGER.info("Configuration migrated to version %s", config_entry.version)
         else:
             _LOGGER.debug(
