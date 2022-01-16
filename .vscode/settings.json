@@ -5,6 +5,6 @@
         "--max-line-length=88"
     ],
     "files.associations": {
-        "*.yaml": "home-assistant"
+        "*.yaml": "yaml"
     }
 }
