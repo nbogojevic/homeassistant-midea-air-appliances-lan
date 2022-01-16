@@ -9,7 +9,7 @@
     "@nbogojevic"
   ],
   "requirements": [
-    "midea-beautiful-air==0.8.11"
+    "midea-beautiful-air==0.8.15"
   ],
   "after_dependencies": [
     "network"
