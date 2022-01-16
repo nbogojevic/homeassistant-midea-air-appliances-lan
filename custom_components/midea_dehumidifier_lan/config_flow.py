@@ -427,9 +427,11 @@ def _get_broadcast_addresses(user_input: dict[str, Any]):
         try:
             ipaddress.IPv4Network(addr)
             addresses.append(addr)
+        except ValueError as ex:
+            raise _FlowException("invalid_ip_range", str(ex)) from ex
         except Exception as ex:
             _LOGGER.warning("Invalid IP address %s", addr, exc_info=True)
-            raise _FlowException("invalid_ip_address", addr) from ex
+            raise _FlowException("invalid_ip_range", addr) from ex
     return addresses
 
 
@@ -470,9 +472,12 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         """Validates that cloud credentials are valid and discovers local appliances"""
 
         self._connect_to_cloud()
-        addresses = self.conf.get(CONF_BROADCAST_ADDRESS, [])
-        if isinstance(addresses, str):
-            addresses = [addresses]
+        conf_addresses = self.conf.get(CONF_BROADCAST_ADDRESS, [])
+        if isinstance(conf_addresses, str):
+            conf_addresses = [conf_addresses]
+        addresses = []
+        for addr in conf_addresses:
+            addresses.append(str(ipaddress.IPv4Network(addr).broadcast_address))
         self.appliances = self.client.find_appliances(self.cloud, addresses=addresses)
         if self.appliances:
             self.devices_conf = [{} for _ in self.appliances]
