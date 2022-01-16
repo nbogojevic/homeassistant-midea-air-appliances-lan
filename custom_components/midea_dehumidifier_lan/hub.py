@@ -8,7 +8,7 @@ import asyncio
 from datetime import timedelta
 import itertools
 import logging
-from typing import Any, Iterator, cast, final
+from typing import Any, Final, Iterator, Tuple, cast, final
 
 from homeassistant.components.network import async_get_ipv4_broadcast_addresses
 from homeassistant.config_entries import ConfigEntry
@@ -23,6 +23,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_TOKEN,
+    CONF_TYPE,
     CONF_UNIQUE_ID,
     CONF_USERNAME,
 )
@@ -56,6 +57,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     CONF_APPID,
     CONF_APPKEY,
     CONF_TOKEN_KEY,
+    DEFAULT_DISCOVERY_MODE,
     DISCOVERY_CLOUD,
     DISCOVERY_WAIT,
     DISCOVERY_IGNORE,
@@ -67,6 +69,8 @@ from custom_components.midea_dehumidifier_lan.const import (
 
 
 _LOGGER = logging.getLogger(__name__)
+
+_NUMBER_OF_BROADCASTS: Final = 64
 
 
 ADDITIONAL_ADDRESSES = iter(
@@ -107,29 +111,33 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             self.remove_discovery = None
 
         self.broadcast_addresses: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
-        _LOGGER.debug("broadcast_address=%s", self.broadcast_addresses)
+        _LOGGER.debug("Using broadcast address %s", self.broadcast_addresses)
         has_waiting = any(
             device
             for device in self.data[CONF_DEVICES]
             if device[CONF_DISCOVERY] == DISCOVERY_WAIT
         )
-        directed_addresses = []
         if has_waiting and self.broadcast_addresses:
-            for addr in self.broadcast_addresses:
-                if addr == "255.255.255.255":
-                    continue
-                if addr[-4:] == ".255":
-                    base = addr[:-3]
 
-                    def ip_block():
-                        for i in range(0, 254, 32):
-                            yield [base + str(j) for j in range(i, i + 32)]
+            def ip_iteration():
 
-                    directed_addresses.append(ip_block())
+                for addr in self.broadcast_addresses:
+                    if addr == "255.255.255.255":
+                        continue
+                    if addr[-4:] == ".255":
+                        base = addr[:-3]
+                        _LOGGER.debug("Scanning IPv4 addresses %s0-%s254", base, base)
+                        for i in range(0, 254, _NUMBER_OF_BROADCASTS):
+                            yield [
+                                base + str(j)
+                                for j in range(i, i + _NUMBER_OF_BROADCASTS)
+                            ]
 
-        self.address_iterator = itertools.chain(*directed_addresses)
+            self.address_iterator = itertools.cycle(ip_iteration())
+        else:
+            self.address_iterator = iter([])
         scan_interval = self.data.get(CONF_SCAN_INTERVAL, APPLIANCE_SCAN_INTERVAL)
-        _LOGGER.debug("scan_interval=%s", scan_interval)
+        _LOGGER.debug("Scan interval %s minute(s)", scan_interval)
         if scan_interval:
             self.remove_discovery = async_track_time_interval(
                 self.hass, self._async_discover, timedelta(minutes=scan_interval)
@@ -166,7 +174,6 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
 
     async def _async_discover(self, *_: Any) -> None:
         """Discover Midea Appliances on configured network interfaces."""
-        _LOGGER.debug("Discovery started")
         addresses = []
         addresses.extend([str(address) for address in self.broadcast_addresses])
         if new_addresses := next(self.address_iterator, None):
@@ -174,25 +181,88 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         if not addresses:
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses.extend([str(address) for address in iface_broadcast])
-        _LOGGER.debug("Discovery %s", addresses)
-        if result := self.client.find_appliances(addresses=addresses, retries=1):
+        _LOGGER.debug("Initiated discovery via %s", addresses)
+        if result := self.client.find_appliances(
+            addresses=addresses, cloud=self.cloud, retries=1
+        ):
             await self._async_trigger_discovery(result)
-        _LOGGER.debug("Discovery ednded")
 
     async def _async_trigger_discovery(self, devices: list[LanDevice]) -> None:
         """Trigger config flows for discovered devices."""
 
         conf = self.data
-        dev_confs = []
+        dev_confs: list[dict] = []
         for dev_data in conf[CONF_DEVICES]:
             dev_conf = {**dev_data}
-            dev_conf.setdefault(CONF_DISCOVERY, DISCOVERY_LAN)
+            dev_conf.setdefault(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
             dev_conf.setdefault(CONF_IP_ADDRESS, UNKNOWN_IP)
             dev_confs.append(dev_conf)
         conf[CONF_DEVICES] = dev_confs
-        new_devices = []
-        changed_devices = []
+        new_devices: list[LanDevice] = []
+        changed_devices: list[Tuple[LanDevice, ApplianceUpdateCoordinator]] = []
 
+        self._iterate_devices(devices, conf, new_devices, changed_devices)
+
+        need_reload = False
+        updated_conf = False
+        for new in new_devices:
+            for known in dev_confs:
+                if known[CONF_UNIQUE_ID] == new.serial_number:
+                    if known[CONF_DISCOVERY] == DISCOVERY_WAIT:
+                        update = {
+                            CONF_DISCOVERY: DISCOVERY_LAN,
+                            CONF_API_VERSION: new.version,
+                            CONF_ID: new.appliance_id,
+                            CONF_IP_ADDRESS: new.address,
+                            CONF_NAME: new.name,
+                            CONF_TOKEN_KEY: new.key,
+                            CONF_TOKEN: new.token,
+                            CONF_TYPE: new.type,
+                            CONF_UNIQUE_ID: new.serial_number,
+                        }
+                        _LOGGER.warning("Updating discovered device %s", new)
+                        _LOGGER.warning("Updating old value %s", known)
+                        _LOGGER.warning("New value %s", update)
+
+                        known.update(update)
+                        updated_conf = True
+                        need_reload = True
+                    if known[CONF_DISCOVERY] != DISCOVERY_LAN:
+                        _LOGGER.warning(
+                            "Device %s in discovery mode %s found on address %s."
+                            " It can be configured for LAN access.",
+                            new,
+                            known[CONF_DISCOVERY],
+                            new.address,
+                        )
+                    break
+        for changed in changed_devices:
+            for known in dev_confs:
+                if known[CONF_UNIQUE_ID] == changed[1].appliance.serial_number:
+                    if known[CONF_DISCOVERY] == DISCOVERY_LAN:
+                        changed[1].appliance.address = changed[0].address
+                        known[CONF_IP_ADDRESS] = changed[0].address
+                        updated_conf = True
+                        break
+                    _LOGGER.warning(
+                        "Device %s in discovery mode %s found on address %s."
+                        " It can be configured for LAN access.",
+                        changed[1].appliance,
+                        changed[1].discovery_mode,
+                        changed[0].address,
+                    )
+
+        if updated_conf:
+            self.hass.config_entries.async_update_entry(
+                entry=self.config_entry,
+                data=self.data,
+            )
+        if need_reload:
+            self.hass.async_create_task(
+                self.hass.config_entries.async_reload(self.config_entry.entry_id)
+            )
+
+    def _iterate_devices(self, devices, conf, new_devices, changed_devices):
         for device in devices:
             existing = next(
                 (
@@ -212,16 +282,9 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 if supported_appliance(conf, device):
                     new_devices.append(device)
                 else:
-                    _LOGGER.warning("DEV: Ignored device %s", device)
-        _LOGGER.warning("New addresses: %s", changed_devices)
-        _LOGGER.warning("New devices: %s", new_devices)
-        # hass.async_create_task(
-        #     hass.config_entries.flow.async_init(
-        #         DOMAIN,
-        #         context={"source": config_entries.SOURCE_DISCOVERY},
-        #         data={},
-        #     )
-        # )
+                    _LOGGER.debug("DEV: Ignored device %s", device)
+        _LOGGER.debug("Changed devices: %s", changed_devices)
+        _LOGGER.debug("Discovered new devices: %s", new_devices)
 
     async def _process_appliance(self, device: dict):
         _LOGGER.debug("conf=%s", self.data)
@@ -234,7 +297,8 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         if discovery_mode == DISCOVERY_WAIT:
             _LOGGER.debug("Waiting for appliance discovery %s", device)
             return
-        need_cloud = discovery_mode == DISCOVERY_CLOUD
+        use_cloud = discovery_mode == DISCOVERY_CLOUD
+        need_cloud = use_cloud
         lan_mode = discovery_mode == DISCOVERY_LAN
         version = device.get(CONF_API_VERSION, 3)
         need_token = (
@@ -274,7 +338,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 device.get(CONF_TOKEN),  # token
                 device.get(CONF_TOKEN_KEY),  # key
                 self.cloud,  # cloud
-                need_cloud,  # use_cloud
+                use_cloud,  # use_cloud
                 device[CONF_ID],  # id
             )
             if appliance is not None:
@@ -407,7 +471,7 @@ class ApplianceEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self.coordinator = coordinator
         self.appliance = coordinator.appliance
-        self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.unique_id}"
+        self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.serial_number}"
         self._attr_name = str(self.appliance.name or self.unique_id) + self.name_suffix
         self._applying = False
 
@@ -452,7 +516,7 @@ class ApplianceEntity(CoordinatorEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        identifier = str(self.appliance.serial_number or self.appliance.unique_id)
+        identifier = str(self.appliance.serial_number or self.appliance.serial_number)
         return DeviceInfo(
             identifiers={(DOMAIN, str(identifier))},
             name=self.appliance.name,
