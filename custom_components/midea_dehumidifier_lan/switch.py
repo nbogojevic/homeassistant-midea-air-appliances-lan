@@ -29,7 +29,9 @@ class _MideaSwitchDescriptor:
     prefix: str
 
 
-_DISABLED_BY_DEFAULT: Final = ""
+_DISABLED_BY_DEFAULT: Final = ":disabled:"
+_ENABLED_BY_DEFAULT: Final = ":enabled:"
+_ALWAYS_CREATE: Final = [_DISABLED_BY_DEFAULT, _ENABLED_BY_DEFAULT]
 
 ION_MODE_SWITCH: Final = _MideaSwitchDescriptor(
     attr="ion_mode",
@@ -135,13 +137,21 @@ async def async_setup_entry(
     for switch in DEHIMIDIFER_SWITCHES:
         for coord in hub.coordinators:
             if coord.is_dehumidifier():
-                switches.append(MideaSwitch(coord, switch))
+                if (
+                    switch.capability in _ALWAYS_CREATE
+                    or coord.dehumidifier().supports.get(switch.capability, False)
+                ):
+                    switches.append(MideaSwitch(coord, switch))
 
     # Air conditioner entities
     for switch in CLIMATE_SWITCHES:
         for coord in hub.coordinators:
             if coord.is_climate():
-                switches.append(MideaSwitch(coord, switch))
+                if (
+                    switch.capability in _ALWAYS_CREATE
+                    or coord.airconditioner().supports.get(switch.capability, False)
+                ):
+                    switches.append(MideaSwitch(coord, switch))
 
     async_add_entities(switches)
 
@@ -160,10 +170,8 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
         self._name_suffix = " " + descriptor.name.strip()
         self._attr_icon = descriptor.icon
         self._attr_entity_registry_enabled_default = False
-        if descriptor.capability:
-            supports = getattr(coordinator.appliance.state, "supports", {})
-            if supports.get(descriptor.capability, 0):
-                self._attr_entity_registry_enabled_default = True
+        if descriptor.capability == _DISABLED_BY_DEFAULT:
+            self._attr_entity_registry_enabled_default = True
 
         super().__init__(coordinator)
 

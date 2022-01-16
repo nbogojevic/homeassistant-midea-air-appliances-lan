@@ -37,7 +37,9 @@ async def async_setup_entry(
         if c.is_dehumidifier() and c.dehumidifier().supports.get("pump", False)
     )
     async_add_entities(
-        FilterReplacementSensor(c) for c in hub.coordinators if c.is_dehumidifier()
+        FilterReplacementSensor(c)
+        for c in hub.coordinators
+        if c.is_dehumidifier() and c.dehumidifier().supports.get("filter", False)
     )
     async_add_entities(
         DefrostingSensor(c) for c in hub.coordinators if c.is_dehumidifier()
