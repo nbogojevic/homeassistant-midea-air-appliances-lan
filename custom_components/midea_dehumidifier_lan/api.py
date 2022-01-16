@@ -1,18 +1,18 @@
 """Library facade"""
 
+from homeassistant.const import CONF_INCLUDE
+
 import midea_beautiful as midea_beautiful_api
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
-
-from custom_components.midea_dehumidifier_lan.const import CONF_DETECT_AC_APPLIANCES
+from midea_beautiful.midea import APPLIANCE_TYPE_AIRCON, DEFAULT_APP_ID, DEFAULT_APPKEY
 
 
 def supported_appliance(conf: dict, appliance: LanDevice) -> bool:
     """Checks if appliance is supported by integration"""
     aircon = False
-    if conf.get(CONF_DETECT_AC_APPLIANCES, False):
+    if APPLIANCE_TYPE_AIRCON in conf.get(CONF_INCLUDE, []):
         aircon = AirConditionerAppliance.supported(appliance.type)
     return aircon or DehumidifierAppliance.supported(appliance.type)
 
