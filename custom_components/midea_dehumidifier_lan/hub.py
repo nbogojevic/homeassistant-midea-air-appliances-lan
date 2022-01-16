@@ -17,7 +17,6 @@ from homeassistant.const import (
     CONF_BROADCAST_ADDRESS,
     CONF_DEVICES,
     CONF_DISCOVERY,
-    CONF_EXCLUDE,
     CONF_ID,
     CONF_IP_ADDRESS,
     CONF_NAME,
@@ -227,11 +226,11 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
     async def _process_appliance(self, device: dict):
         _LOGGER.debug("conf=%s", self.data)
         _LOGGER.debug("device=%s", device)
-        if device.get(CONF_EXCLUDE, False):
-            _LOGGER.debug("Excluded appliance %s", dict)
-            return
         discovery_mode = device.get(CONF_DISCOVERY)
         # We are waiting for appliance to come online
+        if discovery_mode == DISCOVERY_IGNORE:
+            _LOGGER.debug("Ignored appliance for discovery %s", device)
+            return
         if discovery_mode == DISCOVERY_WAIT:
             _LOGGER.debug("Waiting for appliance discovery %s", device)
             return
