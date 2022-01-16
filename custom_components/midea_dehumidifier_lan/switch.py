@@ -47,13 +47,6 @@ PUMP_SWITCH: Final = _MideaSwitchDescriptor(
     capability="pump",
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-SLEEP_SWITCH: Final = _MideaSwitchDescriptor(
-    attr="sleep",
-    name="Sleep",
-    icon="mdi:weather-night",
-    capability=_DISABLED_BY_DEFAULT,
-    prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
-)
 DEHUMIDIFIER_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="beep_prompt",
     name="Beep",
@@ -61,11 +54,10 @@ DEHUMIDIFIER_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     capability=_DISABLED_BY_DEFAULT,
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-DEHIMIDIFER_SWITCHES: Final = [
+DEHUMIDIFER_SWITCHES: Final = [
     DEHUMIDIFIER_BEEP_SWITCH,
     ION_MODE_SWITCH,
     PUMP_SWITCH,
-    SLEEP_SWITCH,
 ]
 # Climate
 CLIMATE_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
@@ -134,7 +126,7 @@ async def async_setup_entry(
 
     switches = []
     # Dehumidifier sensors
-    for switch in DEHIMIDIFER_SWITCHES:
+    for switch in DEHUMIDIFER_SWITCHES:
         for coord in hub.coordinators:
             if coord.is_dehumidifier():
                 if (
@@ -169,9 +161,9 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
         self.attr = descriptor.attr
         self._name_suffix = " " + descriptor.name.strip()
         self._attr_icon = descriptor.icon
-        self._attr_entity_registry_enabled_default = False
-        if descriptor.capability == _DISABLED_BY_DEFAULT:
-            self._attr_entity_registry_enabled_default = True
+        self._attr_entity_registry_enabled_default = (
+            descriptor.capability != _DISABLED_BY_DEFAULT
+        )
 
         super().__init__(coordinator)
 

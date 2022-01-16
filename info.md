@@ -26,7 +26,6 @@ Platform | Description
 `sensor` | Sensor with value of error code of the appliance (_disabled by default_).
 `switch` | Switch ion mode on and off (_created if device announces that (an)ion mode is supported_)
 `switch` | Switch pump on and off (_created if device announces that pump is supported_)
-`switch` | Switch sleep mode on and off (_disabled by default_)
 `switch` | Switch to activate beep on action (_disabled by default_)
 
 
