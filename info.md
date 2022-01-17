@@ -1,3 +1,8 @@
+{% if prerelease %}
+# This is a pre-release version!
+---
+{% endif %}
+
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]][license]
@@ -8,7 +13,7 @@
 
 ![Midea Brands][logos]
 
-_Adds support for Midea dehumidifer appliances via local network_
+_Adds support for Midea air conditioning and dehumidifier appliances via local network. Support foir air condioning devices is in beta_
 
 **This component will set up the following entities for dehumidifiers.**
 
@@ -17,7 +22,7 @@ Platform | Description
 `humidifier` | Dehumidifier entity. Depending on the model following modes are supported: `Set`, `Continuos`, `Smart` (_if supported_), `Dry` (_if supported_), `Antimould` (_if supported_), `Purifier` (_if supported_).
 `fan` | Fan entity for controlling dehumidifier fan. Three preset modes are available: `Low`, `Medium` and `High`.
 `binary_sensor` | Problem sensor indicating when tank is full.
-`binary_sensor` | Problem sensor indicating when tank is removed  (_created if device announces that pump is supported_).
+`binary_sensor` | Problem sensor indicating when tank is removed (_created if device announces that pump is supported_).
 `binary_sensor` | Problem sensor indicating when filter needs cleaning (_created if device announces that filter is supported_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensors for current relative humidity measured by dehumidifier.
@@ -50,16 +55,16 @@ Platform | Description
 {% if not installed %}
 ## Installation
 
-1. Click install.
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Midea Appliance (LAN)".
+1. Click Install.
+1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Midea Air Appliances (LAN)".
 
 {% endif %}
 
 ## Configuration
 
-[![Add Midea Appliance (LAN)][add-integration-badge]][add-integration]
-* or search for "Midea Dehumidifier (LAN)"
-![Search for "Midea Appliance (LAN)"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/setup-choice.png)
+[![Add Midea Air Appliances (LAN)][add-integration-badge]][add-integration]
+* or search for "Midea Air Appliances (LAN)"
+![Search for "Midea Air Appliances (LAN)"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/setup-choice.png)
 * Sign-in with Midea app account - you may choose Midea app that corresponds to one you use (anyone should work).
 ![Setup midea App account"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/setup-account.png)
 * On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces.
@@ -82,7 +87,7 @@ https://github.com/sicknesz/midea-inventor-card
 [commits-shield]: https://img.shields.io/github/commit-activity/y/nbogojevic/midea-dehumidifier-lan.svg?style=for-the-badge
 [commits]: https://github.com/nbogojevic/midea-dehumidifier-lan/commits/master
 [hacs]: https://hacs.xyz
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
+[hacsbadge]: https://img.shields.io/badge/HACS-Default-blue.svg?style=for-the-badge
 [forum-shield]: https://img.shields.io/badge/community-forum-brightgreen.svg?style=for-the-badge
 [forum]: https://community.home-assistant.io/
 [license]: https://github.com/nbogojevic/midea-dehumidifier-lan/blob/main/LICENSE

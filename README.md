@@ -1,6 +1,6 @@
-This custom component for Home assistant adds support for Midea air conditioner and dehumidifier appliances via the local area network.
+This custom component for Home Assistant adds support for Midea air conditioner and dehumidifier appliances via the local area network.
 
-# homeassistant-midea-dehumidifier-lan
+# homeassistant-midea-air-appliances-lan
 
 [![Repository validation](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/actions/workflows/validate.yml)
 
@@ -12,11 +12,11 @@ Home Assistant custom component for controlling Midea appliance on local network
 ## Installation instruction
 
 ### HACS
-The easiest way to install the this integration is with [HACS](https://hacs.xyz/). First, install [HACS](https://hacs.xyz/docs/setup/download) if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Appliance (LAN)`, and click download.
+The easiest way to install this integration is with [HACS][hacs]. First, install [HACS][hacs-download] if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Air Appliances (LAN)`, and click download. After download, restart Home Assistant.
 
-Once the integration is installed, you can add it to the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Appliance (LAN)` or, using My Home Assistant service, you can click on:
+Once the integration is installed, you can add it to the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Air Appliances (LAN)` or, using My Home Assistant service, you can click on:
 
-[![Add Midea Appliance (LAN)][add-integration-badge]][add-integration]
+[![Add Midea Air Appliances (LAN)][add-integration-badge]][add-integration]
 
 ### Manual installation
 1. Update Home Assistant to version 2021.12 or newer.
@@ -24,20 +24,20 @@ Once the integration is installed, you can add it to the Home Assistant by going
 3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder.
 
 ### Configuring
-1. Add `Midea Appliance (LAN)` integration via UI.
+1. Add `Midea Air Appliances (LAN)` integration via UI.
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
 3. The integration will discover appliance on local network(s).
-4. If a appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
+4. If an appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
 
 ## Known issues
 
 * If IPv4 address of appliance changes, new IPv4 address will not be used until Home Assistant's restart.
 * If Home Assistant installation doesn't have access to physical network, the integration may not discover all appliances.
-* Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifier might use different names (e.g. `Boost` instead of `Dry`)
-* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea appliance integrations in combination with this one. To avoid problems use a single integration - this one 🙂.
+* Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifier might use different names (e.g., `Boost` instead of `Dry`)
+* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea appliance integrations in combination with this one. To avoid problems, use a single integration - this one 🙂.
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See tables below for more information.
-* Temperature sensor on dehumidifier is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
+* Temperature sensor on dehumidifier is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm, or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
 
 ## Supported appliances
 
@@ -45,7 +45,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * Inventor EVA ΙΟΝ Pro Wi-Fi (EP3-WiFi 16L/20L) (tested with 20L version)
 * Inventor Eva II Pro Wi-Fi (EVP-WF16L/20L)
 * Pro Breeze 30L Smart Dehumidifier with Wifi / App Control
-* Midea SmartDry dehumidifiers (22, 35, 50 pint models )
+* Midea SmartDry dehumidifiers (22, 35, 50 pint models)
 * Midea Cube dehumidifiers (20, 35, 50 pint models)
 
 Supported are V3 and V2 protocols that allow local network access. V3 protocol requires one connection to Midea cloud to get token and key needed for local network access. Some old models use V1 XML based protocol which is not supported. Some newer models use Tuya protocol.
@@ -59,7 +59,7 @@ Platform | Description
 `humidifier` | Dehumidifier entity. Depending on the model following modes are supported: `Set`, `Continuos`, `Smart` (_if supported_), `Dry` (_if supported_), `Antimould` (_if supported_), `Purifier` (_if supported_).
 `fan` | Fan entity for controlling dehumidifier fan. Three preset modes are available: `Low`, `Medium` and `High`.
 `binary_sensor` | Problem sensor indicating when tank is full.
-`binary_sensor` | Problem sensor indicating when tank is removed  (_created if device announces that pump is supported_).
+`binary_sensor` | Problem sensor indicating when tank is removed (_created if device announces that pump is supported_).
 `binary_sensor` | Problem sensor indicating when filter needs cleaning (_created if device announces that filter is supported_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensors for current relative humidity measured by dehumidifier.
@@ -107,8 +107,9 @@ Midea, Inventor, Comfee', Pro Breeze, and other names are trademarks of their re
 
 [add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=midea_dehumidifier_lan
 [add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
-[hacs]: https://github.com/custom-components/hacs
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=flat
+[hacs]: https://hacs.xyz
+[hacs-download]: https://hacs.xyz/docs/setup/download
+[hacsbadge]: https://img.shields.io/badge/HACS-Default-blue.svg?style=flat
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Nenad%20Bogojević-blue.svg?style=flat
 [releases-shield]: https://img.shields.io/github/release/nbogojevic/homeassistant-midea-dehumidifier-lan.svg?style=flat
 [releases]: https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/releases
