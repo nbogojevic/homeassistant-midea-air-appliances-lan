@@ -1,4 +1,4 @@
-"""Constants for Midea dehumidifier custom component"""
+"""Constants for Midea Air Appliance custom component"""
 from __future__ import annotations
 
 from typing import Final
@@ -10,7 +10,7 @@ from midea_beautiful.midea import SUPPORTED_APPS
 __version__ = "0.5.0"
 
 # Base component constants
-NAME: Final = "Midea Dehumidifier (LAN)"
+NAME: Final = "Midea Air Appliance (LAN)"
 UNIQUE_ID_PRE_PREFIX: Final = "midea_"
 UNIQUE_DEHUMIDIFIER_PREFIX: Final = "midea_dehumidifier_"
 UNIQUE_CLIMATE_PREFIX: Final = "midea_climate_"

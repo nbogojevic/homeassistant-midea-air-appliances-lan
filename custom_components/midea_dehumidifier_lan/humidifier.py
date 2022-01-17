@@ -49,7 +49,7 @@ async def async_setup_entry(
 
 # pylint: disable=too-many-ancestors
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
-    """(de)Humidifer entity for Midea appliances """
+    """(de)Humidifer entity for Midea dehumidifier"""
 
     _attr_device_class = HumidifierDeviceClass.DEHUMIDIFIER
     _attr_max_humidity = MAX_TARGET_HUMIDITY

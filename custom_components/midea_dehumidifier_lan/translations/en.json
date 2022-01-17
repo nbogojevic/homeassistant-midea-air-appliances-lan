@@ -44,7 +44,7 @@
           "broadcast_address": "Appliance or network broadcast address"
         },
         "title": "[%key:common::config_flow::title::reauth%]",
-        "description": "The Midea dehumidifier (LAN) integration needs to re-authenticate your account"
+        "description": "The Midea Air Appliance (LAN) integration needs to re-authenticate your account"
       }
     },
     "error": {
@@ -58,11 +58,8 @@
       "midea_client": "An error in communication with Midea API has occurred. See log for more information.",
       "unknown": "An unknown error has occurred. See log for more information."
     },
-    "create_entry": {
-      "default": "Successfully configured Midea appliance (LAN)."
-    },
     "abort": {
-      "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea dehumidifier (LAN).",
+      "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea Air Appliances (LAN).",
       "reauth_successful": "Re-authentication was successful",
       "no_configured_devices": "Nothing to configure"
     }

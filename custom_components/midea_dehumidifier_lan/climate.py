@@ -81,7 +81,7 @@ async def async_setup_entry(
 
 
 class AirConditionerEntity(ApplianceEntity, ClimateEntity):
-    """Air conditioner entity for Midea appliances """
+    """Climate entity for Midea air conditioner"""
 
     _attr_hvac_modes = HVAC_MODES
     _attr_fan_modes = FAN_MODES
