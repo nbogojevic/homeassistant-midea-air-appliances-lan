@@ -2,7 +2,7 @@ This custom component for Home Assistant adds support for Midea air conditioner 
 
 # homeassistant-midea-air-appliances-lan
 
-[![Repository validation](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/actions/workflows/validate.yml)
+[![Repository validation](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml)
 
 [![hacs][hacsbadge]][hacs]
 [![GitHub Release][releases-shield]][releases]
@@ -111,5 +111,5 @@ Midea, Inventor, Comfee', Pro Breeze, and other names are trademarks of their re
 [hacs-download]: https://hacs.xyz/docs/setup/download
 [hacsbadge]: https://img.shields.io/badge/HACS-Default-blue.svg?style=flat
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Nenad%20Bogojević-blue.svg?style=flat
-[releases-shield]: https://img.shields.io/github/release/nbogojevic/homeassistant-midea-dehumidifier-lan.svg?style=flat
-[releases]: https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/releases
+[releases-shield]: https://img.shields.io/github/release/nbogojevic/homeassistant-midea-air-appliances-lan.svg?style=flat
+[releases]: https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/releases

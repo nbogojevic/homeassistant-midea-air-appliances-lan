@@ -64,13 +64,13 @@ Platform | Description
 
 [![Add Midea Air Appliances (LAN)][add-integration-badge]][add-integration]
 * or search for "Midea Air Appliances (LAN)"
-![Search for "Midea Air Appliances (LAN)"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/setup-choice.png)
+![Search for "Midea Air Appliances (LAN)"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-choice.png)
 * Sign-in with Midea app account - you may choose Midea app that corresponds to one you use (anyone should work).
-![Setup midea App account"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/setup-account.png)
+![Setup midea App account"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-account.png)
 * On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces.
-![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/advanced-options.png)
+![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/advanced-options.png)
 * For devices that are known to cloud service, but not discovered localy, you will have another prompt to enter details if you know them or to specify that you want to rely on cloud polling for that device.
-![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/appliance-missing.png)
+![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/appliance-missing.png)
 
 
 ***
@@ -97,8 +97,8 @@ https://github.com/sicknesz/midea-inventor-card
 [releases]: https://github.com/nbogojevic/midea-dehumidifier-lan/releases
 
 [user_profile]: https://github.com/nbogojevic
-[logos]: https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/logos.png
+[logos]: https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/logos.png
 [add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=midea_dehumidifier_lan
 [add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
 
-[dehumidifier-details]: https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/raw/main/assets/dehumidifier-details.png
+[dehumidifier-details]: https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/dehumidifier-details.png

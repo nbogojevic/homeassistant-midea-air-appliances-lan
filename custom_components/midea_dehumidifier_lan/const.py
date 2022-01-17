@@ -16,7 +16,7 @@ UNIQUE_DEHUMIDIFIER_PREFIX: Final = "midea_dehumidifier_"
 UNIQUE_CLIMATE_PREFIX: Final = "midea_climate_"
 DOMAIN: Final = f"{UNIQUE_DEHUMIDIFIER_PREFIX}lan"
 # pylint: disable=line-too-long
-ISSUE_URL: Final = "https://github.com/nbogojevic/homeassistant-midea-dehumidifier-lan/issues/new/choose"  # noqa: E501
+ISSUE_URL: Final = "https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/issues/new/choose"  # noqa: E501
 
 CONF_ADVANCED_SETTINGS: Final = "advanced_settings"
 CONF_APPID: Final = "appid"
