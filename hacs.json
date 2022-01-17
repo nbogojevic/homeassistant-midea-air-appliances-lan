@@ -1,5 +1,5 @@
 {
-  "name": "Midea Appliance (LAN)",
+  "name": "Midea Air Appliances (LAN)",
   "version": "0.5.0",
   "domains": [
     "binary_sensor",
