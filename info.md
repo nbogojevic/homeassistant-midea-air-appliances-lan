@@ -3,6 +3,35 @@
 ---
 {% endif %}
 
+{% if installed %}
+## Changes as compared to your installed version:
+
+{% if (version_installed.split(".")[0] | int) < 0 %}
+{% if (version_installed.split(".")[1] | int) < 5 %}
+
+## Breaking Changes
+- Unique id of enitites changed. Using serial number now instead of cloud API id.
+- Removed sleep switch.
+
+## Major changes
+- Added support for air conditioners (**beta**)
+- Added periodic discovery of appliances
+- Enable integration configuration
+- Enable discovery of appliances at later time
+- Select appliance discovery behavior via dropdown
+- Add notification if appliance is discovered on the network, but was ignored or polled from the cloud
+- Added tank removed (bucket) binary sensor.
+
+
+## Bug fixes
+- If appliance doesn't load at start, integration will attemtp again to set it up
+- An error during startup doesn't prevent integration to load.
+- Enable integration reload from drop down menu
+- Fixed entity naming conflicts after an with same id as old appliance is added.
+
+{% endif %}
+{% endif %}
+
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]][license]
@@ -13,7 +42,7 @@
 
 ![Midea Brands][logos]
 
-_Adds support for Midea air conditioning and dehumidifier appliances via local network. Support foir air condioning devices is in beta_
+_Adds support for Midea air conditioning and dehumidifier appliances via local network. Support for air condioning devices is in **beta**_
 
 **This component will set up the following entities for dehumidifiers.**
 
@@ -29,9 +58,9 @@ Platform | Description
 `sensor` | Sensor for current temperature measured by dehumidifier.
 `sensor` | Sensor for water level in the tank (_created if device announces that water level is supported_).
 `sensor` | Sensor with value of error code of the appliance (_disabled by default_).
-`switch` | Switch ion mode on and off (_created if device announces that (an)ion mode is supported_)
-`switch` | Switch pump on and off (_created if device announces that pump is supported_)
-`switch` | Switch to activate beep on action (_disabled by default_)
+`switch` | Switch ion mode on and off (_created if device announces that (an)ion mode is supported_).
+`switch` | Switch pump on and off (_created if device announces that pump is supported_).
+`switch` | Switch to activate beep on action (_disabled by default_).
 
 
 **This component will set up the following entities for air conditioners.**
@@ -44,13 +73,13 @@ Platform | Description
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensor for outside temperature measured by air conditioner.
 `sensor` | Sensor with value of error code of the appliance (_disabled by default_).
-`switch` | Switch purifier mode on and off (_enabled if device announces that it is supported_)
-`switch` | Switch dryer mode on and off (_disabled by default_)
-`switch` | Switch sleep mode on and off (_disabled by default_)
-`switch` | Switch to activate beep on action (_disabled by default_)
-`switch` | Switch display to Fahrenheit degrees (_enabled if device announces that it is supported_)
-`switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_)
-`switch` | Switch screen on and off (_enabled if device announces that it is supported_)
+`switch` | Switch purifier mode on and off (_enabled if device announces that it is supported_).
+`switch` | Switch dryer mode on and off (_disabled by default_).
+`switch` | Switch sleep mode on and off (_disabled by default_).
+`switch` | Switch to activate beep on action (_disabled by default_).
+`switch` | Switch display to Fahrenheit degrees (_enabled if device announces that it is supported_).
+`switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
+`switch` | Switch screen on and off (_enabled if device announces that it is supported_).
 
 {% if not installed %}
 ## Installation
