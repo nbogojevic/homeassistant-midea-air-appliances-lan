@@ -1,4 +1,4 @@
-"""Config flow for Midea Dehumidifier (Local) integration."""
+"""Config flow for Midea Air Appliance (Local) integration."""
 from __future__ import annotations
 
 import ipaddress
@@ -248,9 +248,9 @@ class _MideaFlow(FlowHandler):
         try:
             if discovery_mode == DISCOVERY_CLOUD:
                 discovered = self.client.appliance_state(
+                    appliance_id=appliance.appliance_id,
                     cloud=self.cloud,
                     use_cloud=True,
-                    appliance_id=appliance.appliance_id,
                 )
             else:
                 if appliance.address == UNKNOWN_IP:
@@ -317,7 +317,7 @@ class _MideaFlow(FlowHandler):
         if len(self.devices_conf) == 0:
             return self.async_abort(reason="no_configured_devices")
         return self.async_create_entry(
-            title="Midea Dehumidifiers",
+            title="Midea Air Appliance",
             data=self.conf,
         )
 
@@ -341,7 +341,7 @@ class _MideaFlow(FlowHandler):
                 user_input.get(
                     CONF_IP_ADDRESS, device_conf.get(CONF_IP_ADDRESS, UNKNOWN_IP)
                 )
-                if discovery_mode == DISCOVERY_LAN
+                if discovery_mode in [DISCOVERY_LAN, DISCOVERY_WAIT]
                 else UNKNOWN_IP
             )
             appliance.name = user_input.get(CONF_NAME, appliance.name)
@@ -665,7 +665,9 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize Midea options flow."""
         super().__init__()
+        self.config_entry = config_entry
         self.conf = {**config_entry.data}
+        self.devices_conf = self.conf.get(CONF_DEVICES, [])
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -687,7 +689,7 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
         assert self.config_entry
         hub: Hub = self.hass.data[DOMAIN][self.config_entry.entry_id]
         self.appliances = []
-        self.devices_conf: list[dict[str, Any]] = self.conf[CONF_DEVICES]
+        self.devices_conf = self.conf[CONF_DEVICES]
         for device in self.devices_conf:
             for coord in hub.coordinators:
                 if device[CONF_UNIQUE_ID] == coord.appliance.serial_number:
