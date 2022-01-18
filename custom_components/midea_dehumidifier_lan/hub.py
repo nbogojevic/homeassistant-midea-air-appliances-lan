@@ -3,13 +3,14 @@ The custom component for local network access to Midea appliances
 """
 
 from __future__ import annotations
-import asyncio
 
+import asyncio
+from dataclasses import dataclass
 from datetime import timedelta
 import ipaddress
 import itertools
 import logging
-from typing import Any, Final, Iterator, Tuple, cast, final
+from typing import Any, Final, Iterator, cast, final
 
 from homeassistant.components.network import async_get_ipv4_broadcast_addresses
 from homeassistant.config_entries import ConfigEntry
@@ -28,10 +29,10 @@ from homeassistant.const import (
     CONF_UNIQUE_ID,
     CONF_USERNAME,
 )
-from homeassistant.core import HomeAssistant, callback, CALLBACK_TYPE
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.debounce import Debouncer
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -39,7 +40,6 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 from homeassistant.util import slugify
-
 
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.exceptions import AuthenticationError, MideaError
@@ -60,31 +60,151 @@ from custom_components.midea_dehumidifier_lan.const import (
     CONF_TOKEN_KEY,
     DEFAULT_DISCOVERY_MODE,
     DISCOVERY_CLOUD,
-    DISCOVERY_WAIT,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
-    LOCAL_BROADCAST,
-    UNKNOWN_IP,
-    UNIQUE_DEHUMIDIFIER_PREFIX,
+    DISCOVERY_WAIT,
     DOMAIN,
+    LOCAL_BROADCAST,
+    UNIQUE_DEHUMIDIFIER_PREFIX,
+    UNKNOWN_IP,
 )
 
 
 _LOGGER = logging.getLogger(__name__)
 
-_NUMBER_OF_BROADCASTS: Final = 64
+_DISCOVER_BATCH_SIZE: Final = 64
 
 
-ADDITIONAL_ADDRESSES = iter(
-    [
-        [],
-        ["10.0.4.210"],
-        ["10.0.7.130"],
-        ["10.0.7.130"],
-        ["10.0.7.130"],
-        [],
-    ]
-)
+def address_iterator(conf_addresses, batch_size: int = _DISCOVER_BATCH_SIZE):
+    """Generator for one batch of ip addresses to scan"""
+    net_addrs = []
+    addr_count = 0
+    for addr in conf_addresses:
+        # If local broadcast address we don't need to expand it
+        if addr == LOCAL_BROADCAST:
+            continue
+        # Get network corresponding to address
+        net = ipaddress.IPv4Network(addr)
+        # If network references a block:
+        if net.num_addresses > 1:
+            _LOGGER.debug(
+                "Got network block %s with %d addresses", net, net.num_addresses
+            )
+            # collect all hosts from the block
+            net_addrs.append(net.hosts())
+            addr_count += net.num_addresses
+
+    # If we do have addresses to scan
+    if net_addrs:
+        # we will iterate over all of available addresses in batches
+        # having batch_size items
+        all_addrs = itertools.chain(*net_addrs)
+        for _ in range(0, addr_count, batch_size):
+            yield list(
+                # We use filter to remove empty addresses
+                filter(
+                    None,
+                    map(
+                        (lambda _: (x := next(all_addrs)) and str(x)), range(batch_size)
+                    ),
+                )
+            )
+
+
+def _admit_new_devices(dev_confs: list[dict], new_devices: list[LanDevice]) -> bool:
+    need_reload = False
+    added_devices = []
+    for new in new_devices:
+        for known in dev_confs:
+            if known[CONF_UNIQUE_ID] == new.serial_number:
+                if _admit_known_device(known, new):
+                    need_reload = True
+                break
+        else:
+            # TODO check if it is present on cloud, otherwise add it as IGNORED
+
+            _LOGGER.warning(
+                "Found unknown device %s.",
+                new,
+            )
+            name = f"{new.model} {new.mac[-4] if new.mac else new.serial_number}"
+            update = {
+                CONF_DISCOVERY: DISCOVERY_IGNORE,
+                CONF_API_VERSION: new.version,
+                CONF_ID: new.appliance_id,
+                CONF_IP_ADDRESS: new.address,
+                CONF_NAME: name,
+                CONF_TOKEN_KEY: new.key,
+                CONF_TOKEN: new.token,
+                CONF_TYPE: new.type,
+                CONF_UNIQUE_ID: new.serial_number,
+            }
+            added_devices.append(update)
+            need_reload = True
+    if added_devices:
+        dev_confs += added_devices
+    return need_reload
+
+
+def _admit_known_device(known: dict[str, Any], new: LanDevice) -> bool:
+    need_reload = False
+    if known[CONF_DISCOVERY] == DISCOVERY_WAIT:
+        update = {
+            CONF_DISCOVERY: DISCOVERY_LAN,
+            CONF_API_VERSION: new.version,
+            CONF_ID: new.appliance_id,
+            CONF_IP_ADDRESS: new.address,
+            CONF_TOKEN_KEY: new.key,
+            CONF_TOKEN: new.token,
+            CONF_TYPE: new.type,
+            CONF_UNIQUE_ID: new.serial_number,
+        }
+        _LOGGER.warning("Updating discovered device %s", new)
+        _LOGGER.warning("Updating old value %s", known)
+        _LOGGER.warning("New value %s", update)
+
+        known.update(update)
+        need_reload = True
+    elif known[CONF_DISCOVERY] != DISCOVERY_LAN:
+        _LOGGER.warning(
+            "Device %s in discovery mode %s found on address %s."
+            " It can be configured for LAN access.",
+            new,
+            known[CONF_DISCOVERY],
+            new.address,
+        )
+
+    return need_reload
+
+
+@dataclass
+class _ChangedDevice:
+    device: LanDevice
+    coordinator: ApplianceUpdateCoordinator
+
+    @staticmethod
+    def merge_with_configuration(
+        dev_confs: list[dict], changed_devices: list[_ChangedDevice]
+    ) -> bool:
+        """Merges list of changed devices with existing config entry configuration"""
+        updated_conf = False
+        for changed in changed_devices:
+            for known in dev_confs:
+                if known[CONF_UNIQUE_ID] == changed.coordinator.appliance.serial_number:
+                    changed.coordinator.appliance.address = changed.device.address
+                    known[CONF_IP_ADDRESS] = changed.device.address
+                    updated_conf = True
+                    if known[CONF_DISCOVERY] != DISCOVERY_LAN:
+                        _LOGGER.warning(
+                            "Device %s in discovery mode %s found on address %s."
+                            " It can be configured for LAN access.",
+                            changed.coordinator.appliance,
+                            changed.coordinator.discovery_mode,
+                            changed.device.address,
+                        )
+                    break
+
+        return updated_conf
 
 
 class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
@@ -95,7 +215,6 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         self.broadcast_addresses: list[str] = []
         self.client = MideaClient()
         self.cloud = None
-        self.conf_addresses: list[str] = []
         self.config_entry = config_entry
         self.coordinators: list[ApplianceUpdateCoordinator] = []
         self.data = {}
@@ -109,43 +228,48 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         """Startup-time setup"""
 
         if self.remove_discovery:
+            _LOGGER.debug("Removed periodic discovery")
             self.remove_discovery()
             self.remove_discovery = None
 
-        self.conf_addresses: list[str] = self.data.get(CONF_BROADCAST_ADDRESS, [])
-        self.broadcast_addresses = []
-        for addr in self.conf_addresses:
+        self._build_address_iterator()
+        self._setup_discovery_callback()
+
+    def _build_address_iterator(self):
+        conf_addresses: list[str] = []
+        has_discovrable = False
+        for device in self.data[CONF_DEVICES]:
+            if device[CONF_DISCOVERY] != DISCOVERY_LAN:
+                has_discovrable = True
+                if device[CONF_IP_ADDRESS] and device[CONF_IP_ADDRESS] != UNKNOWN_IP:
+                    conf_addresses.append(device[CONF_IP_ADDRESS])
+        conf_addresses += [
+            item
+            for item in self.data.get(CONF_BROADCAST_ADDRESS, [])
+            if item != LOCAL_BROADCAST
+        ]
+        self.broadcast_addresses = [LOCAL_BROADCAST]
+        for addr in conf_addresses:
             net = ipaddress.IPv4Network(addr)
             self.broadcast_addresses.append(str(net.broadcast_address))
 
-        _LOGGER.debug("Using broadcast address %s", self.broadcast_addresses)
-        has_waiting = any(
-            device
-            for device in self.data[CONF_DEVICES]
-            if device[CONF_DISCOVERY] == DISCOVERY_WAIT
-        )
-        if has_waiting and self.broadcast_addresses:
+        _LOGGER.debug("Discovery via broadcast addresses %s", self.broadcast_addresses)
+        _LOGGER.debug("Discovery via configured addresses %s", conf_addresses)
 
-            def ip_iteration():
-                """One block of ip addresses to scan"""
-                for addr in self.conf_addresses:
-                    if addr == LOCAL_BROADCAST:
-                        continue
-                    net = ipaddress.IPv4Network(addr)
-                    if net.num_addresses > 1:
-                        result = []
-                        count = _NUMBER_OF_BROADCASTS
-                        while nxt := next(net.hosts(), None) and count > 0:
-                            count -= 1
-                            result.append(nxt)
-                        yield result
-
-            self.address_iterator = itertools.cycle(ip_iteration())
+        if has_discovrable and conf_addresses:
+            self.address_iterator = itertools.cycle(
+                address_iterator(conf_addresses, _DISCOVER_BATCH_SIZE)
+            )
         else:
             self.address_iterator = None
+
+    def _setup_discovery_callback(self):
         scan_interval = self.data.get(CONF_SCAN_INTERVAL, APPLIANCE_SCAN_INTERVAL)
-        _LOGGER.debug("Scan interval %s minute(s)", scan_interval)
         if scan_interval:
+            _LOGGER.debug(
+                "Staring periodic discovery with interval %s minute(s)", scan_interval
+            )
+
             self.remove_discovery = async_track_time_interval(
                 self.hass, self._async_discover, timedelta(minutes=scan_interval)
             )
@@ -180,19 +304,16 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             raise ConfigEntryNotReady(str(self.errors))
 
     async def _async_discover(self, *_: Any) -> None:
-        """Discover Midea Appliances on configured network interfaces."""
-        addresses = []
-        addresses.extend([str(address) for address in self.broadcast_addresses])
+        """Discover Midea appliances on configured network interfaces."""
+        addresses = [address for address in self.broadcast_addresses]
         if self.address_iterator:
             if new_addresses := next(self.address_iterator, None):
-                addresses.extend(new_addresses)
+                addresses += new_addresses
         if not addresses:
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
-            addresses.extend([str(address) for address in iface_broadcast])
+            addresses += [str(address) for address in iface_broadcast]
         _LOGGER.debug("Initiated discovery via %s", addresses)
-        if result := self.client.find_appliances(
-            addresses=addresses, cloud=self.cloud, retries=1
-        ):
+        if result := self.client.find_appliances(addresses=addresses, retries=1):
             await self._async_trigger_discovery(result)
 
     async def _async_trigger_discovery(self, devices: list[LanDevice]) -> None:
@@ -207,71 +328,37 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             dev_confs.append(dev_conf)
         conf[CONF_DEVICES] = dev_confs
         new_devices: list[LanDevice] = []
-        changed_devices: list[Tuple[LanDevice, ApplianceUpdateCoordinator]] = []
+        changed_devices: list[_ChangedDevice] = []
 
-        self._iterate_devices(devices, conf, new_devices, changed_devices)
+        self._iterate_devices(devices, new_devices, changed_devices)
 
-        need_reload = False
-        updated_conf = False
-        for new in new_devices:
-            for known in dev_confs:
-                if known[CONF_UNIQUE_ID] == new.serial_number:
-                    if known[CONF_DISCOVERY] == DISCOVERY_WAIT:
-                        update = {
-                            CONF_DISCOVERY: DISCOVERY_LAN,
-                            CONF_API_VERSION: new.version,
-                            CONF_ID: new.appliance_id,
-                            CONF_IP_ADDRESS: new.address,
-                            CONF_TOKEN_KEY: new.key,
-                            CONF_TOKEN: new.token,
-                            CONF_TYPE: new.type,
-                            CONF_UNIQUE_ID: new.serial_number,
-                        }
-                        _LOGGER.warning("Updating discovered device %s", new)
-                        _LOGGER.warning("Updating old value %s", known)
-                        _LOGGER.warning("New value %s", update)
+        need_reload = _admit_new_devices(dev_confs, new_devices)
+        devices_changed = _ChangedDevice.merge_with_configuration(
+            dev_confs, changed_devices
+        )
 
-                        known.update(update)
-                        updated_conf = True
-                        need_reload = True
-                    if known[CONF_DISCOVERY] != DISCOVERY_LAN:
-                        _LOGGER.warning(
-                            "Device %s in discovery mode %s found on address %s."
-                            " It can be configured for LAN access.",
-                            new,
-                            known[CONF_DISCOVERY],
-                            new.address,
-                        )
-                    break
-        for changed in changed_devices:
-            for known in dev_confs:
-                if known[CONF_UNIQUE_ID] == changed[1].appliance.serial_number:
-                    if known[CONF_DISCOVERY] == DISCOVERY_LAN:
-                        changed[1].appliance.address = changed[0].address
-                        known[CONF_IP_ADDRESS] = changed[0].address
-                        updated_conf = True
-                        break
-                    _LOGGER.warning(
-                        "Device %s in discovery mode %s found on address %s."
-                        " It can be configured for LAN access.",
-                        changed[1].appliance,
-                        changed[1].discovery_mode,
-                        changed[0].address,
-                    )
-
-        if updated_conf:
+        if devices_changed or need_reload:
+            _LOGGER.warning("Updating entry")
             self.hass.config_entries.async_update_entry(
                 entry=self.config_entry,
                 data=self.data,
             )
         if need_reload:
+            _LOGGER.warning("Needing reload")
             self.hass.async_create_task(
                 self.hass.config_entries.async_reload(self.config_entry.entry_id)
             )
 
-    def _iterate_devices(self, devices, conf, new_devices, changed_devices):
+    def _iterate_devices(
+        self,
+        devices: list[LanDevice],
+        new_devices: list[LanDevice],
+        changed_devices: list[_ChangedDevice],
+    ):
         for device in devices:
-            existing = next(
+            if not device.address:
+                continue
+            coordinator = next(
                 (
                     coord
                     for coord in self.coordinators
@@ -279,19 +366,19 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 ),
                 None,
             )
-            if existing:
+            if coordinator:
                 # If address changed, we need to handle it
-                if device.address != existing.appliance.address:
+                if device.address and device.address != coordinator.appliance.address:
                     _LOGGER.warning("DEV: Discovered changed device %r", device)
-                    changed_devices.append((device, existing))
+                    changed_devices.append(_ChangedDevice(device, coordinator))
             else:
                 _LOGGER.warning("DEV: Discovered device %r", device)
-                if supported_appliance(conf, device):
+                if supported_appliance(self.data, device):
                     new_devices.append(device)
                 else:
                     _LOGGER.debug("DEV: Ignored device %s", device)
-        _LOGGER.debug("Changed devices: %s", changed_devices)
-        _LOGGER.debug("Discovered new devices: %s", new_devices)
+        _LOGGER.debug("Changed configuration for devices: %s", changed_devices)
+        _LOGGER.debug("Newly discovered new devices: %s", new_devices)
 
     async def _process_appliance(self, device: dict):
         _LOGGER.debug("conf=%s", self.data)
@@ -339,6 +426,13 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 return
 
         try:
+            _LOGGER.debug(
+                "DEV: appliance_state %s %s %s %s",
+                device,
+                need_cloud,
+                use_cloud,
+                self.cloud,
+            )
             appliance = await self.hass.async_add_executor_job(
                 self.client.appliance_state,
                 device[CONF_IP_ADDRESS] if lan_mode else None,  # ip
