@@ -280,7 +280,11 @@ class _MideaFlow(FlowHandler):
                     {
                         CONF_API_VERSION: appliance.version,
                         CONF_ID: appliance.appliance_id,
-                        CONF_IP_ADDRESS: appliance.address,
+                        CONF_IP_ADDRESS: (
+                            appliance.address
+                            or device_conf[CONF_IP_ADDRESS]
+                            or UNKNOWN_IP
+                        ),
                         CONF_NAME: appliance.name,
                         CONF_TOKEN_KEY: appliance.key,
                         CONF_TOKEN: appliance.token,
@@ -312,7 +316,7 @@ class _MideaFlow(FlowHandler):
             data=self.conf,
         )
 
-    async def _async_step_appliance(
+    async def _async_step_appliance(  # pylint: disable=too-many-locals
         self: _MideaFlow,
         step_id: str,
         user_input: dict[str, Any] | None = None,
@@ -325,17 +329,16 @@ class _MideaFlow(FlowHandler):
         appliance = self.appliances[self.appliance_idx]
         device_conf = self.devices_conf[self.appliance_idx]
         discovery_mode = device_conf.get(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
+        ip_address = appliance.address or UNKNOWN_IP
         if user_input is not None:
             try:
+                _LOGGER.debug("appliance user_input %s", user_input)
+
                 ip_address = user_input.get(
                     CONF_IP_ADDRESS, device_conf.get(CONF_IP_ADDRESS, UNKNOWN_IP)
                 )
-                if ip_address and ip_address != UNKNOWN_IP:
-                    for i in range(self.appliance_idx):
-                        if self.devices_conf[i][CONF_IP_ADDRESS] == ip_address:
-                            raise _FlowException(
-                                "duplicate_ip_provided", self.devices_conf[i][CONF_NAME]
-                            )
+                self._check_ip_address_unique(ip_address)
+
                 discovery_mode = user_input.get(CONF_DISCOVERY, discovery_mode)
                 device_conf[CONF_DISCOVERY] = discovery_mode
                 appliance.address = ip_address
@@ -354,14 +357,14 @@ class _MideaFlow(FlowHandler):
                 self.discovered_appliances[self.appliance_idx] = discovered
 
                 if not self.indexes_to_process:
-                    for discovered in self.discovered_appliances:
-                        if discovered:
-                            self.appliances[self.appliance_idx].update(discovered)
+                    self._update_appliances_after_flow()
+
                     return await self._async_add_entry()
 
                 self.appliance_idx = self.indexes_to_process.pop(0)
                 appliance = self.appliances[self.appliance_idx]
                 device_conf = self.devices_conf[self.appliance_idx]
+                ip_address = appliance.address or device_conf[CONF_IP_ADDRESS]
                 user_input = None
                 discovery_mode = DEFAULT_DISCOVERY_MODE
 
@@ -381,9 +384,7 @@ class _MideaFlow(FlowHandler):
         placeholders = self._placeholders(appliance, extra)
         schema_arg = {
             "name": name,
-            "address": device_conf.get(
-                CONF_IP_ADDRESS, appliance.address or UNKNOWN_IP
-            ),
+            "address": device_conf.get(CONF_IP_ADDRESS, ip_address),
             "token": device_conf.get(CONF_TOKEN, appliance.token),
             "token_key": device_conf.get(CONF_TOKEN_KEY, appliance.key),
             "discovery_mode": device_conf.get(CONF_DISCOVERY, discovery_mode),
@@ -397,6 +398,22 @@ class _MideaFlow(FlowHandler):
             errors=errors,
             last_step=len(self.indexes_to_process) == 0,
         )
+
+    def _check_ip_address_unique(self, ip_address):
+        if ip_address and ip_address != UNKNOWN_IP:
+            for i in range(self.appliance_idx):
+                if self.devices_conf[i][CONF_IP_ADDRESS] == ip_address:
+                    raise _FlowException(
+                        "duplicate_ip_provided", self.devices_conf[i][CONF_NAME]
+                    )
+
+    def _update_appliances_after_flow(self):
+        for i, discovered in enumerate(self.discovered_appliances):
+            if discovered:
+                old_address = self.appliances[i].address
+                self.appliances[i].update(discovered)
+                if not discovered.address:
+                    self.appliances[i].address = old_address
 
     def _placeholders(
         self: _MideaFlow, appliance: LanDevice = None, extra: dict[str, str] = None

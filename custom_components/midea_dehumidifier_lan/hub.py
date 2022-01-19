@@ -189,6 +189,20 @@ class _ApplianceDiscoveryHelper:
                 update,
             )
 
+            msg = (
+                "Device %(name)s,"
+                " which was waiting to be discovered,"
+                " was found on address %(address)s."
+                " It will now be activated."
+            ) % {
+                "name": known[CONF_NAME],
+                "address": new.address,
+            }
+            self.hass.components.persistent_notification.async_create(
+                title=NAME,
+                message=msg,
+                notification_id=f"midea_wait_discovery_{new.serial_number}",
+            )
             known.update(update)
             need_reload = True
         elif new.address and known[CONF_DISCOVERY] != DISCOVERY_LAN:
@@ -216,14 +230,17 @@ class _ApplianceDiscoveryHelper:
                 known[CONF_DISCOVERY], known[CONF_DISCOVERY]
             )
             msg = (
-                "Device %s"
-                " which is '%s'"
-                " found on address %s."
+                "Device %(name)s,"
+                " which is %(discovery_label)s,"
+                " was found on address %(address)s."
                 " It can be configured for local network access."
-                " [Check it out.](/config/integrations)" % known[CONF_NAME],
-                discovery_label,
-                address,
-            )
+                " [Check it out.](/config/integrations)"
+            ) % {
+                "name": known[CONF_NAME],
+                "discovery_label": discovery_label,
+                "address": address,
+            }
+
             self.hass.components.persistent_notification.async_create(
                 title=NAME,
                 message=msg,
