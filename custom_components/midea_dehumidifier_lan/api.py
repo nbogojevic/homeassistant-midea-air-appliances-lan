@@ -67,6 +67,7 @@ class MideaClient:
         appid: str = None,
         addresses: list[str] = None,
         retries: int = 3,
+        timeout: int = 3,
     ) -> list[LanDevice]:
         """Delegate to midea_beautiful_api.find_appliances"""
         return midea_beautiful_api.find_appliances(
@@ -77,6 +78,7 @@ class MideaClient:
             appid=appid,
             addresses=addresses,
             retries=retries,
+            timeout=timeout,
         )
 
 
