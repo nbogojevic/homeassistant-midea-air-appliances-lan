@@ -4,7 +4,7 @@ logger:
   default: info
   logs:
     custom_components.midea_dehumidifier_lan: debug
-    midea_beautiful: debug
+    midea_beautiful: info
 
 # To debug uncomment the line below (doc: https://www.home-assistant.io/integrations/debugpy/)
 # debugpy:

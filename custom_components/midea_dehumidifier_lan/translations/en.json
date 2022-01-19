@@ -30,7 +30,7 @@
           "name": "Device name",
           "token": "Token",
           "token_key": "Token key",
-          "appliance_action": "Choose action"
+          "discovery": "Choose action (discovery mode)"
         },
         "description": "We were unable to discover an appliance called {name} with the serial number {id}.\n\nPlease choose if you want to exclude appliance, search for it later, use cloud API to poll it, or provide its IPv4 address if you know it.\n\nYou can also provide token and key if you have them. If not, we will try to obtain them from Midea cloud.",
         "title": "Unable to discover appliance"
@@ -50,6 +50,7 @@
     "error": {
       "cannot_connect": "Unable to connect to appliance ({cause}).",
       "connection_error": "Connection error ({cause}).",
+      "duplicate_ip_provided": "Same IPv4 address was used for {cause}. Please specify different address for different appliances.",
       "invalid_auth": "Invalid username or password ({cause})",
       "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
       "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",
@@ -73,13 +74,14 @@
           "name": "Device name",
           "token": "Token",
           "token_key": "Token key",
-          "appliance_action": "Choose action"
+          "discovery": "Choose action (discovery mode)"
         }
       }
     },
     "error": {
       "cannot_connect": "Unable to connect to appliance ({cause}).",
       "connection_error": "Connection error ({cause}).",
+      "duplicate_ip_provided": "Same IPv4 address was used for {cause}. Please specify different address for different appliances.",
       "invalid_auth": "Invalid username or password ({cause})",
       "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
       "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",

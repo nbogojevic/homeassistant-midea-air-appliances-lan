@@ -71,7 +71,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DEFAULT_USERNAME,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
-    DISCOVERY_LAN,
+    DISCOVERY_MODE_LABELS,
     DISCOVERY_WAIT,
     DOMAIN,
     LOCAL_BROADCAST,
@@ -82,7 +82,7 @@ from custom_components.midea_dehumidifier_lan.const import (
 _LOGGER = logging.getLogger(__name__)
 
 
-def _unreachable_appliance_schema(
+def _appliance_schema(
     name: str,
     address: str = UNKNOWN_IP,
     token: str = "",
@@ -92,12 +92,7 @@ def _unreachable_appliance_schema(
     return vol.Schema(
         {
             vol.Optional(CONF_DISCOVERY, default=str(discovery_mode)): vol.In(
-                {
-                    DISCOVERY_IGNORE: "Exclude appliance",
-                    DISCOVERY_LAN: "Provide appliance's IPv4 address",
-                    DISCOVERY_WAIT: "Wait for appliance to come online",
-                    DISCOVERY_CLOUD: "Use cloud API to poll devices",
-                }
+                DISCOVERY_MODE_LABELS
             ),
             vol.Optional(
                 CONF_IP_ADDRESS,
@@ -237,12 +232,12 @@ class _MideaFlow(FlowHandler):
         """
         discovery_mode = device_conf.get(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
         if discovery_mode == DISCOVERY_IGNORE:
-            _LOGGER.debug("Ignored appliance with id=%s", appliance.appliance_id)
+            _LOGGER.debug("Ignoring appliance %s", appliance)
             return None
         if discovery_mode == DISCOVERY_WAIT:
             _LOGGER.debug(
-                "Attempt to discover appliance with id=%s will be made later",
-                appliance.appliance_id,
+                "Attempt to discover appliance %s will be made later",
+                appliance,
             )
             return None
         try:
@@ -252,7 +247,7 @@ class _MideaFlow(FlowHandler):
                     cloud=self.cloud,
                     use_cloud=True,
                 )
-            else:
+            else:  # DISCOVERY_LAN
                 if appliance.address == UNKNOWN_IP:
                     raise _FlowException("invalid_ip_address", appliance.address)
                 try:
@@ -282,9 +277,12 @@ class _MideaFlow(FlowHandler):
 
     async def _async_add_entry(self: _MideaFlow) -> FlowResult:
         for i, appliance in enumerate(self.appliances):
+            _LOGGER.warning("APPLIANCE %d %s", i, appliance)
             if not supported_appliance(self.conf, appliance):
                 continue
             device_conf = self.devices_conf[i]
+            _LOGGER.warning("APPLIANCE CONF %d %s", i, device_conf)
+
             if device_conf.get(CONF_DISCOVERY) != DISCOVERY_IGNORE:
                 device_conf.update(
                     {
@@ -303,6 +301,7 @@ class _MideaFlow(FlowHandler):
         # Remove not used elements
         self.conf.pop(CONF_ADVANCED_SETTINGS, None)
         self.conf.pop(CONF_MOBILE_APP, None)
+        _LOGGER.debug("Created configuration data %s", self.conf)
 
         if self.config_entry:
             self.hass.config_entries.async_update_entry(
@@ -335,20 +334,23 @@ class _MideaFlow(FlowHandler):
         device_conf = self.devices_conf[self.appliance_idx]
         discovery_mode = device_conf.get(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
         if user_input is not None:
-            discovery_mode = user_input.get(CONF_DISCOVERY, discovery_mode)
-            device_conf[CONF_DISCOVERY] = discovery_mode
-            appliance.address = (
-                user_input.get(
+            try:
+                ip_address = user_input.get(
                     CONF_IP_ADDRESS, device_conf.get(CONF_IP_ADDRESS, UNKNOWN_IP)
                 )
-                if discovery_mode in [DISCOVERY_LAN, DISCOVERY_WAIT]
-                else UNKNOWN_IP
-            )
-            appliance.name = user_input.get(CONF_NAME, appliance.name)
-            appliance.token = user_input.get(CONF_TOKEN, "")
-            appliance.key = user_input.get(CONF_TOKEN_KEY, "")
+                if ip_address and ip_address != UNKNOWN_IP:
+                    for i in range(self.appliance_idx):
+                        if self.devices_conf[i][CONF_IP_ADDRESS] == ip_address:
+                            raise _FlowException(
+                                "duplicate_ip_provided", self.devices_conf[i][CONF_NAME]
+                            )
+                discovery_mode = user_input.get(CONF_DISCOVERY, discovery_mode)
+                device_conf[CONF_DISCOVERY] = discovery_mode
+                appliance.address = ip_address
+                appliance.name = user_input.get(CONF_NAME, appliance.name)
+                appliance.token = user_input.get(CONF_TOKEN, "")
+                appliance.key = user_input.get(CONF_TOKEN_KEY, "")
 
-            try:
                 if not self.cloud:
                     await self.hass.async_add_executor_job(self._connect_to_cloud)
 
@@ -384,13 +386,17 @@ class _MideaFlow(FlowHandler):
             "count": str(len(self.appliances)),
         }
         placeholders = self._placeholders(appliance, extra)
-        schema = _unreachable_appliance_schema(
-            name,
-            address=device_conf.get(CONF_IP_ADDRESS, appliance.address or UNKNOWN_IP),
-            token=device_conf.get(CONF_TOKEN, appliance.token),
-            token_key=device_conf.get(CONF_TOKEN_KEY, appliance.key),
-            discovery_mode=device_conf.get(CONF_DISCOVERY, discovery_mode),
-        )
+        schema_arg = {
+            "name": name,
+            "address": device_conf.get(
+                CONF_IP_ADDRESS, appliance.address or UNKNOWN_IP
+            ),
+            "token": device_conf.get(CONF_TOKEN, appliance.token),
+            "token_key": device_conf.get(CONF_TOKEN_KEY, appliance.key),
+            "discovery_mode": device_conf.get(CONF_DISCOVERY, discovery_mode),
+        }
+        _LOGGER.debug("appliance form arguments %s", schema_arg)
+        schema = _appliance_schema(**schema_arg)
         return self.async_show_form(
             step_id=step_id,
             data_schema=schema,
@@ -519,6 +525,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             ):
                 self.indexes_to_process.append(i)
         if self.indexes_to_process:
+            _LOGGER.debug("Pages to show %s", self.indexes_to_process)
             self.appliance_idx = self.indexes_to_process.pop(0)
             self.discovered_appliances = [None] * len(self.devices_conf)
             return await self.async_step_unreachable_appliance()
@@ -604,6 +611,11 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the appliances that were not discovered automatically on LAN."""
+        _LOGGER.debug("Pages to show %s", self.indexes_to_process)
+        _LOGGER.debug("Current configuration %s", self.conf)
+        _LOGGER.debug(
+            "Saved configuration %s", self.config_entry and self.config_entry.data
+        )
 
         return await self._async_step_appliance(
             step_id="unreachable_appliance",
@@ -680,6 +692,12 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Options for an appliance"""
+        _LOGGER.debug("Pages to show %s", self.indexes_to_process)
+        _LOGGER.debug("Current configuration %s", self.conf)
+        _LOGGER.debug(
+            "Saved configuration %s", self.config_entry and self.config_entry.data
+        )
+
         return await self._async_step_appliance(
             step_id="appliance",
             user_input=user_input,
