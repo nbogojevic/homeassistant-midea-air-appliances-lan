@@ -56,6 +56,8 @@ class MideaClient:
             cloud=cloud,
             use_cloud=use_cloud,
             appliance_id=appliance_id,
+            retries=5,
+            cloud_timeout=6,
         )
 
     def find_appliances(  # pylint: disable=too-many-arguments,no-self-use
