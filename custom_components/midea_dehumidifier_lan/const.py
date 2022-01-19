@@ -36,7 +36,7 @@ CURRENT_CONFIG_VERSION: Final = 2
 # Wait half a second between successive refresh calls
 APPLIANCE_REFRESH_COOLDOWN: Final = 0.5
 APPLIANCE_REFRESH_INTERVAL: Final = 60
-APPLIANCE_SCAN_INTERVAL: Final = 2
+DEFAULT_SCAN_INTERVAL: Final = 15
 MIN_SCAN_INTERVAL: Final = 2
 
 ATTR_FAN_SPEED: Final = "fan_speed"
@@ -81,4 +81,22 @@ DISCOVERY_MODE_LABELS = {
     DISCOVERY_LAN: "Provide appliance's IPv4 address",
     DISCOVERY_WAIT: "Wait for appliance to come online",
     DISCOVERY_CLOUD: "Use cloud API to poll devices",
+}
+
+DISCOVERY_MODE_EXPLANATION = {
+    DISCOVERY_IGNORE: "excluded from polling",
+    DISCOVERY_LAN: "assigned local network address",
+    DISCOVERY_WAIT: "waiting to be disovered",
+    DISCOVERY_CLOUD: "polled using cloud",
+}
+
+APPLIANCE_SCAN_INTERVALS = {
+    2: "2 minutes",
+    5: "5 minutes",
+    10: "10 minutes",
+    15: "15 minutes",
+    30: "30 minutes",
+    60: "1 hour",
+    360: "6 hours",
+    1440: "24 hours",
 }

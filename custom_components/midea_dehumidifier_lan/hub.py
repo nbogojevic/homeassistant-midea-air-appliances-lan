@@ -54,7 +54,7 @@ from custom_components.midea_dehumidifier_lan.api import (
 from custom_components.midea_dehumidifier_lan.const import (
     APPLIANCE_REFRESH_COOLDOWN,
     APPLIANCE_REFRESH_INTERVAL,
-    APPLIANCE_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
     CONF_APPID,
     CONF_APPKEY,
     CONF_TOKEN_KEY,
@@ -62,7 +62,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
-    DISCOVERY_MODE_LABELS,
+    DISCOVERY_MODE_EXPLANATION,
     DISCOVERY_WAIT,
     DOMAIN,
     LOCAL_BROADCAST,
@@ -154,11 +154,12 @@ class _ApplianceDiscoveryHelper:
                 }
                 added_devices.append(update)
                 need_reload = True
+
+                _LOGGER.debug("Found unknown device %s at %s.", name, new.address)
                 msg = (
-                    f"Found previously unknown device {name} on {new.address}."
-                    f" [Configure it](/config/integrations)"
+                    f"Found previously unknown device {name} found on {new.address}."
+                    f" [Check it out.](/config/integrations)"
                 )
-                _LOGGER.warning(msg)
                 self.hass.components.persistent_notification.async_create(
                     title=NAME,
                     message=msg,
@@ -202,18 +203,27 @@ class _ApplianceDiscoveryHelper:
         address: str,
     ):
         if address not in self.notifed_addresses:
+            _LOGGER.warning(
+                "Device %s in mode %s found on address %s. "
+                " It can be configured for local network access.",
+                known[CONF_NAME],
+                known[CONF_DISCOVERY],
+                address,
+            )
             self.notifed_addresses.add(address)
-            discovery_label = DISCOVERY_MODE_LABELS.get(
+
+            discovery_label = DISCOVERY_MODE_EXPLANATION.get(
                 known[CONF_DISCOVERY], known[CONF_DISCOVERY]
             )
             msg = (
-                f"Device {known[CONF_NAME]}"
-                f" in discovery mode `{discovery_label}`"
-                f" found on address {address}."
-                f" It can be configured for LAN access."
-                f" [Check it out.](/config/integrations)"
+                "Device %s"
+                " which is '%s'"
+                " found on address %s."
+                " It can be configured for local network access."
+                " [Check it out.](/config/integrations)" % known[CONF_NAME],
+                discovery_label,
+                address,
             )
-            _LOGGER.warning(msg)
             self.hass.components.persistent_notification.async_create(
                 title=NAME,
                 message=msg,
@@ -269,7 +279,11 @@ class _ApplianceDiscoveryHelper:
             if coordinator:
                 # If address changed, we need to handle it
                 if device.address and device.address != coordinator.appliance.address:
-                    _LOGGER.debug("Discovered changed device %s", device)
+                    _LOGGER.debug(
+                        "Device %s changed address to %s",
+                        coordinator.appliance,
+                        device.address,
+                    )
                     self.changed_devices.append(_ChangedDevice(device, coordinator))
             elif supported_appliance(self.hub.data, device):
                 _LOGGER.debug("Discovered new device %s", device)
@@ -370,7 +384,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         self._setup_discovery_callback()
 
     def _setup_discovery_callback(self):
-        scan_interval = self.data.get(CONF_SCAN_INTERVAL, APPLIANCE_SCAN_INTERVAL)
+        scan_interval = self.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         if scan_interval:
             _LOGGER.debug(
                 "Staring periodic discovery with interval %s minute(s)", scan_interval

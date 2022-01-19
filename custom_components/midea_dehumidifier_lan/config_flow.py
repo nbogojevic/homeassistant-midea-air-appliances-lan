@@ -58,7 +58,8 @@ from custom_components.midea_dehumidifier_lan.api import (
     supported_appliance,
 )
 from custom_components.midea_dehumidifier_lan.const import (
-    APPLIANCE_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+    APPLIANCE_SCAN_INTERVALS,
     CONF_ADVANCED_SETTINGS,
     CONF_APPID,
     CONF_APPKEY,
@@ -122,17 +123,8 @@ def _advanced_settings_schema(
             vol.Required(CONF_APPKEY, default=appkey): cv.string,
             vol.Required(CONF_APPID, default=appid): cv.positive_int,
             vol.Optional(CONF_BROADCAST_ADDRESS, default=broadcast_address): cv.string,
-            vol.Required(CONF_SCAN_INTERVAL, default=2): vol.In(
-                {
-                    2: "2 minutes",
-                    5: "5 minutes",
-                    10: "10 minutes",
-                    15: "15 minutes",
-                    30: "30 minutes",
-                    60: "1 hour",
-                    360: "6 hours",
-                    1440: "24 hours",
-                }
+            vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.In(
+                APPLIANCE_SCAN_INTERVALS
             ),
             vol.Required(CONF_INCLUDE, default=appliances): vol.All(
                 cv.multi_select(
@@ -253,7 +245,7 @@ class _MideaFlow(FlowHandler):
                 try:
                     ipaddress.IPv4Address(appliance.address)
                 except Exception as ex:
-                    _LOGGER.warning(
+                    _LOGGER.debug(
                         "Invalid appliance address %s", appliance.address, exc_info=True
                     )
                     raise _FlowException(
@@ -277,11 +269,11 @@ class _MideaFlow(FlowHandler):
 
     async def _async_add_entry(self: _MideaFlow) -> FlowResult:
         for i, appliance in enumerate(self.appliances):
-            _LOGGER.warning("APPLIANCE %d %s", i, appliance)
+            _LOGGER.debug("APPLIANCE %d %s", i, appliance)
             if not supported_appliance(self.conf, appliance):
                 continue
             device_conf = self.devices_conf[i]
-            _LOGGER.warning("APPLIANCE CONF %d %s", i, device_conf)
+            _LOGGER.debug("APPLIANCE CONF %d %s", i, device_conf)
 
             if device_conf.get(CONF_DISCOVERY) != DISCOVERY_IGNORE:
                 device_conf.update(
@@ -384,6 +376,7 @@ class _MideaFlow(FlowHandler):
         extra = {
             "index": str(self.appliance_idx + 1),
             "count": str(len(self.appliances)),
+            "serial_number": appliance.serial_number,
         }
         placeholders = self._placeholders(appliance, extra)
         schema_arg = {
@@ -429,14 +422,14 @@ def _get_broadcast_addresses(user_input: dict[str, Any]):
         addr.strip() for addr in address_entry.split(",") if addr.strip()
     ]
     for addr in specified_addresses:
-        _LOGGER.warning("Trying IPv4 %s", addr)
+        _LOGGER.debug("Trying IPv4 %s", addr)
         try:
             ipaddress.IPv4Network(addr)
             addresses.append(addr)
         except ValueError as ex:
             raise _FlowException("invalid_ip_range", str(ex)) from ex
         except Exception as ex:
-            _LOGGER.warning("Invalid IP address %s", addr, exc_info=True)
+            _LOGGER.debug("Invalid IP address %s", addr, exc_info=True)
             raise _FlowException("invalid_ip_range", addr) from ex
     return addresses
 
@@ -512,7 +505,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
                 return await self.async_step_advanced_settings()
 
             self.conf[CONF_BROADCAST_ADDRESS] = []
-            self.conf[CONF_SCAN_INTERVAL] = APPLIANCE_SCAN_INTERVAL
+            self.conf[CONF_SCAN_INTERVAL] = DEFAULT_SCAN_INTERVAL
             self.conf[CONF_INCLUDE] = [APPLIANCE_TYPE_DEHUMIDIFIER]
 
         await self.hass.async_add_executor_job(self._connect_and_discover)
