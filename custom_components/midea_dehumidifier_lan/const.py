@@ -75,3 +75,10 @@ If you have any issues with this you need to open an issue here:
 {ISSUE_URL}
 -------------------------------------------------------------------
 """
+
+DISCOVERY_MODE_LABELS = {
+    DISCOVERY_IGNORE: "Exclude appliance",
+    DISCOVERY_LAN: "Provide appliance's IPv4 address",
+    DISCOVERY_WAIT: "Wait for appliance to come online",
+    DISCOVERY_CLOUD: "Use cloud API to poll devices",
+}

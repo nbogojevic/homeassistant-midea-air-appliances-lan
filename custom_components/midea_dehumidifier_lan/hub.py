@@ -62,6 +62,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
+    DISCOVERY_MODE_LABELS,
     DISCOVERY_WAIT,
     DOMAIN,
     LOCAL_BROADCAST,
@@ -190,23 +191,27 @@ class _ApplianceDiscoveryHelper:
             known.update(update)
             need_reload = True
         elif new.address and known[CONF_DISCOVERY] != DISCOVERY_LAN:
-            self._possible_lan_notification(new, known[CONF_DISCOVERY], new.address)
+            self._possible_lan_notification(new, known, new.address)
 
         return need_reload
 
     def _possible_lan_notification(
         self,
         device: LanDevice,
-        discovery_mode: str,
+        known: dict[str, Any],
         address: str,
     ):
         if address not in self.notifed_addresses:
             self.notifed_addresses.add(address)
+            discovery_label = DISCOVERY_MODE_LABELS.get(
+                known[CONF_DISCOVERY], known[CONF_DISCOVERY]
+            )
             msg = (
-                f"Device {device.name}"
-                f" in discovery mode {discovery_mode}"
+                f"Device {known[CONF_NAME]}"
+                f" in discovery mode `{discovery_label}`"
                 f" found on address {address}."
                 f" It can be configured for LAN access."
+                f" [Check it out.](/config/integrations)"
             )
             _LOGGER.warning(msg)
             self.hass.components.persistent_notification.async_create(
@@ -289,7 +294,7 @@ class _ApplianceDiscoveryHelper:
                     if device.address and known[CONF_DISCOVERY] != DISCOVERY_LAN:
                         self._possible_lan_notification(
                             coordinator.appliance,
-                            coordinator.discovery_mode,
+                            known,
                             device.address,
                         )
                     break
@@ -375,8 +380,6 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 self.hass, self._async_discover, timedelta(minutes=scan_interval)
             )
 
-            _LOGGER.debug("Remove discovery %s", self.remove_discovery)
-
     async def async_unload(self) -> None:
         """Stops discovery and coordinators"""
         _LOGGER.debug("Unloading hub")
@@ -428,12 +431,12 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses += [str(address) for address in iface_broadcast]
         _LOGGER.debug("Initiated discovery via %s", addresses)
-        if result := self.client.find_appliances(addresses=addresses, retries=1):
+        if result := self.client.find_appliances(
+            addresses=addresses, retries=1, timeout=1
+        ):
             await self.discovery_helper.async_discover(result)
 
     async def _process_appliance(self, device: dict):
-        _LOGGER.debug("conf=%s", self.data)
-        _LOGGER.debug("device=%s", device)
         discovery_mode = device.get(CONF_DISCOVERY)
         # We are waiting for appliance to come online
         if discovery_mode == DISCOVERY_IGNORE:
@@ -452,7 +455,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             and (not device.get(CONF_TOKEN) or not device.get(CONF_TOKEN_KEY))
         )
         if need_token:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Appliance %s, id=%s has no token,"
                 " trying to obtain it from Midea cloud API",
                 device.get(CONF_NAME),
