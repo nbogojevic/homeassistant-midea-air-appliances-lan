@@ -7,7 +7,7 @@
 ## Changes as compared to your installed version:
 
 {% if (version_installed.split(".")[0] | int) < 0 %}
-{% if (version_installed.split(".")[1] | int) < 5 %}
+{% if (version_installed.split(".")[1] | int) < 6 %}
 
 ## Breaking Changes
 - Unique id of enitites changed. Using serial number now instead of cloud API id.
@@ -15,20 +15,22 @@
 
 ## Major changes
 - Added support for air conditioners (**beta**)
-- Added periodic discovery of appliances
-- Enable integration configuration
+- Added periodic discovery of appliances.
+- Added support for appliance address change.
+- Enable integration configuration.
 - Enable discovery of appliances at later time
 - Select appliance discovery behavior via dropdown
 - Add notification if appliance is discovered on the network, but was ignored or polled from the cloud
-- Added tank removed (bucket) binary sensor.
+- Added tank removed (bucket) binary sensor
 
 
 ## Bug fixes
-- If appliance doesn't load at start, integration will attemtp again to set it up
+- If appliance doesn't load at start, integration will attemtp again to set it up.
 - An error during startup doesn't prevent integration to load.
-- Enable integration reload from drop down menu
+- Fixed integration reload.
 - Fixed entity naming conflicts after an with same id as old appliance is added.
 
+{% endif %}
 {% endif %}
 {% endif %}
 
