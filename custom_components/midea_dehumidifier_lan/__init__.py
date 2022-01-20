@@ -5,6 +5,7 @@ The custom component for local network access to Midea appliances
 from __future__ import annotations
 
 import logging
+from typing import Any, Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -24,7 +25,12 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 
+from midea_beautiful.cloud import MideaCloud
+from midea_beautiful.exceptions import MideaError
+from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
+
+from custom_components.midea_dehumidifier_lan.api import MideaClient
 
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_APPID,
@@ -37,6 +43,8 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_LAN,
     DISCOVERY_WAIT,
     DOMAIN,
+    LOCAL_BROADCAST,
+    NAME,
     PLATFORMS,
     UNKNOWN_IP,
 )
@@ -75,10 +83,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
     if config_entry.version < CURRENT_CONFIG_VERSION:
         old_conf = config_entry.data
+        old_broadcast = old_conf.get(CONF_BROADCAST_ADDRESS, [])
+        if not old_broadcast:
+            old_broadcast = [LOCAL_BROADCAST]
         new_conf = {
             CONF_APPKEY: old_conf.get(CONF_APPKEY),
             CONF_APPID: old_conf.get(CONF_APPID),
-            CONF_BROADCAST_ADDRESS: old_conf.get(CONF_BROADCAST_ADDRESS, []),
+            CONF_BROADCAST_ADDRESS: old_broadcast,
             CONF_USERNAME: old_conf.get(CONF_USERNAME),
             CONF_PASSWORD: old_conf.get(CONF_PASSWORD),
         }
@@ -88,6 +99,8 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
         new_devices = []
         new_conf[CONF_DEVICES] = new_devices
+
+        id_resolver = _ApplianceIdResolver(hass)
 
         old: dict
         for old in config_entry.data[CONF_DEVICES]:
@@ -102,6 +115,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 CONF_TYPE: old.get(CONF_TYPE),
                 CONF_UNIQUE_ID: old.get(CONF_UNIQUE_ID),
             }
+
             if not new.get(CONF_DISCOVERY):
                 if old.get(CONF_USE_CLOUD_OBSOLETE):
                     new[CONF_DISCOVERY] = DISCOVERY_CLOUD
@@ -113,6 +127,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                     new[CONF_DISCOVERY] = DISCOVERY_LAN
             if not new.get(CONF_IP_ADDRESS):
                 new[CONF_IP_ADDRESS] = UNKNOWN_IP
+            await id_resolver.async_get_unique_id_if_missing(new_conf, new)
             new_devices.append(new)
 
         config_entry.version = CURRENT_CONFIG_VERSION
@@ -126,6 +141,82 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 "Configuration didn't change during migration to version %s",
                 config_entry.version,
             )
-        return True
+        return id_resolver.success
 
     return False
+
+
+class _ApplianceIdResolver:
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+        self.client: Final = MideaClient()
+        self.cloud: MideaCloud | None = None
+        self.list_appliances: list[LanDevice] | None = None
+        self.success = True
+
+    async def _start(self, conf: dict[str, None]):
+        try:
+            self.cloud = await self.hass.async_add_executor_job(
+                self.client.connect_to_cloud,
+                conf[CONF_USERNAME],
+                conf[CONF_PASSWORD],
+                conf[CONF_APPKEY],
+                conf[CONF_APPID],
+            )
+            self.list_appliances = self.cloud.list_appliances()
+        except MideaError as ex:
+            _LOGGER.error(
+                "Unable to get list of appliances during configuration migration %s.",
+                ex,
+                exc_info=True,
+            )
+
+    async def async_get_unique_id_if_missing(
+        self,
+        conf: dict[str, Any],
+        device_conf: dict[str, Any],
+    ):
+        """If there is no unique_id assigned, try to find serial number"""
+        if device_conf[CONF_UNIQUE_ID] is None:
+            if device_conf[CONF_DISCOVERY] == DISCOVERY_LAN:
+                appliance = await self._get_appliance_state(device_conf)
+                device_conf[CONF_UNIQUE_ID] = appliance and appliance.serial_number
+            if device_conf[CONF_UNIQUE_ID] is None:
+                if self.cloud is None:
+                    await self._start(conf)
+                if self.list_appliances is not None:
+                    for app in self.list_appliances:
+                        if app.appliance_id == device_conf[CONF_ID]:
+                            device_conf[CONF_UNIQUE_ID] = app.serial_number
+                            break
+            if device_conf[CONF_UNIQUE_ID] is None:
+                _LOGGER.error(
+                    "Unable to find serial number for appliance %s."
+                    "Please re-install %s integration.",
+                    device_conf[CONF_NAME],
+                    NAME,
+                )
+                self.success = False
+
+    async def _get_appliance_state(
+        self,
+        device_conf: dict[str, None],
+        cloud: MideaCloud = None,
+        use_cloud: bool = False,
+    ):
+        try:
+            return await self.hass.async_add_executor_job(
+                self.client.appliance_state,
+                device_conf[CONF_IP_ADDRESS],
+                device_conf[CONF_TOKEN],
+                device_conf[CONF_TOKEN_KEY],
+                cloud,
+                use_cloud,
+                device_conf[CONF_ID],
+            )
+        except MideaError as ex:
+            _LOGGER.error(
+                "Unable to poll appliance during configuration migration %s.",
+                ex,
+                exc_info=True,
+            )
