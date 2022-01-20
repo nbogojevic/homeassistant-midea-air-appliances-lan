@@ -27,7 +27,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_registry import async_get_registry
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
-from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
 from custom_components.midea_dehumidifier_lan.api import MideaClient
@@ -186,12 +185,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     return False
 
 
+# pylint: disable=too-few-public-methods
 class _ApplianceIdResolver:
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
         self.client: Final = MideaClient()
         self.cloud: MideaCloud | None = None
-        self.list_appliances: list[LanDevice] | None = None
+        self.list_appliances: list[dict[str, Any]] | None = None
         self.success = True
 
     async def _start(self, conf: dict[str, None]):
@@ -228,8 +228,13 @@ class _ApplianceIdResolver:
                     await self._start(conf)
                 if self.list_appliances is not None:
                     for app in self.list_appliances:
-                        if app.appliance_id == device_conf[CONF_ID]:
-                            device_conf[CONF_UNIQUE_ID] = app.serial_number
+                        if app["id"] == device_conf[CONF_ID]:
+                            if app["sn"] and app["sn"] != "Unknown":
+                                device_conf[CONF_UNIQUE_ID] = app["sn"]
+                            else:
+                                _LOGGER.warning(
+                                    "Unable to get serial number for %s", app
+                                )
                             break
             if device_conf[CONF_UNIQUE_ID] is None:
                 _LOGGER.error(
@@ -262,3 +267,4 @@ class _ApplianceIdResolver:
                 ex,
                 exc_info=True,
             )
+            return None
