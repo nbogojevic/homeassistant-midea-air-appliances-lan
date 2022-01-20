@@ -24,7 +24,7 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
-
+from homeassistant.helpers.entity_registry import async_get_registry
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
 from midea_beautiful.lan import LanDevice
@@ -54,17 +54,70 @@ from custom_components.midea_dehumidifier_lan.hub import Hub
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Set up platform from a ConfigEntry."""
     hass.data.setdefault(DOMAIN, {})
 
-    if (hub := hass.data[DOMAIN].get(entry.entry_id)) is None:
-        hub = Hub(hass, entry)
-        hass.data[DOMAIN][entry.entry_id] = hub
+    if (hub := hass.data[DOMAIN].get(config_entry.entry_id)) is None:
+        hub = Hub(hass, config_entry)
+        hass.data[DOMAIN][config_entry.entry_id] = hub
     await hub.async_setup()
+    await _async_migrate_names(hass, config_entry)
+    hass.config_entries.async_setup_platforms(config_entry, PLATFORMS)
 
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
     return True
+
+
+async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry):
+    entity_registry = await async_get_registry(hass)
+
+    conf = config_entry.data
+    if devices := conf.get(CONF_DEVICES):
+        old_entites = [
+            entry
+            for _, entry in entity_registry.entities.items()
+            if entry.platform == DOMAIN
+        ]
+        for reg_entry in old_entites:
+            for device in devices:
+                old_suffix = f"_{device[CONF_ID]}"
+                new_suffix = f"_{device[CONF_UNIQUE_ID]}"
+                if reg_entry.unique_id.endswith(old_suffix):
+                    prefix = reg_entry.unique_id[: -len(old_suffix)]
+                    old_unique_id = reg_entry.unique_id
+                    new_unique_id = f"{prefix}{new_suffix}"
+                    try:
+                        entity_registry.async_update_entity(
+                            reg_entry.entity_id,
+                            new_unique_id=new_unique_id,
+                        )
+                        _LOGGER.warning(
+                            "Changed unique id of %s from %s to %s",
+                            reg_entry.entity_id,
+                            old_unique_id,
+                            new_unique_id,
+                        )
+                    except ValueError as ex:
+                        _LOGGER.error(
+                            "Unable to change unique id of %s: %s",
+                            reg_entry.entity_id,
+                            ex,
+                        )
+                        conflict = entity_registry.async_get_entity_id(
+                            reg_entry.domain, reg_entry.platform, new_unique_id
+                        )
+                        if conflict:
+                            entity_registry.async_remove(conflict)
+                            entity_registry.async_update_entity(
+                                reg_entry.entity_id,
+                                new_unique_id=new_unique_id,
+                            )
+                            _LOGGER.warning(
+                                "Did change unique id of %s from %s to %s",
+                                reg_entry.entity_id,
+                                old_unique_id,
+                                new_unique_id,
+                            )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

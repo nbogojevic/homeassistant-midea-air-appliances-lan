@@ -44,7 +44,7 @@
 
 ![Midea Brands][logos]
 
-_Adds support for Midea air conditioning and dehumidifier appliances via local network. Support for air condioning devices is in **beta**_
+_Adds support for Midea air conditioning and dehumidifier appliances via local network. Support for air conditioning devices is in **beta**_
 
 **This component will set up the following entities for dehumidifiers.**
 
