@@ -134,7 +134,9 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         _LOGGER.debug(
             "Migrating configuration from %s to %s", config_entry.data, new_conf
         )
-        if hass.config_entries.async_update_entry(config_entry, data=new_conf):
+        if hass.config_entries.async_update_entry(
+            config_entry, data=new_conf, title=NAME
+        ):
             _LOGGER.info("Configuration migrated to version %s", config_entry.version)
         else:
             _LOGGER.debug(
