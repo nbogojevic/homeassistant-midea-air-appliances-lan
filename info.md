@@ -10,7 +10,7 @@
 {% if (version_installed.split(".")[1] | int) < 6 %}
 
 ## Breaking Changes
-- Unique id of enitites changed. Using serial number now instead of cloud API id.
+- Unique id of enitities changed. Using serial number now instead of cloud API id.
 - Removed sleep switch.
 
 ## Major changes
@@ -20,12 +20,12 @@
 - Enable integration configuration.
 - Enable discovery of appliances at later time
 - Select appliance discovery behavior via dropdown
-- Add notification if appliance is discovered on the network, but was ignored or polled from the cloud
+- Add notification if appliance is discovered on the network, but was either ignored, or polled from the cloud
 - Added tank removed (bucket) binary sensor
-
+- Reverted to three presets for fan in all cases.
 
 ## Bug fixes
-- If appliance doesn't load at start, integration will attemtp again to set it up.
+- If appliance doesn't load at start, integration will attempt again to set it up.
 - An error during startup doesn't prevent integration to load.
 - Fixed integration reload.
 - Fixed entity naming conflicts after an with same id as old appliance is added.
