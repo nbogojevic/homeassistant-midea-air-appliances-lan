@@ -10,7 +10,7 @@
 {% if (version_installed.split(".")[1] | int) < 6 %}
 
 ## Breaking Changes
-- Unique id of enitities changed. Using serial number now instead of cloud API id.
+- Unique id of entities changed. Using serial number now instead of cloud API id.
 - Removed sleep switch.
 
 ## Major changes
@@ -27,8 +27,8 @@
 ## Bug fixes
 - If appliance doesn't load at start, integration will attempt again to set it up.
 - An error during startup doesn't prevent integration to load.
-- Fixed integration reload.
-- Fixed entity naming conflicts after an with same id as old appliance is added.
+- Fixed integration reload failing.
+- Fixed entity naming conflicts after an appliance with same id as another old appliance is added.
 
 {% endif %}
 {% endif %}
@@ -97,10 +97,10 @@ Platform | Description
 * or search for "Midea Air Appliances (LAN)"
 ![Search for "Midea Air Appliances (LAN)"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-choice.png)
 * Sign-in with Midea app account - you may choose Midea app that corresponds to one you use (anyone should work).
-![Setup midea App account"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-account.png)
+![Setup Midea App account"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-account.png)
 * On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces.
 ![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/advanced-options.png)
-* For devices that are known to cloud service, but not discovered localy, you will have another prompt to enter details if you know them or to specify that you want to rely on cloud polling for that device.
+* For devices that are known to cloud service, but not discovered locally, you will have another prompt to enter details if you know them or to specify that you want to rely on cloud polling for that device.
 ![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/appliance-missing.png)
 
 
