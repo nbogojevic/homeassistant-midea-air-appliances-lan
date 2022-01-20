@@ -203,7 +203,9 @@ class _ApplianceIdResolver:
                 conf[CONF_APPKEY],
                 conf[CONF_APPID],
             )
-            self.list_appliances = self.cloud.list_appliances()
+            self.list_appliances = await self.hass.async_add_executor_job(
+                self.cloud.list_appliances
+            )
         except MideaError as ex:
             _LOGGER.error(
                 "Unable to get list of appliances during configuration migration %s.",
