@@ -103,21 +103,6 @@ async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry):
                             reg_entry.entity_id,
                             ex,
                         )
-                        conflict = entity_registry.async_get_entity_id(
-                            reg_entry.domain, reg_entry.platform, new_unique_id
-                        )
-                        if conflict:
-                            entity_registry.async_remove(conflict)
-                            entity_registry.async_update_entity(
-                                reg_entry.entity_id,
-                                new_unique_id=new_unique_id,
-                            )
-                            _LOGGER.warning(
-                                "Did change unique id of %s from %s to %s",
-                                reg_entry.entity_id,
-                                old_unique_id,
-                                new_unique_id,
-                            )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

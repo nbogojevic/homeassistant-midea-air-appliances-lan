@@ -6,11 +6,11 @@
 {% if installed %}
 ## Changes as compared to your installed version:
 
-{% if (version_installed.split(".")[0] | int) < 0 %}
+{% if (version_installed.split(".")[0] | int) < 1 %}
 {% if (version_installed.split(".")[1] | int) < 6 %}
 
 ## Breaking Changes
-- Unique id of entities changed. Using serial number now instead of cloud API id.
+- Unique id of entities changed. Using serial number now instead of cloud API id. Old entites are updated with new unique id.
 - Removed sleep switch.
 
 ## Major changes
