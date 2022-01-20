@@ -78,14 +78,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         new_conf = {
             CONF_APPKEY: old_conf.get(CONF_APPKEY),
             CONF_APPID: old_conf.get(CONF_APPID),
-            CONF_BROADCAST_ADDRESS: old_conf.get(CONF_BROADCAST_ADDRESS),
+            CONF_BROADCAST_ADDRESS: old_conf.get(CONF_BROADCAST_ADDRESS, []),
             CONF_USERNAME: old_conf.get(CONF_USERNAME),
             CONF_PASSWORD: old_conf.get(CONF_PASSWORD),
         }
         if not new_conf.get(CONF_APPID) or not new_conf.get(CONF_APPKEY):
             new_conf[CONF_APPKEY] = DEFAULT_APPKEY
             new_conf[CONF_APPID] = DEFAULT_APP_ID
-        new_conf.setdefault(CONF_BROADCAST_ADDRESS, [])
 
         new_devices = []
         new_conf[CONF_DEVICES] = new_devices

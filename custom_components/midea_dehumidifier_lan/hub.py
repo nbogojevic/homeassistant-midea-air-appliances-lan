@@ -349,7 +349,7 @@ class _ApplianceDiscoveryHelper:
         conf_addresses += [
             item
             for item in data.get(CONF_BROADCAST_ADDRESS, [])
-            if item != LOCAL_BROADCAST
+            if item and item != LOCAL_BROADCAST
         ]
         self.broadcast_addresses = [LOCAL_BROADCAST]
         for addr in conf_addresses:
