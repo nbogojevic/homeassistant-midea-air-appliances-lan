@@ -59,7 +59,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
-        supports = getattr(coordinator.appliance.state, "supports", {})
+        supports = coordinator.appliance.state.capabilities
 
         self._attr_available_modes = [MODE_SET]
         if supports.get("auto", 0):
@@ -104,6 +104,17 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             _LOGGER.warning("Unknown mode %d", curr_mode)
             return MODE_SET
         return mode
+
+    @property
+    def extra_state_attributes(self):
+        """Return entity specific state attributes."""
+        data = {
+            "capabilities": str(self.appliance.state.capabilities),
+            "last_data": self.appliance.state.latest_data.hex(),
+            "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
+        }
+
+        return data
 
     def turn_on(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """Turn the entity on."""

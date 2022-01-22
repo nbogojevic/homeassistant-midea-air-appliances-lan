@@ -160,6 +160,17 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
             return HVAC_MODE_AUTO
         return mode
 
+    @property
+    def extra_state_attributes(self):
+        """Return entity specific state attributes."""
+        data = {
+            "capabilities": str(self.appliance.state.capabilities),
+            "last_data": self.appliance.state.latest_data.hex(),
+            "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
+        }
+
+        return data
+
     _MODES = [
         (1, HVAC_MODE_AUTO),
         (2, HVAC_MODE_COOL),
