@@ -65,11 +65,13 @@ Platform | Description
 `sensor` | Sensors for current relative humidity measured by dehumidifier.
 `sensor` | Sensor for current temperature measured by dehumidifier.
 `sensor` | Sensor for water level in the tank (_created if device announces that water level is supported_).
-`sensor` | Sensor with value of error code of the appliance (_disabled by default_).
 `switch` | Switch ion mode on and off (_created if device announces that (an)ion mode is supported_)
 `switch` | Switch pump on and off (_created if device announces that pump is supported_).
+`switch` | Switch to enable pump (_created if device announces that pump is supported_).
 `switch` | Switch to activate beep on action (_disabled by default_).
 
+
+In addition to this, `humidifier` entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
 This custom component creates following entities for each discovered air conditioner:
 
@@ -80,7 +82,6 @@ Platform | Description
 `binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
 `binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensor for outside temperature measured by air conditioner.
-`sensor` | Sensor with value of error code of the appliance (_disabled by default_).
 `switch` | Switch purifier mode on and off (_enabled if device announces that it is supported_).
 `switch` | Switch dryer mode on and off (_disabled by default_).
 `switch` | Switch sleep mode on and off (_disabled by default_).
@@ -88,6 +89,8 @@ Platform | Description
 `switch` | Switch display to Fahrenheit degrees (_enabled if device announces that it is supported_).
 `switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
 `switch` | Switch screen on and off (_enabled if device announces that it is supported_).
+
+In addition to this, `climate` entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
 ## See also
 
