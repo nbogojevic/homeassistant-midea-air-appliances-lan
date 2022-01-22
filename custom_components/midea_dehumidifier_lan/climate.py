@@ -183,7 +183,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
             "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
             "error_code": new_error_code,
             "last_error_code": self._last_error_code,
-            "last_time": self._last_error_code_time,
+            "last_error_time": self._last_error_code_time,
         }
 
         return data
