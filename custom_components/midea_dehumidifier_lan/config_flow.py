@@ -72,6 +72,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DEFAULT_USERNAME,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
+    DISCOVERY_LAN,
     DISCOVERY_MODE_LABELS,
     DISCOVERY_WAIT,
     DOMAIN,
@@ -268,6 +269,7 @@ class _MideaFlow(FlowHandler):
         return discovered
 
     async def _async_add_entry(self: _MideaFlow) -> FlowResult:
+        supported_devices_conf = []
         for i, appliance in enumerate(self.appliances):
             _LOGGER.debug("APPLIANCE %d %s", i, appliance)
             if not supported_appliance(self.conf, appliance):
@@ -292,6 +294,14 @@ class _MideaFlow(FlowHandler):
                         CONF_UNIQUE_ID: appliance.serial_number,
                     }
                 )
+                suggested_discovery = (
+                    DISCOVERY_LAN
+                    if device_conf[CONF_IP_ADDRESS] != UNKNOWN_IP
+                    else DISCOVERY_WAIT
+                )
+                device_conf.get(CONF_DISCOVERY, suggested_discovery)
+                supported_devices_conf.append(device_conf)
+        self.devices_conf = supported_devices_conf
         self.conf[CONF_DEVICES] = self.devices_conf
 
         # Remove not used elements
