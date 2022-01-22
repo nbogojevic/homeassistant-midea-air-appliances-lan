@@ -182,7 +182,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
             )
         return id_resolver.success
 
-    return False
+    return True
 
 
 # pylint: disable=too-few-public-methods
