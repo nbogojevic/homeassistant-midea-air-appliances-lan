@@ -341,8 +341,9 @@ class _ApplianceDiscoveryHelper:
         self.notifed_addresses.clear()
         conf_addresses: list[str] = []
         has_discovrable = False
+        device: dict[str, Any]
         for device in data[CONF_DEVICES]:
-            if device[CONF_DISCOVERY] != DISCOVERY_LAN:
+            if device.get(CONF_DISCOVERY) != DISCOVERY_LAN:
                 has_discovrable = True
                 if device[CONF_IP_ADDRESS] and device[CONF_IP_ADDRESS] != UNKNOWN_IP:
                     conf_addresses.append(device[CONF_IP_ADDRESS])

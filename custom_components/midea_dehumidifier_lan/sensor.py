@@ -38,7 +38,7 @@ async def async_setup_entry(
     async_add_entities(
         TankLevelSensor(c)
         for c in hub.coordinators
-        if c.is_dehumidifier() and c.dehumidifier().supports.get("water_level")
+        if c.is_dehumidifier() and c.dehumidifier().capabilities.get("water_level")
     )
     # Climate sensors
     async_add_entities(

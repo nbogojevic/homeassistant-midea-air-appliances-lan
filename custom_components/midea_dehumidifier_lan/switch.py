@@ -131,7 +131,7 @@ async def async_setup_entry(
             if coord.is_dehumidifier():
                 if (
                     switch.capability in _ALWAYS_CREATE
-                    or coord.dehumidifier().supports.get(switch.capability, False)
+                    or coord.dehumidifier().capabilities.get(switch.capability, False)
                 ):
                     switches.append(MideaSwitch(coord, switch))
 
@@ -141,7 +141,7 @@ async def async_setup_entry(
             if coord.is_climate():
                 if (
                     switch.capability in _ALWAYS_CREATE
-                    or coord.airconditioner().supports.get(switch.capability, False)
+                    or coord.airconditioner().capabilities.get(switch.capability, False)
                 ):
                     switches.append(MideaSwitch(coord, switch))
 
