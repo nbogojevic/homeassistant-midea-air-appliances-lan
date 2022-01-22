@@ -5,7 +5,6 @@ from typing import Any, Final
 
 from homeassistant.components.fan import (
     SUPPORT_PRESET_MODE,
-    SUPPORT_SET_SPEED,
     FanEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -13,17 +12,23 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan.const import ATTR_FAN_SPEED, DOMAIN
-from custom_components.midea_dehumidifier_lan.hub import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan.hub import (
+    ApplianceEntity,
+    ApplianceUpdateCoordinator,
+    Hub,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-MODE_MEDIUM: Final = "Medium"
 MODE_NONE: Final = "None"
 MODE_AUTO: Final = "Auto"
 MODE_LOW: Final = "Low"
+MODE_MEDIUM: Final = "Medium"
 MODE_HIGH: Final = "High"
 
 PRESET_MODES_7: Final = [MODE_LOW, MODE_MEDIUM, MODE_HIGH]
+PRESET_MODES_3: Final = [MODE_LOW, MODE_HIGH]
+PRESET_MODES_2: Final = [MODE_AUTO]
 
 
 async def async_setup_entry(
@@ -44,15 +49,33 @@ async def async_setup_entry(
 class DehumidiferFan(ApplianceEntity, FanEntity):
     """Entity for managing dehumidifer fan"""
 
-    _attr_speed_count = 3
-    _attr_preset_modes = PRESET_MODES_7
-    _attr_supported_features = SUPPORT_PRESET_MODE | SUPPORT_SET_SPEED
+    _attr_supported_features = SUPPORT_PRESET_MODE
     _name_suffix = " Fan"
+
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        supports = coordinator.appliance.state.capabilities
+        fan_capability = supports.get("fan_speed", 0)
+
+        if fan_capability == 3:
+            self._attr_preset_modes = PRESET_MODES_3
+        elif fan_capability == 2:
+            self._attr_preset_modes = PRESET_MODES_2
+        else:
+            self._attr_preset_modes = PRESET_MODES_7
+        self._attr_speed_count = len(self._attr_preset_modes)
+        self._fan_speeds = {
+            MODE_NONE: 0,
+            MODE_LOW: 40,
+            MODE_MEDIUM: 60,
+            MODE_HIGH: 80 if self._attr_speed_count == 3 else 60,
+            MODE_AUTO: 101,
+        }
 
     @property
     def is_on(self) -> bool:
         """Assume fan is off when in silent mode"""
-        return self.dehumidifier().fan_speed > 40
+        return self.dehumidifier().fan_speed > self._fan_speeds[MODE_LOW]
 
     @property
     def percentage(self) -> int:
@@ -61,28 +84,20 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
 
     @property
     def preset_mode(self) -> str:
-        speed = self.dehumidifier().fan_speed
+        fan_speed = self.dehumidifier().fan_speed
+        for mode, mode_speed in self._fan_speeds.items():
+            if fan_speed <= mode_speed:
+                return mode
+        return MODE_NONE
 
-        if speed == 0:
-            return MODE_NONE
-        if speed <= 40:
-            return MODE_LOW
-        if speed <= 60:
-            return MODE_MEDIUM
-        if speed <= 80:
-            return MODE_HIGH
-        return MODE_AUTO
+    def _is_speed(self, speed: int) -> bool:
+        return self._attr_speed_count == speed
 
     def set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan."""
-        if preset_mode == MODE_LOW:
-            self.apply(ATTR_FAN_SPEED, 40)
-        elif preset_mode == MODE_MEDIUM:
-            self.apply(ATTR_FAN_SPEED, 60)
-        elif preset_mode == MODE_HIGH:
-            self.apply(ATTR_FAN_SPEED, 80)
-        elif preset_mode == MODE_AUTO:
-            self.apply(ATTR_FAN_SPEED, 101)
+        speed = self._fan_speeds.get(preset_mode, None)
+        if speed is not None:
+            self.apply(ATTR_FAN_SPEED, speed)
         else:
             _LOGGER.warning("Unsupported fan mode %s", preset_mode)
 
@@ -108,7 +123,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         if speed is not None:
             self.set_speed(speed)
             updated = True
-        if not updated and self.percentage <= 40:
+        if not updated and self.percentage < self._fan_speeds[MODE_MEDIUM]:
             self.set_preset_mode(MODE_MEDIUM)
 
     def turn_off(self, **kwargs: Any) -> None:
