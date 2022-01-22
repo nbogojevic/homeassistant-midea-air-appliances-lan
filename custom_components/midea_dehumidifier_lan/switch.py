@@ -47,6 +47,13 @@ PUMP_SWITCH: Final = _MideaSwitchDescriptor(
     capability="pump",
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
+PUMP_SWITCH_ENABLED: Final = _MideaSwitchDescriptor(
+    attr="pump_enabled",
+    name="Pump Enabled",
+    icon="mdi:electric-switch",
+    capability="pump",
+    prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
+)
 DEHUMIDIFIER_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="beep_prompt",
     name="Beep",
@@ -58,6 +65,7 @@ DEHUMIDIFER_SWITCHES: Final = [
     DEHUMIDIFIER_BEEP_SWITCH,
     ION_MODE_SWITCH,
     PUMP_SWITCH,
+    PUMP_SWITCH_ENABLED,
 ]
 # Climate
 CLIMATE_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
