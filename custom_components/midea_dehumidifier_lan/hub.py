@@ -83,14 +83,14 @@ def empty_address_iterator():
 
 
 def _redact_key(redacted_data: dict[str, Any], key: str, char="*"):
-    if redacted_data[key]:
+    if redacted_data.get(key):
         redacted_data[key] = char * len(redacted_data[key])
 
 
 def redacted_conf(data: dict[str, Any]) -> dict[str, Any]:
     """Remove sensitive information from configuration"""
     conf = {**data}
-    if conf[CONF_USERNAME]:
+    if conf.get(CONF_USERNAME):
         old_username = conf[CONF_USERNAME]
         _redact_key(conf, CONF_USERNAME)
         conf[CONF_USERNAME][0] = old_username[0]
