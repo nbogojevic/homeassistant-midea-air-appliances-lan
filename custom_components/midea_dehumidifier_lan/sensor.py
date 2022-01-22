@@ -44,24 +44,6 @@ async def async_setup_entry(
     async_add_entities(
         OutsideTemperatureSensor(c) for c in hub.coordinators if c.is_climate()
     )
-    async_add_entities(
-        ErrorCodeSensor(c)
-        for c in hub.coordinators
-        if c.is_dehumidifier() or c.is_climate()
-    )
-
-
-class ErrorCodeSensor(ApplianceEntity, SensorEntity):
-    """Returns current appliance error code"""
-
-    _attr_state_class = SensorStateClass.MEASUREMENT
-    _name_suffix = " Error Code"
-    _attr_entity_registry_enabled_default = False
-
-    @property
-    def native_value(self) -> float:
-        """Return the value of the sensor property."""
-        return self.dehumidifier().error_code
 
 
 class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
