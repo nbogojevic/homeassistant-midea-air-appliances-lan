@@ -1,5 +1,6 @@
 """Adds dehumidifer entity for each dehumidifer appliance."""
 
+from datetime import datetime
 import logging
 from typing import Final
 
@@ -61,6 +62,8 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         super().__init__(coordinator)
         supports = coordinator.appliance.state.capabilities
 
+        self._last_error_code = 0
+        self._last_error_code_time = datetime.now()
         self._attr_available_modes = [MODE_SET]
         if supports.get("auto", 0):
             self._attr_available_modes.append(MODE_SMART)
@@ -108,10 +111,17 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     @property
     def extra_state_attributes(self):
         """Return entity specific state attributes."""
+        new_error_code = self.dehumidifier().error_code
+        if new_error_code:
+            self._last_error_code = new_error_code
+            self._last_error_code_time = datetime.now()
         data = {
             "capabilities": str(self.appliance.state.capabilities),
             "last_data": self.appliance.state.latest_data.hex(),
             "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
+            "error_code": new_error_code,
+            "last_error_code": self._last_error_code,
+            "last_time": self._last_error_code_time,
         }
 
         return data

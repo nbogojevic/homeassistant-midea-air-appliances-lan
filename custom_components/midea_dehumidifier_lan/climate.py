@@ -1,5 +1,6 @@
 """Adds climate entity for each air conditioner appliance."""
 
+from datetime import datetime
 import logging
 from typing import Final
 
@@ -38,7 +39,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     MAX_TARGET_TEMPERATURE,
     MIN_TARGET_TEMPERATURE,
 )
-from custom_components.midea_dehumidifier_lan.hub import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan.hub import (
+    ApplianceEntity,
+    ApplianceUpdateCoordinator,
+    Hub,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,6 +105,11 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         | SUPPORT_SWING_MODE
         | SUPPORT_PRESET_MODE
     )
+
+    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+        super().__init__(coordinator)
+        self._last_error_code = 0
+        self._last_error_code_time = datetime.now()
 
     @property
     def is_on(self) -> bool:
@@ -163,10 +173,17 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     @property
     def extra_state_attributes(self):
         """Return entity specific state attributes."""
+        new_error_code = self.dehumidifier().error_code
+        if new_error_code:
+            self._last_error_code = new_error_code
+            self._last_error_code_time = datetime.now()
         data = {
             "capabilities": str(self.appliance.state.capabilities),
             "last_data": self.appliance.state.latest_data.hex(),
             "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
+            "error_code": new_error_code,
+            "last_error_code": self._last_error_code,
+            "last_time": self._last_error_code_time,
         }
 
         return data
