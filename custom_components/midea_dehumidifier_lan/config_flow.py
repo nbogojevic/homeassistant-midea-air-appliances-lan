@@ -350,7 +350,19 @@ class _MideaFlow(FlowHandler):
                 self._check_ip_address_unique(ip_address)
 
                 discovery_mode = user_input.get(CONF_DISCOVERY, discovery_mode)
+                if discovery_mode not in [
+                    DISCOVERY_WAIT,
+                    DISCOVERY_LAN,
+                    DISCOVERY_IGNORE,
+                    DISCOVERY_CLOUD,
+                ]:
+                    discovery_mode = (
+                        DISCOVERY_LAN
+                        if ip_address and ip_address != UNKNOWN_IP
+                        else DISCOVERY_CLOUD
+                    )
                 device_conf[CONF_DISCOVERY] = discovery_mode
+
                 appliance.address = ip_address
                 appliance.name = user_input.get(CONF_NAME, appliance.name)
                 appliance.token = user_input.get(CONF_TOKEN, "")

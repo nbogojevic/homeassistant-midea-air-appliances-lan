@@ -82,6 +82,26 @@ def empty_address_iterator():
     yield from ()
 
 
+def _redact_key(redacted_data: dict[str, Any], key: str, char="*"):
+    if redacted_data[key]:
+        redacted_data[key] = char * len(redacted_data[key])
+
+
+def redacted_conf(data: dict[str, Any]) -> dict[str, Any]:
+    """Remove sensitive information from configuration"""
+    conf = {**data}
+    if conf[CONF_USERNAME]:
+        old_username = conf[CONF_USERNAME]
+        _redact_key(conf, CONF_USERNAME)
+        conf[CONF_USERNAME][0] = old_username[0]
+    _redact_key(conf, CONF_PASSWORD)
+    if conf.get(CONF_DEVICES):
+        for device in conf[CONF_DEVICES]:
+            _redact_key(device, CONF_TOKEN)
+            _redact_key(device, CONF_TOKEN_KEY)
+    return conf
+
+
 class _ApplianceDiscoveryHelper:
     def __init__(self, hub: Hub) -> None:
         self.hub = hub
@@ -512,6 +532,15 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 return
 
         try:
+            ip_address = device[CONF_IP_ADDRESS] if lan_mode else None
+            if not ip_address and not use_cloud:
+                _LOGGER.error(
+                    "Missing ip_address and cloud discovery not used: %s."
+                    "Will fall-back to cloud discovery, full configuration %s",
+                    redacted_conf(device),
+                    redacted_conf(self.data),
+                )
+                use_cloud = True
             appliance = await self.hass.async_add_executor_job(
                 self.client.appliance_state,
                 device[CONF_IP_ADDRESS] if lan_mode else None,  # ip
@@ -526,10 +555,9 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         except Exception as ex:  # pylint: disable=broad-except
             self.errors[device[CONF_UNIQUE_ID]] = str(ex)
             _LOGGER.error(
-                "Error while setting appliance id=%s sn=%s ip=%s: %s",
-                device[CONF_ID],
-                device[CONF_UNIQUE_ID],
-                device[CONF_IP_ADDRESS],
+                "Error while setting appliance %s, full configuration %s, cause %s",
+                redacted_conf(device),
+                redacted_conf(self.data),
                 ex,
                 exc_info=True,
             )
@@ -585,7 +613,10 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     def _cloud(self):
         if self.use_cloud:
             if not self.hub.cloud:
-                raise UpdateFailed("Midea cloud API was not initialized")
+                raise UpdateFailed(
+                    f"Midea cloud API was not initialized, {self.appliance}"
+                    f" configuration={redacted_conf(self.hub.data)}"
+                )
             return self.hub.cloud
         return None
 

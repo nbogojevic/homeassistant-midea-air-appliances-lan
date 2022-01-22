@@ -153,7 +153,13 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 CONF_UNIQUE_ID: old.get(CONF_UNIQUE_ID),
             }
 
-            if not new.get(CONF_DISCOVERY):
+            discovery_mode = new.get(CONF_DISCOVERY)
+            if not discovery_mode or discovery_mode not in [
+                DISCOVERY_WAIT,
+                DISCOVERY_LAN,
+                DISCOVERY_IGNORE,
+                DISCOVERY_CLOUD,
+            ]:
                 if old.get(CONF_USE_CLOUD_OBSOLETE):
                     new[CONF_DISCOVERY] = DISCOVERY_CLOUD
                 elif old.get(CONF_EXCLUDE):
@@ -162,6 +168,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                     new[CONF_DISCOVERY] = DISCOVERY_WAIT
                 else:
                     new[CONF_DISCOVERY] = DISCOVERY_LAN
+
             if not new.get(CONF_IP_ADDRESS):
                 new[CONF_IP_ADDRESS] = UNKNOWN_IP
             await id_resolver.async_get_unique_id_if_missing(new_conf, new)
