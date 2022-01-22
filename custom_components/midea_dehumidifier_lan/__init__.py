@@ -233,16 +233,7 @@ class _ApplianceIdResolver:
             if device_conf[CONF_UNIQUE_ID] is None:
                 if self.cloud is None:
                     await self._start(conf)
-                if self.list_appliances is not None:
-                    for app in self.list_appliances:
-                        if app["id"] == device_conf[CONF_ID]:
-                            if app["sn"] and app["sn"] != "Unknown":
-                                device_conf[CONF_UNIQUE_ID] = app["sn"]
-                            else:
-                                _LOGGER.warning(
-                                    "Unable to get serial number for %s", app
-                                )
-                            break
+                self._find_unique_id_in_appliance_list(device_conf)
             if device_conf[CONF_UNIQUE_ID] is None:
                 _LOGGER.error(
                     "Unable to find serial number for appliance %s."
@@ -251,6 +242,16 @@ class _ApplianceIdResolver:
                     NAME,
                 )
                 self.success = False
+
+    def _find_unique_id_in_appliance_list(self, device_conf):
+        if self.list_appliances is not None:
+            for app in self.list_appliances:
+                if app["id"] == device_conf[CONF_ID]:
+                    if app["sn"] and app["sn"] != "Unknown":
+                        device_conf[CONF_UNIQUE_ID] = app["sn"]
+                    else:
+                        _LOGGER.warning("Unable to get serial number for %s", app)
+                    break
 
     async def _get_appliance_state(
         self,
