@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from midea_beautiful.midea import ERROR_CODE_P2
+from midea_beautiful.midea import ERROR_CODE_BUCKET_FULL, ERROR_CODE_BUCKET_REMOVED
 
 from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
@@ -59,13 +59,13 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         return (
             self.dehumidifier().tank_full
-            or self.dehumidifier().error_code == ERROR_CODE_P2
+            or self.dehumidifier().error_code == ERROR_CODE_BUCKET_FULL
         )
 
 
 class TankRemovedSensor(ApplianceEntity, BinarySensorEntity):
     """
-    Describes tank has been removed binary sensors (indicated as problem as it prevents
+    Shows that tank has been removed binary sensors (indicated as problem as it prevents
     dehumidifier from operating)
     """
 
@@ -74,7 +74,7 @@ class TankRemovedSensor(ApplianceEntity, BinarySensorEntity):
 
     @property
     def is_on(self) -> bool:
-        return self.dehumidifier().error_code == 37
+        return self.dehumidifier().error_code == ERROR_CODE_BUCKET_REMOVED
 
 
 class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
