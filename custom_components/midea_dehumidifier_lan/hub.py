@@ -91,9 +91,7 @@ def redacted_conf(data: dict[str, Any]) -> dict[str, Any]:
     """Remove sensitive information from configuration"""
     conf = {**data}
     if conf.get(CONF_USERNAME):
-        old_username = conf[CONF_USERNAME]
         _redact_key(conf, CONF_USERNAME)
-        conf[CONF_USERNAME][0] = old_username[0]
     _redact_key(conf, CONF_PASSWORD)
     if conf.get(CONF_DEVICES):
         for device in conf[CONF_DEVICES]:
