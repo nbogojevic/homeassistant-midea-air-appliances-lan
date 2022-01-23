@@ -70,7 +70,7 @@ async def test_successful_config_flow(hass: HomeAssistant, midea_single_applianc
     assert result["result"]
 
 
-async def test_successful_config_flow_midea_two_appliances(
+async def test_successful_config_flow_midea_two_appliances_only_dehumidifier(
     hass: HomeAssistant, midea_two_appliances
 ):
     """Test a successful config flow."""
@@ -93,7 +93,7 @@ async def test_successful_config_flow_midea_two_appliances(
     assert result["title"] == "Midea Air Appliance"
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
-    assert len(result["data"]["devices"]) == 2
+    assert len(result["data"]["devices"]) == 1
     assert result["result"]
 
 
@@ -244,6 +244,7 @@ async def test_advanced_settings_config_flow_success_use_cloud(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input=user_input
     )
+    print(result)
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["title"] == "Midea Air Appliance"
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]

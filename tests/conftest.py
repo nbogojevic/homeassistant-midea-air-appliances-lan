@@ -2,11 +2,12 @@
 # pylint: disable=unused-argument
 """Global fixtures for integration."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from midea_beautiful.exceptions import CloudAuthenticationError, MideaError
+from midea_beautiful.midea import APPLIANCE_TYPE_DEHUMIDIFIER, APPLIANCE_TYPE_AIRCON
 
 from custom_components.midea_dehumidifier_lan.api import MideaClient
 
@@ -70,27 +71,58 @@ def midea_no_appliances():
 
 
 @pytest.fixture(name="midea_single_appliances")
-def midea_single_appliances():
+def midea_single_appliances(dehumidifier_mock):
     """Skip calls to get data from API."""
     with patch.multiple(
         MideaClient,
         connect_to_cloud=Mock(),
         appliance_state=Mock(),
-        find_appliances=Mock(return_value=[Mock()]),
+        find_appliances=Mock(return_value=[dehumidifier_mock]),
     ):
         yield
 
 
 @pytest.fixture(name="midea_two_appliances")
-def midea_two_appliances():
+def midea_two_appliances(dehumidifier_mock, airconditioner_mock):
     """Skip calls to get data from API."""
+    dehumidifier_mock()
     with patch.multiple(
         MideaClient,
         connect_to_cloud=Mock(),
         appliance_state=Mock(),
-        find_appliances=Mock(return_value=[Mock(), Mock()]),
+        find_appliances=Mock(return_value=[dehumidifier_mock, airconditioner_mock]),
     ):
         yield
+
+
+@pytest.fixture(name="dehumidifier_mock")
+def dehumidifier_mock():
+    """Mock dehumidifier appliance"""
+    dehumidifier_mock = MagicMock()
+    dehumidifier_mock.type = APPLIANCE_TYPE_DEHUMIDIFIER
+    dehumidifier_mock.version = 3
+    dehumidifier_mock.name = "Test Name"
+    dehumidifier_mock.address = "192.0.2.1"
+    dehumidifier_mock.token = "TOKEN"
+    dehumidifier_mock.key = "KEY"
+    dehumidifier_mock.appliance_id = "654321"
+    dehumidifier_mock.serial_number = "SN654321"
+    return dehumidifier_mock
+
+
+@pytest.fixture(name="airconditioner_mock")
+def airconditioner_mock():
+    """Mock air conditioner appliance"""
+    airconditioner_mock = MagicMock()
+    airconditioner_mock.type = APPLIANCE_TYPE_AIRCON
+    airconditioner_mock.version = 3
+    airconditioner_mock.name = "Test AC"
+    airconditioner_mock.address = "192.0.2.2"
+    airconditioner_mock.token = "TOKENAC"
+    airconditioner_mock.key = "KEYAC"
+    airconditioner_mock.appliance_id = "65432123456"
+    airconditioner_mock.serial_number = "AC654321"
+    return airconditioner_mock
 
 
 @pytest.fixture(name="midea_two_appliances_one_supported")
