@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import logging
-from typing import Final
+from typing import Any, Final
 
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
 from homeassistant.components.humidifier.const import SUPPORT_MODES
@@ -100,7 +100,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     ]
 
     @property
-    def mode(self):
+    def mode(self) -> str:
         curr_mode = self.dehumidifier().mode
         mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
         if mode is None:
@@ -109,7 +109,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         return mode
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return entity specific state attributes."""
         new_error_code = self.dehumidifier().error_code
         if new_error_code:

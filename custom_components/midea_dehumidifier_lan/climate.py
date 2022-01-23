@@ -2,7 +2,7 @@
 
 from datetime import datetime
 import logging
-from typing import Final
+from typing import Any, Final
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
@@ -127,7 +127,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         return self.airconditioner().target_temperature
 
     @property
-    def fan_mode(self):
+    def fan_mode(self) -> str:
         fan = self.airconditioner().fan_speed
         if fan <= 20:
             return FAN_SILENT
@@ -152,7 +152,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         return PRESET_NONE
 
     @property
-    def swing_mode(self):
+    def swing_mode(self) -> str:
         if self.airconditioner().vertical_swing:
             if self.airconditioner().horizontal_swing:
                 return SWING_BOTH
@@ -162,7 +162,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         return SWING_OFF
 
     @property
-    def hvac_mode(self):
+    def hvac_mode(self) -> str:
         curr_mode = self.airconditioner().mode
         mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
         if mode is None:
@@ -171,7 +171,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         return mode
 
     @property
-    def extra_state_attributes(self):
+    def extra_state_attributes(self) -> dict[str, Any]:
         """Return entity specific state attributes."""
         new_error_code = self.dehumidifier().error_code
         if new_error_code:

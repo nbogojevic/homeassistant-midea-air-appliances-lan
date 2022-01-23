@@ -55,7 +55,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
     _name_suffix = " Humidity"
 
     @property
-    def native_value(self):
+    def native_value(self) -> int:
         return self.dehumidifier().current_humidity
 
 
@@ -68,7 +68,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     _name_suffix = " Temperature"
 
     @property
-    def native_value(self):
+    def native_value(self) -> float:
         return self.dehumidifier().current_temperature
 
 
@@ -86,7 +86,7 @@ class TankLevelSensor(ApplianceEntity, SensorEntity):
         )
 
     @property
-    def native_value(self):
+    def native_value(self) -> int:
         return self.dehumidifier().tank_level
 
 
@@ -100,5 +100,5 @@ class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
     _name_suffix = " Outdoor Temperature"
 
     @property
-    def native_value(self):
+    def native_value(self) -> float:
         return self.airconditioner().outdoor_temperature

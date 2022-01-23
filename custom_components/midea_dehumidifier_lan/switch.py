@@ -1,7 +1,6 @@
 """Support for different Midea appliances switches"""
 
 from dataclasses import dataclass
-import logging
 from typing import Final
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -118,9 +117,6 @@ CLIMATE_SWITCHES: Final = [
     PURIFIER_SWITCH,
     TURBO_FAN_SWITCH,
 ]
-
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(

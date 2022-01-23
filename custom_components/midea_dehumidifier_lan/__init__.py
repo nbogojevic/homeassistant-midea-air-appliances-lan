@@ -5,7 +5,6 @@ The custom component for local network access to Midea appliances
 from __future__ import annotations
 
 import logging
-from typing import Any, Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -27,6 +26,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_registry import async_get_registry
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
+from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
 from custom_components.midea_dehumidifier_lan.api import MideaClient
@@ -46,6 +46,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     PLATFORMS,
     UNKNOWN_IP,
+    ConfDict,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 
@@ -67,7 +68,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     return True
 
 
-async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry):
+async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
     entity_registry = await async_get_registry(hass)
 
     conf = config_entry.data
@@ -139,7 +140,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 
         id_resolver = _ApplianceIdResolver(hass)
 
-        old: dict
+        old: ConfDict
         for old in config_entry.data[CONF_DEVICES]:
             new = {
                 CONF_API_VERSION: old.get(CONF_API_VERSION),
@@ -196,12 +197,12 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 class _ApplianceIdResolver:
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
-        self.client: Final = MideaClient()
+        self.client = MideaClient()
         self.cloud: MideaCloud | None = None
-        self.list_appliances: list[dict[str, Any]] | None = None
+        self.list_appliances: list[dict] | None = None
         self.success = True
 
-    async def _start(self, conf: dict[str, None]):
+    async def _start(self, conf: ConfDict) -> None:
         try:
             self.cloud = await self.hass.async_add_executor_job(
                 self.client.connect_to_cloud,
@@ -222,9 +223,9 @@ class _ApplianceIdResolver:
 
     async def async_get_unique_id_if_missing(
         self,
-        conf: dict[str, Any],
-        device_conf: dict[str, Any],
-    ):
+        conf: ConfDict,
+        device_conf: ConfDict,
+    ) -> None:
         """If there is no unique_id assigned, try to find serial number"""
         if device_conf[CONF_UNIQUE_ID] is None:
             if device_conf[CONF_DISCOVERY] == DISCOVERY_LAN:
@@ -243,7 +244,7 @@ class _ApplianceIdResolver:
                 )
                 self.success = False
 
-    def _find_unique_id_in_appliance_list(self, device_conf):
+    def _find_unique_id_in_appliance_list(self, device_conf) -> None:
         if self.list_appliances is not None:
             for app in self.list_appliances:
                 if app["id"] == device_conf[CONF_ID]:
@@ -255,10 +256,10 @@ class _ApplianceIdResolver:
 
     async def _get_appliance_state(
         self,
-        device_conf: dict[str, None],
+        device_conf: ConfDict,
         cloud: MideaCloud = None,
         use_cloud: bool = False,
-    ):
+    ) -> LanDevice | None:
         try:
             return await self.hass.async_add_executor_job(
                 self.client.appliance_state,
