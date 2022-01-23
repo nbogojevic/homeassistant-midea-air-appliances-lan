@@ -6,11 +6,11 @@ from __future__ import annotations
 import asyncio
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 import ipaddress
 import itertools
 import logging
-from typing import Any, Final, Iterator, cast, final
+from typing import Iterator, cast, final
 
 from homeassistant.components.network import async_get_ipv4_broadcast_addresses
 from homeassistant.config_entries import ConfigEntry
@@ -42,6 +42,7 @@ from homeassistant.helpers.update_coordinator import (
 from homeassistant.util import slugify
 
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
+from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import AuthenticationError, MideaError
 from midea_beautiful.lan import LanDevice
 
@@ -59,6 +60,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     CONF_APPKEY,
     CONF_TOKEN_KEY,
     DEFAULT_DISCOVERY_MODE,
+    DISCOVERY_BATCH_SIZE,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
@@ -69,12 +71,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     UNIQUE_DEHUMIDIFIER_PREFIX,
     UNKNOWN_IP,
+    ConfDict,
 )
 
 
 _LOGGER = logging.getLogger(__name__)
-
-_DISCOVER_BATCH_SIZE: Final = 64
 
 
 def empty_address_iterator():
@@ -82,22 +83,73 @@ def empty_address_iterator():
     yield from ()
 
 
-def _redact_key(redacted_data: dict[str, Any], key: str, char="*"):
+def _redact_key(redacted_data: ConfDict, key: str, char="*", length: int = 0) -> None:
     if redacted_data.get(key) is not None:
-        redacted_data[key] = char * len(str(redacted_data[key]))
+        to_redact = str(redacted_data[key])
+        if length <= 0 or length >= len(to_redact):
+            redacted_data[key] = char * len(to_redact)
+        else:
+            redacted_data[key] = to_redact[:-length] + char * length
 
 
-def redacted_conf(data: dict[str, Any]) -> dict[str, Any]:
+def redacted_conf(data: ConfDict) -> ConfDict:
     """Remove sensitive information from configuration"""
     conf = {**data}
     _redact_key(conf, CONF_USERNAME)
     _redact_key(conf, CONF_PASSWORD)
+    _redact_device_conf(conf)
     if conf.get(CONF_DEVICES) and isinstance(conf.get(CONF_DEVICES), list):
         for device in conf[CONF_DEVICES]:
             if device and isinstance(device, dict):
-                _redact_key(device, CONF_TOKEN)
-                _redact_key(device, CONF_TOKEN_KEY)
+                _redact_device_conf(device)
     return conf
+
+
+def _redact_device_conf(device) -> None:
+    _redact_key(device, CONF_TOKEN)
+    _redact_key(device, CONF_TOKEN_KEY)
+    _redact_key(device, CONF_UNIQUE_ID, length=8)
+    _redact_key(device, CONF_ID, length=4)
+
+
+def assure_valid_device_configuration(conf: ConfDict, device: ConfDict) -> bool:
+    """Checks device configuration.
+    If configuration is correct returns ``True``.
+    If it is not complete, updates it and returns ``False``.
+    For example, if discovery mode is not set-up corectly it will try to deduce
+    correct setting."""
+    discovery_mode = device.get(CONF_DISCOVERY)
+    _LOGGER.debug(
+        "Device %s %s has discovery mode %s",
+        device.get(CONF_NAME),
+        device.get(CONF_UNIQUE_ID),
+        discovery_mode,
+    )
+    if discovery_mode in [
+        DISCOVERY_IGNORE,
+        DISCOVERY_WAIT,
+        DISCOVERY_LAN,
+        DISCOVERY_CLOUD,
+    ]:
+        return True
+    ip_address = device.get(CONF_IP_ADDRESS)
+    token = device.get(CONF_TOKEN)
+    key = device.get(CONF_TOKEN_KEY)
+    if ip_address and ip_address != UNKNOWN_IP:
+        device[CONF_DISCOVERY] = DISCOVERY_LAN if token and key else DISCOVERY_WAIT
+    elif token and key:
+        device[CONF_DISCOVERY] = DISCOVERY_WAIT
+    else:
+        username = conf.get(CONF_USERNAME)
+        password = conf.get(CONF_PASSWORD)
+        device[CONF_DISCOVERY] = (
+            DISCOVERY_CLOUD if username and password else DISCOVERY_IGNORE
+        )
+    _LOGGER.warning(
+        "Updated discovery mode for device %s.",
+        redacted_conf(device),
+    )
+    return False
 
 
 class _ApplianceDiscoveryHelper:
@@ -111,7 +163,7 @@ class _ApplianceDiscoveryHelper:
         self.notifed_addresses: set[str] = set()
 
     @staticmethod
-    def iterator(conf_addresses, batch_size: int = _DISCOVER_BATCH_SIZE):
+    def iterator(conf_addresses, batch_size: int = DISCOVERY_BATCH_SIZE):
         """Generator for one batch of ip addresses to scan"""
         net_addrs = []
         addr_count = 0
@@ -187,7 +239,7 @@ class _ApplianceDiscoveryHelper:
             dev_confs += added_devices
         return need_reload
 
-    def _admit_known_device(self, known: dict[str, Any], new: LanDevice) -> bool:
+    def _admit_known_device(self, known: ConfDict, new: LanDevice) -> bool:
         need_reload = False
         if known[CONF_DISCOVERY] == DISCOVERY_WAIT:
             update = {
@@ -231,7 +283,7 @@ class _ApplianceDiscoveryHelper:
     def _possible_lan_notification(
         self,
         device: LanDevice,
-        known: dict[str, Any],
+        known: ConfDict,
         address: str,
     ):
         if address not in self.notifed_addresses:
@@ -350,7 +402,7 @@ class _ApplianceDiscoveryHelper:
 
         return updated_conf
 
-    def setup(self, data: dict[str, Any]):
+    def setup(self, data: ConfDict) -> None:
         """
         Initializes address iterator.
         Address iterator allows iterating over adresses to broadcast to.
@@ -359,7 +411,7 @@ class _ApplianceDiscoveryHelper:
         self.notifed_addresses.clear()
         conf_addresses: list[str] = []
         has_discovrable = False
-        device: dict[str, Any]
+        device: ConfDict
         for device in data[CONF_DEVICES]:
             if device.get(CONF_DISCOVERY) != DISCOVERY_LAN:
                 has_discovrable = True
@@ -380,7 +432,7 @@ class _ApplianceDiscoveryHelper:
         if has_discovrable and conf_addresses:
             _LOGGER.debug("Discovery via configured addresses %s", conf_addresses)
             self.address_iterator = itertools.cycle(
-                _ApplianceDiscoveryHelper.iterator(conf_addresses, _DISCOVER_BATCH_SIZE)
+                _ApplianceDiscoveryHelper.iterator(conf_addresses, DISCOVERY_BATCH_SIZE)
             )
         else:
             self.address_iterator = empty_address_iterator()
@@ -419,7 +471,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         self.discovery_helper.setup(self.data)
         self._setup_discovery_callback()
 
-    def _setup_discovery_callback(self):
+    def _setup_discovery_callback(self) -> None:
         scan_interval = self.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         if scan_interval:
             _LOGGER.debug(
@@ -454,6 +506,8 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         devices = []
         for device_conf in self.data[CONF_DEVICES]:
             device = {**device_conf}
+            if not assure_valid_device_configuration(self.data, device):
+                self.updated_conf = True
             await self._process_appliance(device)
             devices.append(device)
         self.data[CONF_DEVICES] = devices
@@ -470,7 +524,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         if self.errors:
             raise ConfigEntryNotReady(str(self.errors))
 
-    async def _async_discover(self, *_: Any) -> None:
+    async def _async_discover(self, _: datetime) -> None:
         """Discover Midea appliances on configured network interfaces."""
         addresses = list(
             address for address in self.discovery_helper.broadcast_addresses
@@ -486,7 +540,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
         ):
             await self.discovery_helper.async_discover(result)
 
-    async def _process_appliance(self, device: dict):
+    async def _process_appliance(self, device: ConfDict) -> None:
         discovery_mode = device.get(CONF_DISCOVERY)
         # We are waiting for appliance to come online
         if discovery_mode == DISCOVERY_IGNORE:
@@ -512,7 +566,54 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 device.get(CONF_ID),
             )
             need_cloud = True
+        if not await self._async_get_cloud_if_needed(device, need_cloud, need_token):
+            return
+
+        try:
+            ip_address = device[CONF_IP_ADDRESS] if lan_mode else None
+            if not ip_address and not use_cloud:
+                _LOGGER.error(
+                    "Missing ip_address and cloud discovery not used: %s."
+                    "Will fall-back to cloud discovery, full configuration %s",
+                    redacted_conf(device),
+                    redacted_conf(self.data),
+                )
+                use_cloud = True
+            appliance = await self.hass.async_add_executor_job(
+                self.client.appliance_state,
+                device[CONF_IP_ADDRESS] if lan_mode else None,
+                device.get(CONF_TOKEN),
+                device.get(CONF_TOKEN_KEY),
+                self.cloud,
+                use_cloud,
+                device[CONF_ID],
+            )
+
+            self._create_coordinator(appliance, device, need_token)
+        except Exception as ex:  # pylint: disable=broad-except
+            self.errors[device[CONF_UNIQUE_ID]] = str(ex)
+            _LOGGER.error(
+                "Error while setting appliance %s, full configuration %s, cause %s",
+                redacted_conf(device),
+                redacted_conf(self.data),
+                ex,
+                exc_info=True,
+            )
+
+    async def _async_get_cloud_if_needed(
+        self, device: ConfDict, need_cloud: bool, need_token: bool
+    ) -> bool:
         if need_cloud and self.cloud is None:
+            if not self.data.get(CONF_USERNAME) or not self.data.get(CONF_PASSWORD):
+                if need_token:
+                    cause = f"the token is missing for {device.get(CONF_NAME)}"
+                else:
+                    cause = f"{device.get(CONF_NAME)} uses cloud polling"
+                raise ConfigEntryAuthFailed(
+                    f"Integration needs to connect to Midea cloud,"
+                    f" because {cause},"
+                    f" but username or password are not configured."
+                )
             try:
                 self.cloud = await self.hass.async_add_executor_job(
                     self.client.connect_to_cloud,
@@ -527,40 +628,12 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                 ) from ex
             except Exception as ex:  # pylint: disable=broad-except
                 self.errors[device[CONF_UNIQUE_ID]] = str(ex)
-                return
+                return False
+        return True
 
-        try:
-            ip_address = device[CONF_IP_ADDRESS] if lan_mode else None
-            if not ip_address and not use_cloud:
-                _LOGGER.error(
-                    "Missing ip_address and cloud discovery not used: %s."
-                    "Will fall-back to cloud discovery, full configuration %s",
-                    redacted_conf(device),
-                    redacted_conf(self.data),
-                )
-                use_cloud = True
-            appliance = await self.hass.async_add_executor_job(
-                self.client.appliance_state,
-                device[CONF_IP_ADDRESS] if lan_mode else None,  # ip
-                device.get(CONF_TOKEN),  # token
-                device.get(CONF_TOKEN_KEY),  # key
-                self.cloud,  # cloud
-                use_cloud,  # use_cloud
-                device[CONF_ID],  # id
-            )
-
-            self._create_coordinator(appliance, device, need_token)
-        except Exception as ex:  # pylint: disable=broad-except
-            self.errors[device[CONF_UNIQUE_ID]] = str(ex)
-            _LOGGER.error(
-                "Error while setting appliance %s, full configuration %s, cause %s",
-                redacted_conf(device),
-                redacted_conf(self.data),
-                ex,
-                exc_info=True,
-            )
-
-    def _create_coordinator(self, appliance: LanDevice, device: dict, need_token: bool):
+    def _create_coordinator(
+        self, appliance: LanDevice, device: ConfDict, need_token: bool
+    ):
         appliance.name = device[CONF_NAME]
         if not device.get(CONF_API_VERSION):
             device[CONF_API_VERSION] = appliance.version
@@ -585,7 +658,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         hub: Hub,
         appliance: LanDevice,
-        config: dict[str, Any],
+        config: ConfDict,
     ):
         super().__init__(
             hass,
@@ -608,7 +681,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         self.discovery_mode = config.get(CONF_DISCOVERY, DISCOVERY_IGNORE)
         self.use_cloud: bool = self.discovery_mode == DISCOVERY_CLOUD
 
-    def _cloud(self):
+    def _cloud(self) -> MideaCloud | None:
         if self.use_cloud:
             if not self.hub.cloud:
                 raise UpdateFailed(
@@ -692,13 +765,13 @@ class ApplianceEntity(CoordinatorEntity):
         self.async_on_remove(self.coordinator.async_add_listener(self._updated_data))
 
     @callback
-    def _updated_data(self):
+    def _updated_data(self) -> None:
         """Called when data has been updated by coordinator"""
         self.appliance = self.coordinator.appliance
         self._attr_available = self.appliance.online
         self.process_update()
 
-    def process_update(self):
+    def process_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""
 
     @final
