@@ -1,17 +1,13 @@
 """Test integration configuration flow"""
 # pylint: disable=unused-argument
-from typing import Any
-from unittest.mock import patch
 
-from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
     CONF_DEVICES,
+    CONF_NAME,
     CONF_TOKEN,
-    CONF_DISCOVERY,
 )
-from homeassistant.core import HomeAssistant
 
 
 from custom_components.midea_dehumidifier_lan.hub import redacted_conf
@@ -39,8 +35,12 @@ def test_redact():
         CONF_DEVICES: [
             {CONF_TOKEN: "ABCDEF"},
             {CONF_TOKEN: "12345", CONF_TOKEN_KEY: "4444"},
-            {CONF_TOKEN_KEY: "2332"},
+            {CONF_TOKEN_KEY: "2332", CONF_NAME: "Name"},
             {CONF_PASSWORD: "ABC"},
+            {CONF_TOKEN_KEY: 9876},
+            {},
+            44,
+            {CONF_TOKEN: False},
         ],
     }
     redacted = redacted_conf(conf)
@@ -57,6 +57,9 @@ def test_redact():
     assert redacted[CONF_DEVICES][1][CONF_TOKEN] == "*****"
     assert redacted[CONF_DEVICES][2][CONF_TOKEN_KEY] == "****"
     assert redacted[CONF_DEVICES][2].get(CONF_TOKEN) is None
+    assert redacted[CONF_DEVICES][2][CONF_NAME] == "Name"
+    assert redacted[CONF_DEVICES][3][CONF_PASSWORD] == "ABC"
     assert redacted[CONF_DEVICES][3].get(CONF_TOKEN) is None
     assert redacted[CONF_DEVICES][3].get(CONF_TOKEN_KEY) is None
-    assert redacted[CONF_DEVICES][3][CONF_PASSWORD] == "ABC"
+    assert redacted[CONF_DEVICES][4][CONF_TOKEN_KEY] == "****"
+    assert redacted[CONF_DEVICES][7][CONF_TOKEN] == "*****"

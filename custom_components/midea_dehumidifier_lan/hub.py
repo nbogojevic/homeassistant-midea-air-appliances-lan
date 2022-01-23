@@ -83,20 +83,20 @@ def empty_address_iterator():
 
 
 def _redact_key(redacted_data: dict[str, Any], key: str, char="*"):
-    if redacted_data.get(key):
-        redacted_data[key] = char * len(redacted_data[key])
+    if redacted_data.get(key) is not None:
+        redacted_data[key] = char * len(str(redacted_data[key]))
 
 
 def redacted_conf(data: dict[str, Any]) -> dict[str, Any]:
     """Remove sensitive information from configuration"""
     conf = {**data}
-    if conf.get(CONF_USERNAME):
-        _redact_key(conf, CONF_USERNAME)
+    _redact_key(conf, CONF_USERNAME)
     _redact_key(conf, CONF_PASSWORD)
-    if conf.get(CONF_DEVICES):
+    if conf.get(CONF_DEVICES) and isinstance(conf.get(CONF_DEVICES), list):
         for device in conf[CONF_DEVICES]:
-            _redact_key(device, CONF_TOKEN)
-            _redact_key(device, CONF_TOKEN_KEY)
+            if device and isinstance(device, dict):
+                _redact_key(device, CONF_TOKEN)
+                _redact_key(device, CONF_TOKEN_KEY)
     return conf
 
 
