@@ -54,7 +54,7 @@
       "invalid_auth": "Invalid username or password ({cause})",
       "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
       "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",
-      "no_cloud": "Unable to connect to Midea cloud API",
+      "no_cloud": "Unable to connect to Midea cloud API ({cause}).",
       "not_discovered": "Unable to find appliance at specified IPv4 address.",
       "midea_client": "An error in communication with Midea API has occurred. See log for more information.",
       "unknown": "An unknown error has occurred. See log for more information."
@@ -85,7 +85,7 @@
       "invalid_auth": "Invalid username or password ({cause})",
       "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
       "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",
-      "no_cloud": "Unable to connect to Midea cloud API",
+      "no_cloud": "Unable to connect to Midea cloud API ({cause}).",
       "not_discovered": "Unable to find appliance at specified IPv4 address.",
       "unknown": "An unknown error has occurred. See log for more information."
     }

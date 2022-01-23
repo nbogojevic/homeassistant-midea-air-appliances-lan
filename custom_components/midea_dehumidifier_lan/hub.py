@@ -540,7 +540,10 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
             for unique_id, error in self.errors.items():
                 self.hass.components.persistent_notification.async_create(
                     title=NAME,
-                    message=f"{error}.\n\nIntegration will try again later.",
+                    message=(
+                        f"{error}.\n\n"
+                        f"Device may be offline or unreachable, trying to again later."
+                    ),
                     notification_id=f"midea_error_{unique_id}",
                 )
 
