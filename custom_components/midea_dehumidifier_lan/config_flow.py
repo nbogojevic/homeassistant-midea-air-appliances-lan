@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import ipaddress
 import logging
-from typing import Final
+from typing import Any, Final
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import (
@@ -74,7 +74,6 @@ from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     LOCAL_BROADCAST,
     UNKNOWN_IP,
-    ConfDict,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -174,10 +173,10 @@ class _MideaFlow(FlowHandler):
         self.cloud: MideaCloud | None = None  # type: ignore
         self.conf = {}
         self.config_entry: ConfigEntry | None = None
-        self.devices_conf: list[ConfDict] = []
+        self.devices_conf: list[dict[str, Any]] = []
         self.discovered_appliances: list[LanDevice | None] = []
         self.error_cause: str = ""
-        self.errors: ConfDict = {}
+        self.errors: dict[str, Any] = {}
         self.indexes_to_process = []
 
     def _process_exception(self: _MideaFlow, ex: Exception) -> None:
@@ -199,7 +198,7 @@ class _MideaFlow(FlowHandler):
         else:
             raise ex
 
-    def _connect_to_cloud(self: _MideaFlow, extra_conf: ConfDict = None) -> None:
+    def _connect_to_cloud(self: _MideaFlow, extra_conf: dict[str, Any] = None) -> None:
         """Validates that cloud credentials are valid"""
         extra_conf = extra_conf or {}
         try:
@@ -325,7 +324,7 @@ class _MideaFlow(FlowHandler):
     async def _async_step_appliance(  # pylint: disable=too-many-locals
         self: _MideaFlow,
         step_id: str,
-        user_input: ConfDict | None = None,
+        user_input: dict[str, Any] | None = None,
     ) -> FlowResult:
         """Manage an appliances"""
 
@@ -450,7 +449,7 @@ class _MideaFlow(FlowHandler):
         return placeholders
 
 
-def _get_broadcast_addresses(user_input: ConfDict) -> list[str]:
+def _get_broadcast_addresses(user_input: dict[str, Any]) -> list[str]:
     address_entry = str(user_input.get(CONF_BROADCAST_ADDRESS, ""))
     addresses = [LOCAL_BROADCAST]
     specified_addresses = [
@@ -519,7 +518,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             self.devices_conf = []
 
     async def _validate_discovery_phase(
-        self, user_input: ConfDict | None
+        self, user_input: dict[str, Any] | None
     ) -> FlowResult:
         assert user_input is not None
         self.conf[CONF_USERNAME] = user_input[CONF_USERNAME]
@@ -560,14 +559,16 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
 
         return await self._async_add_entry()
 
-    async def _do_validate(self, user_input: ConfDict) -> FlowResult | None:
+    async def _do_validate(self, user_input: dict[str, Any]) -> FlowResult | None:
         try:
             return await self._validate_discovery_phase(user_input)
         except Exception as ex:  # pylint: disable=broad-except
             self._process_exception(ex)
         return None
 
-    async def async_step_user(self, user_input: ConfDict | None = None) -> FlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         self.advanced_settings = False
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
@@ -594,7 +595,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         )
 
     async def async_step_advanced_settings(
-        self, user_input: ConfDict | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Step for managing advanced settings"""
         self.errors = {}
@@ -634,7 +635,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         )
 
     async def async_step_unreachable_appliance(
-        self, user_input: ConfDict | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the appliances that were not discovered automatically on LAN."""
         _LOGGER.debug("Pages to show %s", self.indexes_to_process)
@@ -660,7 +661,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
-        self, user_input: ConfDict | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle reauthorization flow."""
         self.errors = {}
@@ -707,13 +708,15 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
         self.conf = {**config_entry.data}
         self.devices_conf = self.conf.get(CONF_DEVICES, [])
 
-    async def async_step_init(self, user_input: ConfDict | None = None) -> FlowResult:
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Starts options flow"""
         self._build_appliance_list()
         return await self.async_step_appliance(user_input)
 
     async def async_step_appliance(
-        self, user_input: ConfDict | None = None
+        self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Options for an appliance"""
         _LOGGER.debug("Pages to show %s", self.indexes_to_process)
@@ -732,7 +735,7 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
         hub: Hub = self.hass.data[DOMAIN][self.config_entry.entry_id]
         self.appliances = []
         self.devices_conf = self.conf[CONF_DEVICES]
-        device: ConfDict
+        device: dict[str, Any]
         for device in self.devices_conf:
             for coord in hub.coordinators:
                 if device[CONF_UNIQUE_ID] == coord.appliance.serial_number:

@@ -1,7 +1,7 @@
 """Constants for Midea Air Appliance custom component"""
 from __future__ import annotations
 
-from typing import Any, Final, MutableMapping
+from typing import Final
 
 from homeassistant.const import Platform
 
@@ -102,5 +102,3 @@ APPLIANCE_SCAN_INTERVALS = {
     360: "6 hours",
     1440: "24 hours",
 }
-
-ConfDict = MutableMapping[str, Any]
