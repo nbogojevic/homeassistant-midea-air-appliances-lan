@@ -542,7 +542,7 @@ class Hub:  # pylint: disable=too-few-public-methods,too-many-instance-attribute
                     title=NAME,
                     message=(
                         f"{error}.\n\n"
-                        f"Device may be offline or unreachable, trying to again later."
+                        f"Device may be offline or unreachable, trying again later."
                     ),
                     notification_id=f"midea_error_{unique_id}",
                 )
