@@ -20,7 +20,10 @@ from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.lan import LanDevice
 
 from custom_components.midea_dehumidifier_lan.api import MideaClient
-from custom_components.midea_dehumidifier_lan.const import CONF_TOKEN_KEY
+from custom_components.midea_dehumidifier_lan.const import (
+    _ALWAYS_CREATE,
+    CONF_TOKEN_KEY,
+)
 
 
 def _redact_key(
@@ -34,24 +37,46 @@ def _redact_key(
             redacted_data[key] = to_redact[:-length] + char * length
 
 
-def redacted_conf(data: dict[str, Any]) -> dict[str, Any]:
-    """Remove sensitive information from configuration"""
-    conf = deepcopy(data)
-    _redact_key(conf, CONF_USERNAME)
-    _redact_key(conf, CONF_PASSWORD)
-    _redact_device_conf(conf)
-    if conf.get(CONF_DEVICES) and isinstance(conf.get(CONF_DEVICES), list):
-        for device in conf[CONF_DEVICES]:
-            if device and isinstance(device, dict):
-                _redact_device_conf(device)
-    return conf
-
-
 def _redact_device_conf(device) -> None:
     _redact_key(device, CONF_TOKEN)
     _redact_key(device, CONF_TOKEN_KEY)
     _redact_key(device, CONF_UNIQUE_ID, length=8)
     _redact_key(device, CONF_ID, length=4)
+
+
+class RedactedConf:
+    """Outputs redacted configuration dictionary by removing or masking
+    confidential data."""
+
+    def __init__(self, data: dict[str, Any]) -> None:
+        """Remove sensitive information from configuration"""
+        self.conf = data
+
+    @property
+    def __dict__(self) -> dict[str, Any]:
+        conf = deepcopy(self.conf)
+        _redact_key(conf, CONF_USERNAME)
+        _redact_key(conf, CONF_PASSWORD)
+        _redact_device_conf(conf)
+        if conf.get(CONF_DEVICES) and isinstance(conf.get(CONF_DEVICES), list):
+            for device in conf[CONF_DEVICES]:
+                if device and isinstance(device, dict):
+                    _redact_device_conf(device)
+        return conf
+
+    def __str__(self) -> str:
+        """Remove sensitive information from configuration"""
+
+        return str(self.__dict__)
+
+
+def is_enabled_by_capabilities(capabilities: dict[str, Any], capability: str) -> bool:
+    """Returns True if given capability is enabled"""
+    if capability in _ALWAYS_CREATE:
+        return True
+    if not capabilities or capabilities.get(capability, False):
+        return True
+    return False
 
 
 class AbstractHub(ABC):

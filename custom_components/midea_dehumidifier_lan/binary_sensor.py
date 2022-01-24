@@ -17,8 +17,16 @@ from custom_components.midea_dehumidifier_lan.const import (
 )
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
+    ApplianceUpdateCoordinator,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
+from custom_components.midea_dehumidifier_lan.util import is_enabled_by_capabilities
+
+
+def _is_enabled(coordinator: ApplianceUpdateCoordinator, capability: str) -> bool:
+    return is_enabled_by_capabilities(
+        coordinator.appliance.state.capabilities, capability
+    )
 
 
 async def async_setup_entry(
@@ -37,12 +45,12 @@ async def async_setup_entry(
     async_add_entities(
         TankRemovedSensor(c)
         for c in hub.coordinators
-        if c.is_dehumidifier() and c.dehumidifier().capabilities.get("pump", False)
+        if c.is_dehumidifier() and _is_enabled(c, "pump")
     )
     async_add_entities(
         FilterReplacementSensor(c)
         for c in hub.coordinators
-        if c.is_dehumidifier() and c.dehumidifier().capabilities.get("filter", False)
+        if c.is_dehumidifier() and _is_enabled(c, "filter")
     )
     async_add_entities(
         DefrostingSensor(c) for c in hub.coordinators if c.is_dehumidifier()
@@ -58,9 +66,8 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
     _attr_device_class = DEVICE_CLASS_PROBLEM
     _name_suffix = " Tank Full"
 
-    @property
-    def is_on(self) -> bool:
-        return (
+    def on_update(self) -> None:
+        self._attr_is_on = (
             self.dehumidifier().tank_full
             or self.dehumidifier().error_code == ERROR_CODE_BUCKET_FULL
         )
@@ -75,9 +82,13 @@ class TankRemovedSensor(ApplianceEntity, BinarySensorEntity):
     _attr_device_class = DEVICE_CLASS_PROBLEM
     _name_suffix = " Tank Removed"
 
-    @property
-    def is_on(self) -> bool:
-        return self.dehumidifier().error_code == ERROR_CODE_BUCKET_REMOVED
+    def on_online(self, update: bool) -> None:
+        super()._set_enabled_for_capability("pump")
+
+        return super().on_online(update)
+
+    def on_update(self) -> None:
+        self._attr_is_on = self.dehumidifier().error_code == ERROR_CODE_BUCKET_REMOVED
 
 
 class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
@@ -94,9 +105,13 @@ class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
         """Prefix for entity id"""
         return f"{UNIQUE_DEHUMIDIFIER_PREFIX}filter_"
 
-    @property
-    def is_on(self) -> bool:
-        return self.dehumidifier().filter_indicator
+    def on_online(self, update: bool) -> None:
+        super()._set_enabled_for_capability("filter")
+
+        return super().on_online(update)
+
+    def on_update(self) -> None:
+        self._attr_is_on = self.dehumidifier().filter_indicator
 
 
 class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
@@ -108,6 +123,5 @@ class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
     _attr_entity_registry_enabled_default = False
     _name_suffix = " Defrosting"
 
-    @property
-    def is_on(self) -> bool:
-        return self.dehumidifier().defrosting
+    def on_update(self) -> None:
+        self._attr_is_on = self.dehumidifier().defrosting

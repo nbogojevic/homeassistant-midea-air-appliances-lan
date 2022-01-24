@@ -75,6 +75,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     LOCAL_BROADCAST,
     UNKNOWN_IP,
 )
+from custom_components.midea_dehumidifier_lan.util import RedactedConf
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -300,9 +301,8 @@ class _MideaFlow(FlowHandler):
         # Remove not used elements
         self.conf.pop(CONF_ADVANCED_SETTINGS, None)
         self.conf.pop(CONF_MOBILE_APP, None)
-        _LOGGER.debug("Congfigured: %s", self.conf)
         if self.config_entry:
-            _LOGGER.debug("Updating configuration data %s", self.conf)
+            _LOGGER.debug("Updating configuration data %s", RedactedConf(self.conf))
             self.hass.config_entries.async_update_entry(
                 entry=self.config_entry,
                 data=self.conf,
@@ -313,9 +313,11 @@ class _MideaFlow(FlowHandler):
             )
 
         if len(self.devices_conf) == 0:
-            _LOGGER.debug("There are no configured appliances %s", self.conf)
+            _LOGGER.debug(
+                "There are no configured appliances %s", RedactedConf(self.conf)
+            )
             return self.async_abort(reason="no_configured_devices")
-        _LOGGER.debug("Creating configuration data %s", self.conf)
+        _LOGGER.debug("Creating configuration data %s", RedactedConf(self.conf))
         return self.async_create_entry(
             title="Midea Air Appliance",
             data=self.conf,
@@ -719,11 +721,6 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Options for an appliance"""
-        _LOGGER.debug("Pages to show %s", self.indexes_to_process)
-        _LOGGER.debug("Current configuration %s", self.conf)
-        _LOGGER.debug(
-            "Saved configuration %s", self.config_entry and self.config_entry.data
-        )
 
         return await self._async_step_appliance(
             step_id="appliance",

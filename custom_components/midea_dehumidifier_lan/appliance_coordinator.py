@@ -31,9 +31,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DOMAIN,
+    ENTITY_DISABLED_BY_DEFAULT,
+    ENTITY_ENABLED_BY_DEFAULT,
     UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-from custom_components.midea_dehumidifier_lan.util import AbstractHub, redacted_conf
+from custom_components.midea_dehumidifier_lan.util import AbstractHub, RedactedConf
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +50,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         hub: AbstractHub,
         appliance: LanDevice,
         device: dict[str, Any],
-        not_detected: bool = False,
+        available: bool,
     ):
         super().__init__(
             hass,
@@ -71,7 +73,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         self.device = device
         self.discovery_mode = device.get(CONF_DISCOVERY, DISCOVERY_IGNORE)
         self.use_cloud: bool = self.discovery_mode == DISCOVERY_CLOUD
-        self.not_detected = not_detected
+        self.available = available
         self.time_to_leave = device.get(CONF_TTL, 0)  # TTL is in seconds
         self.has_failure = False
         self.first_failure_time: float = 0
@@ -81,7 +83,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             if not self.hub.cloud:
                 raise UpdateFailed(
                     f"Midea cloud API was not initialized, {self.appliance}"
-                    f" configuration={redacted_conf(self.hub.config)}"
+                    f" configuration={RedactedConf(self.hub.config)}"
                 )
             return self.hub.cloud
         return None
@@ -89,7 +91,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
     async def _async_appliance_refresh(self) -> LanDevice:
         """Called to refresh appliance state"""
 
-        if self.not_detected:
+        if not self.available:
             await self._async_try_to_detect()
 
         if self.wait_for_update:
@@ -99,12 +101,12 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             if self.updating:
                 await self._async_do_update()
 
-            _LOGGER.debug("Refreshing %s", self.appliance)
             await self.hass.async_add_executor_job(
                 self.appliance.refresh, self._cloud()
             )
             self.has_failure = False
         except MideaError as ex:
+            _LOGGER.debug("Error while talking to device %s", ex)
             if not self.has_failure:
                 self.has_failure = True
                 self.first_failure_time = monotonic()
@@ -136,7 +138,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
 
         self.appliance = appliance
         await self.hub.async_update_config()
-        self.not_detected = False
+        self.available = True
 
     def is_climate(self) -> bool:
         """True if appliance is air conditioner"""
@@ -178,18 +180,41 @@ class ApplianceEntity(CoordinatorEntity):
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
-        await super().async_added_to_hass()
+        # Override parent, we will handle state
         self.async_on_remove(self.coordinator.async_add_listener(self._updated_data))
+        if self.coordinator.available:
+            self.on_online(True)
 
     @callback
     def _updated_data(self) -> None:
         """Called when data has been updated by coordinator"""
+
         self.appliance = self.coordinator.appliance
         self._attr_available = self.appliance.online
-        self.process_update()
+        if not self.coordinator.available:
+            self.on_online(False)
+        self.on_update()
+        self.async_write_ha_state()
 
-    def process_update(self) -> None:
+    def _set_enabled_for_capability(self, capability: str) -> None:
+        if capability == ENTITY_ENABLED_BY_DEFAULT:
+            res = True
+        elif capability == ENTITY_DISABLED_BY_DEFAULT:
+            res = False
+        elif (capabilities := self.appliance.state.capabilities) :
+            res = getattr(capabilities, capability, False)
+        else:
+            res = False
+        self._attr_entity_registry_enabled_default = res
+
+    def on_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""
+
+    def on_online(self, update: bool) -> None:
+        """To be called when appliance comes online for the first time"""
+        if update:
+            self.on_update()
+        self.async_write_ha_state()
 
     @final
     def dehumidifier(self) -> DehumidifierAppliance:
@@ -204,7 +229,7 @@ class ApplianceEntity(CoordinatorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        if self.coordinator.not_detected:
+        if not self.coordinator.available:
             return False
         return super().available
 

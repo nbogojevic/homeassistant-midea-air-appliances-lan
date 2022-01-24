@@ -24,8 +24,8 @@ from custom_components.midea_dehumidifier_lan.const import (
 )
 from custom_components.midea_dehumidifier_lan.hub import (
     _assure_valid_device_configuration,
-    redacted_conf,
 )
+from custom_components.midea_dehumidifier_lan.util import RedactedConf
 
 
 def test_redact():
@@ -34,7 +34,7 @@ def test_redact():
         CONF_USERNAME: "tnasd@example.com",
         CONF_PASSWORD: "asadasd",
     }
-    redacted = redacted_conf(conf)
+    redacted = RedactedConf(conf).__dict__
 
     assert redacted[CONF_PASSWORD] != conf[CONF_PASSWORD]
     assert redacted[CONF_USERNAME] != conf[CONF_USERNAME]
@@ -60,7 +60,7 @@ def test_redact():
             {CONF_TOKEN: False},
         ],
     }
-    redacted = redacted_conf(conf)
+    redacted = RedactedConf(conf).__dict__
 
     assert redacted[CONF_PASSWORD] != conf[CONF_PASSWORD]
     assert redacted[CONF_PASSWORD] != conf[CONF_PASSWORD]
@@ -95,7 +95,7 @@ def test_redact_device_conf():
         CONF_UNIQUE_ID: "12345678ABCDEFGH",
         CONF_TYPE: "0xa1",
     }
-    redacted = redacted_conf(conf)
+    redacted = RedactedConf(conf).__dict__
 
     assert redacted[CONF_TOKEN] == "********"
     assert redacted[CONF_TOKEN_KEY] == "********"

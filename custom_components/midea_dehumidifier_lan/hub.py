@@ -43,7 +43,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     UNKNOWN_IP,
 )
-from custom_components.midea_dehumidifier_lan.util import AbstractHub, redacted_conf
+from custom_components.midea_dehumidifier_lan.util import AbstractHub, RedactedConf
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,12 +57,6 @@ def _assure_valid_device_configuration(
     For example, if discovery mode is not set-up corectly it will try to deduce
     correct setting."""
     discovery_mode = device.get(CONF_DISCOVERY)
-    _LOGGER.debug(
-        "Device %s %s has discovery mode %s",
-        device.get(CONF_NAME),
-        device.get(CONF_UNIQUE_ID),
-        discovery_mode,
-    )
     if discovery_mode in [
         DISCOVERY_IGNORE,
         DISCOVERY_WAIT,
@@ -85,7 +79,7 @@ def _assure_valid_device_configuration(
         )
     _LOGGER.warning(
         "Updated discovery mode for device %s.",
-        redacted_conf(device),
+        RedactedConf(device),
     )
     return False
 
@@ -140,7 +134,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
             if not _assure_valid_device_configuration(self.config, device):
                 self.updated_conf = True
             coordinator = await self._process_appliance(device)
-            if coordinator and not coordinator.not_detected:
+            if coordinator and coordinator.available:
                 await coordinator.async_config_entry_first_refresh()
             devices.append(device)
 
@@ -212,7 +206,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
                 "Missing ip_address and cloud discovery is not used for %s."
                 "Will fall-back to cloud discovery, full configuration is %s",
                 device.get(CONF_UNIQUE_ID),
-                redacted_conf(self.config),
+                RedactedConf(self.config),
             )
             use_cloud = True
         appliance = None
@@ -237,14 +231,14 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
                     " full configuration %s",
                     ex,
                     device.get(CONF_UNIQUE_ID),
-                    redacted_conf(self.config),
+                    RedactedConf(self.config),
                     exc_info=True,
                 )
             else:
                 _LOGGER.debug(
                     "Error '%s' while setting up appliance %s",
                     ex,
-                    redacted_conf(device),
+                    RedactedConf(device),
                 )
         return need_token, appliance
 
@@ -287,17 +281,17 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
     def _create_coordinator(
         self, appliance: LanDevice | None, device: dict[str, Any], need_token: bool
     ) -> ApplianceUpdateCoordinator:
-        not_detected = appliance is None
-        if not_detected:
+        available = appliance is not None
+        if not available:
             appliance = _get_placeholder_appliance(device)
         appliance.name = device[CONF_NAME]
         self._fix_version_if_missing(appliance, device)
         self._update_token(appliance, device, need_token)
         coordinator = ApplianceUpdateCoordinator(
-            self.hass, self, appliance, device, not_detected=not_detected
+            self.hass, self, appliance, device, available=available
         )
 
-        _LOGGER.debug("Created coordinator for %s", device)
+        _LOGGER.debug("Created coordinator for %s", RedactedConf(device))
         self.coordinators.append(coordinator)
         return coordinator
 

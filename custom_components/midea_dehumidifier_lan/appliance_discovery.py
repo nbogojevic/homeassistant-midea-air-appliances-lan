@@ -19,12 +19,10 @@ from homeassistant.const import (
     CONF_ID,
     CONF_IP_ADDRESS,
     CONF_NAME,
-    CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_TOKEN,
     CONF_TYPE,
     CONF_UNIQUE_ID,
-    CONF_USERNAME,
 )
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.helpers.event import async_track_time_interval
@@ -42,7 +40,6 @@ from custom_components.midea_dehumidifier_lan.const import (
     DEFAULT_DISCOVERY_MODE,
     DEFAULT_SCAN_INTERVAL,
     DISCOVERY_BATCH_SIZE,
-    DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
     DISCOVERY_MODE_EXPLANATION,
@@ -51,7 +48,6 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     UNKNOWN_IP,
 )
-from custom_components.midea_dehumidifier_lan.util import redacted_conf
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,48 +55,6 @@ _LOGGER = logging.getLogger(__name__)
 def empty_address_iterator():
     """No addresses to iterate"""
     yield from ()
-
-
-def assure_valid_device_configuration(
-    conf: dict[str, Any], device: dict[str, Any]
-) -> bool:
-    """Checks device configuration.
-    If configuration is correct returns ``True``.
-    If it is not complete, updates it and returns ``False``.
-    For example, if discovery mode is not set-up corectly it will try to deduce
-    correct setting."""
-    discovery_mode = device.get(CONF_DISCOVERY)
-    _LOGGER.debug(
-        "Device %s %s has discovery mode %s",
-        device.get(CONF_NAME),
-        device.get(CONF_UNIQUE_ID),
-        discovery_mode,
-    )
-    if discovery_mode in [
-        DISCOVERY_IGNORE,
-        DISCOVERY_WAIT,
-        DISCOVERY_LAN,
-        DISCOVERY_CLOUD,
-    ]:
-        return True
-    ip_address = device.get(CONF_IP_ADDRESS)
-    token = device.get(CONF_TOKEN)
-    key = device.get(CONF_TOKEN_KEY)
-    if ip_address and ip_address != UNKNOWN_IP:
-        device[CONF_DISCOVERY] = DISCOVERY_LAN if token and key else DISCOVERY_WAIT
-    elif token and key:
-        device[CONF_DISCOVERY] = DISCOVERY_WAIT
-    else:
-        username = conf.get(CONF_USERNAME)
-        password = conf.get(CONF_PASSWORD)
-        device[CONF_DISCOVERY] = (
-            DISCOVERY_CLOUD if username and password else DISCOVERY_IGNORE
-        )
-    _LOGGER.warning(
-        "Updated discovery mode for device %s.",
-        redacted_conf(device),
-    )
-    return False
 
 
 def _add_if_discoverable(conf_addresses: list[str], device: dict[str, Any]):
@@ -380,7 +334,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
             if _add_if_discoverable(conf_addresses, device):
                 has_discoverable = True
         for coordinator in coordinators:
-            if coordinator.not_detected:
+            if not coordinator.available:
                 if _add_if_discoverable(conf_addresses, coordinator.device):
                     has_discoverable = True
         conf_addresses += [

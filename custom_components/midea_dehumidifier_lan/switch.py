@@ -15,10 +15,12 @@ from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceUpdateCoordinator,
 )
 from custom_components.midea_dehumidifier_lan.const import (
+    ENTITY_DISABLED_BY_DEFAULT,
     DOMAIN,
     UNIQUE_CLIMATE_PREFIX,
     UNIQUE_DEHUMIDIFIER_PREFIX,
 )
+from custom_components.midea_dehumidifier_lan.util import is_enabled_by_capabilities
 
 
 @dataclass
@@ -29,10 +31,6 @@ class _MideaSwitchDescriptor:
     capability: str
     prefix: str
 
-
-_DISABLED_BY_DEFAULT: Final = ":disabled:"
-_ENABLED_BY_DEFAULT: Final = ":enabled:"
-_ALWAYS_CREATE: Final = [_DISABLED_BY_DEFAULT, _ENABLED_BY_DEFAULT]
 
 ION_MODE_SWITCH: Final = _MideaSwitchDescriptor(
     attr="ion_mode",
@@ -59,7 +57,7 @@ DEHUMIDIFIER_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="beep_prompt",
     name="Beep",
     icon="mdi:bell-check",
-    capability=_DISABLED_BY_DEFAULT,
+    capability=ENTITY_DISABLED_BY_DEFAULT,
     prefix=UNIQUE_DEHUMIDIFIER_PREFIX,
 )
 DEHUMIDIFER_SWITCHES: Final = [
@@ -73,7 +71,7 @@ CLIMATE_BEEP_SWITCH: Final = _MideaSwitchDescriptor(
     attr="beep_prompt",
     name="Beep",
     icon="mdi:bell-check",
-    capability=_DISABLED_BY_DEFAULT,
+    capability=ENTITY_DISABLED_BY_DEFAULT,
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
 FAHRENHEIT_SWITCH: Final = _MideaSwitchDescriptor(
@@ -121,6 +119,14 @@ CLIMATE_SWITCHES: Final = [
 ]
 
 
+def _is_enabled(
+    coordinator: ApplianceUpdateCoordinator, switch: _MideaSwitchDescriptor
+) -> bool:
+    return is_enabled_by_capabilities(
+        coordinator.appliance.state.capabilities, switch.capability
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -134,22 +140,14 @@ async def async_setup_entry(
     # Dehumidifier sensors
     for switch in DEHUMIDIFER_SWITCHES:
         for coord in hub.coordinators:
-            if coord.is_dehumidifier():
-                if (
-                    switch.capability in _ALWAYS_CREATE
-                    or coord.dehumidifier().capabilities.get(switch.capability, False)
-                ):
-                    switches.append(MideaSwitch(coord, switch))
+            if coord.is_dehumidifier() and _is_enabled(coord, switch):
+                switches.append(MideaSwitch(coord, switch))
 
     # Air conditioner entities
     for switch in CLIMATE_SWITCHES:
         for coord in hub.coordinators:
-            if coord.is_climate():
-                if (
-                    switch.capability in _ALWAYS_CREATE
-                    or coord.airconditioner().capabilities.get(switch.capability, False)
-                ):
-                    switches.append(MideaSwitch(coord, switch))
+            if coord.is_climate() and _is_enabled(coord, switch):
+                switches.append(MideaSwitch(coord, switch))
 
     async_add_entities(switches)
 
@@ -163,23 +161,26 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
         coordinator: ApplianceUpdateCoordinator,
         descriptor: _MideaSwitchDescriptor,
     ) -> None:
+        self._switch_descriptor = descriptor
         self._unique_id_prefix = descriptor.prefix
-        self.attr = descriptor.attr
         self._name_suffix = " " + descriptor.name.strip()
-        self._attr_icon = descriptor.icon
-        self._attr_entity_registry_enabled_default = (
-            descriptor.capability != _DISABLED_BY_DEFAULT
-        )
-
         super().__init__(coordinator)
 
-    def process_update(self) -> None:
-        self._attr_is_on = getattr(self.appliance.state, self.attr, None)
+        self._attr_icon = descriptor.icon
+        self._attribute_name = descriptor.attr
+
+    def on_online(self, update: bool) -> None:
+        super()._set_enabled_for_capability(self._switch_descriptor.capability)
+
+        return super().on_online(update)
+
+    def on_update(self) -> None:
+        self._attr_is_on = getattr(self.appliance.state, self._attribute_name, None)
 
     def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""
-        self.apply(self.attr, True)
+        self.apply(self._attribute_name, True)
 
     def turn_off(self, **kwargs) -> None:
         """Turn the entity off."""
-        self.apply(self.attr, False)
+        self.apply(self._attribute_name, False)

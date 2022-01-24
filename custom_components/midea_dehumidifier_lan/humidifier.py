@@ -61,7 +61,6 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
-        supports = coordinator.appliance.state.capabilities
 
         self._attr_mode = None
         self._error_code = None
@@ -70,6 +69,11 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         self._capabilities = None
         self._last_data = None
         self._capabilities_data = None
+        self._attr_available_modes = [MODE_SET]
+
+    def on_online(self, update: bool) -> None:
+        supports = self.coordinator.appliance.state.capabilities
+
         self._attr_available_modes = [MODE_SET]
         if supports.get("auto", 0):
             self._attr_available_modes.append(MODE_SMART)
@@ -87,6 +91,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             self._attr_available_modes.append(MODE_ANTIMOULD)
         elif more_modes == 4:
             self._attr_available_modes.append(MODE_FAN)
+        super().on_online(update)
 
     _MODES = [
         (1, MODE_SET),
@@ -97,9 +102,8 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         (7, MODE_ANTIMOULD),
     ]
 
-    def process_update(self) -> None:
+    def on_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""
-        _LOGGER.debug("Process update: %s", self)
         dehumidifier = self.dehumidifier()
         curr_mode = dehumidifier.mode
         self._attr_mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
