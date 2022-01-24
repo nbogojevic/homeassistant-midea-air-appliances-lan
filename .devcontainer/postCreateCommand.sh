@@ -3,6 +3,7 @@
 # Add network testing tools
 apt update
 apt install -y iptools iproute2
+update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 # Fix discontinuing of git support by GitHub
 sed 's/git:/https:/' -i /usr/share/container/upgrade
