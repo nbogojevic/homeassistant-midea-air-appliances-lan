@@ -79,16 +79,26 @@ def is_enabled_by_capabilities(capabilities: dict[str, Any], capability: str) ->
     return False
 
 
+class ApplianceCoordinator(ABC):
+    """Abstract interface for Appliance update coordinators"""
+
+    appliance: LanDevice
+    available: bool
+    device: dict[str, Any]
+
+
 class AbstractHub(ABC):
     """Interface for central class for interacting with appliances"""
+
+    coordinators: list[ApplianceCoordinator]
+    config: dict[str, Any]
+    errors: dict[str, Any]
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         self.client = MideaClient()
         self.cloud: MideaCloud | None = None
-        self.config_entry = config_entry
-        self.config: dict[str, Any] = {}
-        self.errors: dict[str, Any] = {}
         self.hass = hass
+        self.config_entry = config_entry
 
     @abstractmethod
     async def async_discover_device(

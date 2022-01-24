@@ -49,6 +49,16 @@ async def async_setup_entry(
     )
 
 
+_MODES = [
+    (1, MODE_SET),
+    (2, MODE_CONTINOUS),
+    (3, MODE_SMART),
+    (4, MODE_DRY),
+    (6, MODE_PURIFIER),
+    (7, MODE_ANTIMOULD),
+]
+
+
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     """(de)Humidifer entity for Midea dehumidifier"""
@@ -75,13 +85,13 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         supports = self.coordinator.appliance.state.capabilities
 
         self._attr_available_modes = [MODE_SET]
-        if supports.get("auto", 0):
+        if supports.get("auto"):
             self._attr_available_modes.append(MODE_SMART)
         self._attr_available_modes.append(MODE_CONTINOUS)
-        if supports.get("dry_clothes", 0):
+        if supports.get("dry_clothes"):
             self._attr_available_modes.append(MODE_DRY)
 
-        more_modes = supports.get("mode", "0")
+        more_modes = supports.get("mode")
         if more_modes == 1:
             self._attr_available_modes.append(MODE_PURIFIER)
         elif more_modes == 2:
@@ -91,22 +101,14 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             self._attr_available_modes.append(MODE_ANTIMOULD)
         elif more_modes == 4:
             self._attr_available_modes.append(MODE_FAN)
-        super().on_online(update)
 
-    _MODES = [
-        (1, MODE_SET),
-        (2, MODE_CONTINOUS),
-        (3, MODE_SMART),
-        (4, MODE_DRY),
-        (6, MODE_PURIFIER),
-        (7, MODE_ANTIMOULD),
-    ]
+        super().on_online(update)
 
     def on_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""
         dehumidifier = self.dehumidifier()
         curr_mode = dehumidifier.mode
-        self._attr_mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
+        self._attr_mode = next((i[1] for i in _MODES if i[0] == curr_mode), None)
         if self._attr_mode is None:
             self._attr_mode = MODE_SET
             _LOGGER.warning("Mode %s is not supported by %s.", curr_mode, NAME)
@@ -144,7 +146,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
 
     def set_mode(self, mode) -> None:
         """Set new target preset mode."""
-        midea_mode = next((i[0] for i in self._MODES if i[1] == mode), None)
+        midea_mode = next((i[0] for i in _MODES if i[1] == mode), None)
         if midea_mode is None:
             _LOGGER.debug("Unsupported dehumidifer mode %s", mode)
             midea_mode = 1

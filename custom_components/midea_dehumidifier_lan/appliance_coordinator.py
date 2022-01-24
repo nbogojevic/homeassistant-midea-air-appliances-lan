@@ -35,13 +35,17 @@ from custom_components.midea_dehumidifier_lan.const import (
     ENTITY_ENABLED_BY_DEFAULT,
     UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-from custom_components.midea_dehumidifier_lan.util import AbstractHub, RedactedConf
+from custom_components.midea_dehumidifier_lan.util import (
+    AbstractHub,
+    ApplianceCoordinator,
+    RedactedConf,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-instance-attributes
-class ApplianceUpdateCoordinator(DataUpdateCoordinator):
+class ApplianceUpdateCoordinator(DataUpdateCoordinator, ApplianceCoordinator):
     """Single class to retrieve data from an appliance"""
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -74,7 +78,7 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
         self.discovery_mode = device.get(CONF_DISCOVERY, DISCOVERY_IGNORE)
         self.use_cloud: bool = self.discovery_mode == DISCOVERY_CLOUD
         self.available = available
-        self.time_to_leave = device.get(CONF_TTL, 0)  # TTL is in seconds
+        self.time_to_leave = device.get(CONF_TTL, 100)  # TTL is in seconds
         self.has_failure = False
         self.first_failure_time: float = 0
 
@@ -106,14 +110,13 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator):
             )
             self.has_failure = False
         except MideaError as ex:
-            _LOGGER.debug("Error while talking to device %s", ex)
             if not self.has_failure:
                 self.has_failure = True
                 self.first_failure_time = monotonic()
             if (monotonic() - self.first_failure_time) >= self.time_to_leave:
                 raise UpdateFailed(str(ex)) from ex
             _LOGGER.warning(
-                "Error fetching %s data: %s, will be trying again.", self.appliance, ex
+                "Error fetching %s data: %s, will be trying again.", self.name, ex
             )
         finally:
             self.wait_for_update = False

@@ -1,5 +1,4 @@
-"""
-The custom component for local network access to Midea appliances
+"""The custom component for local network access to Midea appliances
 """
 
 from __future__ import annotations
@@ -103,7 +102,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
         super().__init__(hass, config_entry)
-        self.discovery = ApplianceDiscoveryHelper(hass, config_entry, self.client)
+        self.discovery = ApplianceDiscoveryHelper(self)
         self.coordinators: list[ApplianceUpdateCoordinator] = []
         self.updated_conf = False
 
@@ -123,6 +122,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
         """Sets up appliances and creates an update coordinator for
         each one
         """
+        self.discovery.stop()
         self.config = {**self.config_entry.data}
         devices = [{**device} for device in self.config.get(CONF_DEVICES, [])]
         self.config[CONF_DEVICES] = devices
@@ -141,7 +141,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
         if self.updated_conf:
             await self.async_update_config()
 
-        self.discovery.start(self.config, self.coordinators)
+        self.discovery.start()
 
         self._notify_setup_errors()
 

@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 import ipaddress
 import itertools
 import logging
-from typing import Any, Iterator
+from typing import Any, Iterator, cast
 
+from homeassistant.core import CALLBACK_TYPE
 from homeassistant.components.network import async_get_ipv4_broadcast_addresses
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_API_VERSION,
     CONF_BROADCAST_ADDRESS,
@@ -24,12 +24,10 @@ from homeassistant.const import (
     CONF_TYPE,
     CONF_UNIQUE_ID,
 )
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.helpers.event import async_track_time_interval
 from midea_beautiful.lan import LanDevice
 
 from custom_components.midea_dehumidifier_lan.api import (
-    MideaClient,
     supported_appliance,
 )
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
@@ -48,6 +46,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     UNKNOWN_IP,
 )
+from custom_components.midea_dehumidifier_lan.util import AbstractHub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,21 +73,17 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        hass: HomeAssistant,
-        config_entry: ConfigEntry,
-        client: MideaClient,
+        hub: AbstractHub,
     ) -> None:
-        self.hass = hass
-        self.config: dict[str, Any] = {}
-        self.client = client
-        self.coordinators: list[ApplianceUpdateCoordinator] = []
+        self.hass = hub.hass
+        self.hub = hub
         self.new_devices: list[LanDevice] = []
         self.changed_devices: list[_ChangedDevice] = []
         self.broadcast_addresses: list[str] = []
         self.address_iterator: Iterator[list[str]] = empty_address_iterator()
         self.notifed_addresses: set[str] = set()
         self.remove_discovery: CALLBACK_TYPE | None = None
-        self.config_entry = config_entry
+        self.conf_addresses: list[str] = []
 
     @staticmethod
     def iterator(conf_addresses, batch_size: int = DISCOVERY_BATCH_SIZE):
@@ -131,7 +126,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
         """Admits new devices into configurations"""
         need_reload = False
         added_devices = []
-        dev_confs = self.config[CONF_DEVICES]
+        dev_confs = self.hub.config[CONF_DEVICES]
         for new in self.new_devices:
             for known in dev_confs:
                 if known[CONF_UNIQUE_ID] == new.serial_number:
@@ -246,7 +241,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
     async def _async_run_discovery(self, devices: list[LanDevice]) -> None:
         """Trigger config flows for discovered devices."""
 
-        dev_confs: list[dict[str, Any]] = self.config[CONF_DEVICES]
+        dev_confs: list[dict[str, Any]] = self.hub.config[CONF_DEVICES]
         for dev_conf in dev_confs:
             dev_conf.setdefault(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
             dev_conf.setdefault(CONF_IP_ADDRESS, UNKNOWN_IP)
@@ -259,25 +254,25 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
         if devices_changed or need_reload:
             _LOGGER.debug("Config entry needs to be updated")
             self.hass.config_entries.async_update_entry(
-                entry=self.config_entry,
-                data=self.config,
+                entry=self.hub.config_entry,
+                data=self.hub.config,
             )
         if need_reload:
             _LOGGER.debug("Config entry needs to be reloaded")
             self.hass.async_create_task(
-                self.hass.config_entries.async_reload(self.config_entry.entry_id)
+                self.hass.config_entries.async_reload(self.hub.config_entry.entry_id)
             )
 
     def _iterate_devices(self, devices: list[LanDevice]):
-        self.new_devices = []
-        self.changed_devices = []
+        self.new_devices.clear()
+        self.changed_devices.clear()
         for device in devices:
             if not device.address:
                 continue
             coordinator = next(
                 (
-                    coord
-                    for coord in self.coordinators
+                    cast(ApplianceUpdateCoordinator, coord)
+                    for coord in self.hub.coordinators
                     if coord.appliance.serial_number == device.serial_number
                 ),
                 None,
@@ -287,19 +282,17 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
                 if device.address and device.address != coordinator.appliance.address:
                     _LOGGER.debug(
                         "Device %s changed address to %s",
-                        coordinator.appliance,
+                        coordinator.name,
                         device.address,
                     )
                     self.changed_devices.append(_ChangedDevice(device, coordinator))
-            elif supported_appliance(self.config, device):
+            elif supported_appliance(self.hub.config, device):
                 _LOGGER.debug("Discovered new device %s", device)
                 self.new_devices.append(device)
-        _LOGGER.debug("Changed configuration for devices: %s", self.changed_devices)
-        _LOGGER.debug("Newly discovered new devices: %s", self.new_devices)
 
     def _merge_with_configuration(self: ApplianceDiscoveryHelper) -> bool:
         """Merges list of changed devices with existing config entry configuration"""
-        dev_confs: list[dict[str, Any]] = self.config[CONF_DEVICES]
+        dev_confs: list[dict[str, Any]] = self.hub.config[CONF_DEVICES]
         updated_conf = False
         for changed in self.changed_devices:
             for known in dev_confs:
@@ -319,58 +312,55 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
 
         return updated_conf
 
-    def _setup(
-        self, data: dict[str, Any], coordinators: list[ApplianceUpdateCoordinator]
-    ) -> None:
+    def _setup(self) -> None:
         """Initializes address iterator.
         Address iterator allows iterating over adresses to broadcast to.
         It will iterate over all addresses in specified ranges.
         """
         self.notifed_addresses.clear()
-        conf_addresses: list[str] = []
+        self.conf_addresses.clear()
         has_discoverable = False
         device: dict[str, Any]
-        for device in data[CONF_DEVICES]:
-            if _add_if_discoverable(conf_addresses, device):
+        for device in self.hub.config[CONF_DEVICES]:
+            if _add_if_discoverable(self.conf_addresses, device):
                 has_discoverable = True
-        for coordinator in coordinators:
+        for coordinator in self.hub.coordinators:
             if not coordinator.available:
-                if _add_if_discoverable(conf_addresses, coordinator.device):
+                if _add_if_discoverable(self.conf_addresses, coordinator.device):
                     has_discoverable = True
-        conf_addresses += [
+        self.conf_addresses += [
             item
-            for item in data.get(CONF_BROADCAST_ADDRESS, [])
+            for item in self.hub.config.get(CONF_BROADCAST_ADDRESS, [])
             if item and item != LOCAL_BROADCAST
         ]
         self.broadcast_addresses = [LOCAL_BROADCAST]
-        for addr in conf_addresses:
+        for addr in self.conf_addresses:
             net = ipaddress.IPv4Network(addr)
             self.broadcast_addresses.append(str(net.broadcast_address))
 
-        _LOGGER.debug("Discovery via broadcast addresses %s", self.broadcast_addresses)
-
-        if has_discoverable and conf_addresses:
-            _LOGGER.debug("Discovery via configured addresses %s", conf_addresses)
+        if has_discoverable and self.conf_addresses:
+            _LOGGER.debug("Discovery via configured addresses %s", self.conf_addresses)
             self.address_iterator = itertools.cycle(
-                ApplianceDiscoveryHelper.iterator(conf_addresses, DISCOVERY_BATCH_SIZE)
+                ApplianceDiscoveryHelper.iterator(
+                    self.conf_addresses, DISCOVERY_BATCH_SIZE
+                )
             )
         else:
             self.address_iterator = empty_address_iterator()
 
-    def start(
-        self, data: dict[str, Any], coordinators: list[ApplianceUpdateCoordinator]
-    ) -> None:
+    def start(self) -> None:
         """Starts periodic disovery of devices"""
-        self.config = data
-        self.coordinators = coordinators
-        self.stop()
-        self._setup(data, coordinators)
-        scan_interval = self.config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        self._setup()
+        scan_interval = self.hub.config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         if scan_interval:
             _LOGGER.debug(
-                "Staring periodic discovery with interval %s minute(s)", scan_interval
+                "Staring periodic discovery with interval %s minute(s),"
+                " broadcast %s, configured %s",
+                scan_interval,
+                self.broadcast_addresses,
+                self.conf_addresses,
             )
-
+        self.stop()
         self.remove_discovery = async_track_time_interval(
             self.hass, self._async_discover, timedelta(minutes=scan_interval)
         )
@@ -390,7 +380,8 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses += [str(address) for address in iface_broadcast]
         _LOGGER.debug("Initiated discovery via %s", addresses)
-        if result := self.client.find_appliances(
+        result = self.hub.client.find_appliances(
             addresses=addresses, retries=1, timeout=1
-        ):
+        )
+        if result:
             await self._async_run_discovery(result)
