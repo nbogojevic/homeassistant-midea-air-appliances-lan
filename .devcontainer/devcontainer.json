@@ -5,6 +5,9 @@
 	"appPort": [
 		"9123:8123"
 	],
+	"runArgs": [
+		"--cap-add=NET_ADMIN"
+	],
 	"postCreateCommand": [
 		"./.devcontainer/postCreateCommand.sh"
 	],

@@ -1,5 +1,9 @@
 #! /bin/bash
 
+# Add network testing tools
+apt update
+apt install -y iptools iproute2
+
 # Fix discontinuing of git support by GitHub
 sed 's/git:/https:/' -i /usr/share/container/upgrade
 
