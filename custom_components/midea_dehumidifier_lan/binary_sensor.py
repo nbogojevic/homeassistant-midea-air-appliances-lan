@@ -15,7 +15,10 @@ from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     UNIQUE_DEHUMIDIFIER_PREFIX,
 )
-from custom_components.midea_dehumidifier_lan.hub import ApplianceEntity, Hub
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
+    ApplianceEntity,
+)
+from custom_components.midea_dehumidifier_lan.hub import Hub
 
 
 async def async_setup_entry(

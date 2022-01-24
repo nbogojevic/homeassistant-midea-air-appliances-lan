@@ -69,6 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 
 async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    # TODO This method can be removed after 0.7.0
     entity_registry = await async_get_registry(hass)
 
     conf = config_entry.data

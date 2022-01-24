@@ -8,9 +8,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan.hub import (
+    Hub,
+)
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
-    Hub,
 )
 from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
@@ -171,9 +173,8 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
 
         super().__init__(coordinator)
 
-    @property
-    def is_on(self) -> bool:
-        return getattr(self.appliance.state, self.attr, False)
+    def process_update(self) -> None:
+        self._attr_is_on = getattr(self.appliance.state, self.attr, None)
 
     def turn_on(self, **kwargs) -> None:
         """Turn the entity on."""

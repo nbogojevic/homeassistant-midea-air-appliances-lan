@@ -39,11 +39,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     MAX_TARGET_TEMPERATURE,
     MIN_TARGET_TEMPERATURE,
 )
-from custom_components.midea_dehumidifier_lan.hub import (
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
-    Hub,
 )
+from custom_components.midea_dehumidifier_lan.hub import Hub
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -381,7 +381,7 @@ class _MideaFlow(FlowHandler):
                 self.appliance_idx = self.indexes_to_process.pop(0)
                 appliance = self.appliances[self.appliance_idx]
                 device_conf = self.devices_conf[self.appliance_idx]
-                ip_address = appliance.address or device_conf[CONF_IP_ADDRESS]
+                ip_address = appliance.address or UNKNOWN_IP
                 user_input = None
                 discovery_mode = DEFAULT_DISCOVERY_MODE
 
@@ -419,7 +419,7 @@ class _MideaFlow(FlowHandler):
     def _check_ip_address_unique(self, ip_address) -> None:
         if ip_address and ip_address != UNKNOWN_IP:
             for i in range(self.appliance_idx):
-                if self.devices_conf[i][CONF_IP_ADDRESS] == ip_address:
+                if self.devices_conf[i].get(CONF_IP_ADDRESS) == ip_address:
                     raise _FlowException(
                         "duplicate_ip_provided", self.devices_conf[i][CONF_NAME]
                     )

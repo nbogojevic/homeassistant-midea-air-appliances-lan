@@ -12,11 +12,11 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from custom_components.midea_dehumidifier_lan.const import DOMAIN, UNIQUE_CLIMATE_PREFIX
-from custom_components.midea_dehumidifier_lan.hub import (
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
-    Hub,
 )
+from custom_components.midea_dehumidifier_lan.hub import Hub
 
 
 async def async_setup_entry(
@@ -54,9 +54,8 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Humidity"
 
-    @property
-    def native_value(self) -> int:
-        return self.dehumidifier().current_humidity
+    def process_update(self) -> None:
+        self._attr_native_value = self.dehumidifier().current_humidity
 
 
 class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
@@ -67,9 +66,8 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Temperature"
 
-    @property
-    def native_value(self) -> float:
-        return self.dehumidifier().current_temperature
+    def process_update(self) -> None:
+        self._attr_native_value = self.dehumidifier().current_temperature
 
 
 class TankLevelSensor(ApplianceEntity, SensorEntity):
@@ -85,9 +83,8 @@ class TankLevelSensor(ApplianceEntity, SensorEntity):
             "water_level"
         )
 
-    @property
-    def native_value(self) -> int:
-        return self.dehumidifier().tank_level
+    def process_update(self) -> None:
+        self._attr_native_value = self.dehumidifier().tank_level
 
 
 class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
@@ -99,6 +96,5 @@ class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
     _unique_id_prefx = UNIQUE_CLIMATE_PREFIX
     _name_suffix = " Outdoor Temperature"
 
-    @property
-    def native_value(self) -> float:
-        return self.airconditioner().outdoor_temperature
+    def process_update(self) -> None:
+        self._attr_native_value = self.airconditioner().outdoor_temperature

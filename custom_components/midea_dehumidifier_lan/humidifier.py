@@ -15,12 +15,13 @@ from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     MAX_TARGET_HUMIDITY,
     MIN_TARGET_HUMIDITY,
+    NAME,
 )
-from custom_components.midea_dehumidifier_lan.hub import (
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
-    Hub,
 )
+from custom_components.midea_dehumidifier_lan.hub import Hub
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ async def async_setup_entry(
     )
 
 
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors,too-many-instance-attributes
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     """(de)Humidifer entity for Midea dehumidifier"""
 
@@ -62,8 +63,13 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         super().__init__(coordinator)
         supports = coordinator.appliance.state.capabilities
 
-        self._last_error_code = 0
+        self._attr_mode = None
+        self._error_code = None
+        self._last_error_code = None
         self._last_error_code_time = datetime.now()
+        self._capabilities = None
+        self._last_data = None
+        self._capabilities_data = None
         self._attr_available_modes = [MODE_SET]
         if supports.get("auto", 0):
             self._attr_available_modes.append(MODE_SMART)
@@ -82,14 +88,6 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         elif more_modes == 4:
             self._attr_available_modes.append(MODE_FAN)
 
-    @property
-    def is_on(self) -> bool:
-        return self.dehumidifier().running
-
-    @property
-    def target_humidity(self) -> int:
-        return self.dehumidifier().target_humidity
-
     _MODES = [
         (1, MODE_SET),
         (2, MODE_CONTINOUS),
@@ -99,27 +97,33 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         (7, MODE_ANTIMOULD),
     ]
 
-    @property
-    def mode(self) -> str:
-        curr_mode = self.dehumidifier().mode
-        mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
-        if mode is None:
-            _LOGGER.warning("Unknown mode %d", curr_mode)
-            return MODE_SET
-        return mode
+    def process_update(self) -> None:
+        """Allows additional processing after the coordinator updates data"""
+        _LOGGER.debug("Process update: %s", self)
+        dehumidifier = self.dehumidifier()
+        curr_mode = dehumidifier.mode
+        self._attr_mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
+        if self._attr_mode is None:
+            self._attr_mode = MODE_SET
+            _LOGGER.warning("Mode %s is not supported by %s.", curr_mode, NAME)
+        self._attr_target_humidity = dehumidifier.target_humidity
+        self._attr_is_on = dehumidifier.running
+        self._error_code = dehumidifier.error_code
+        if self._error_code:
+            self._last_error_code = self._error_code
+            self._last_error_code_time = datetime.now()
+        self._capabilities = self.appliance.state.capabilities
+        self._last_data = self.appliance.state.latest_data.hex()
+        self._capabilities_data = str(self.appliance.state.capabilities_data.hex())
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return entity specific state attributes."""
-        new_error_code = self.dehumidifier().error_code
-        if new_error_code:
-            self._last_error_code = new_error_code
-            self._last_error_code_time = datetime.now()
         data = {
-            "capabilities": str(self.appliance.state.capabilities),
-            "last_data": self.appliance.state.latest_data.hex(),
-            "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
-            "error_code": new_error_code,
+            "capabilities": self._capabilities,
+            "last_data": self._last_data,
+            "capabilities_data": self._capabilities_data,
+            "error_code": self._error_code,
             "last_error_code": self._last_error_code,
             "last_error_time": self._last_error_code_time,
         }
@@ -138,7 +142,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         """Set new target preset mode."""
         midea_mode = next((i[0] for i in self._MODES if i[1] == mode), None)
         if midea_mode is None:
-            _LOGGER.warning("Unsupported dehumidifer mode %s", mode)
+            _LOGGER.debug("Unsupported dehumidifer mode %s", mode)
             midea_mode = 1
         self.apply("mode", midea_mode)
 

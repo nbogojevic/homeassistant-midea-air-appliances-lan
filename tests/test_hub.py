@@ -23,7 +23,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_WAIT,
 )
 from custom_components.midea_dehumidifier_lan.hub import (
-    assure_valid_device_configuration,
+    _assure_valid_device_configuration,
     redacted_conf,
 )
 
@@ -124,26 +124,26 @@ def test_assure_valid_device_configuration():
             {CONF_TOKEN: "ABCDEF"},
         ],
     }
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][0])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][0])
     assert not valid
     assert conf[CONF_DEVICES][0][CONF_DISCOVERY] == DISCOVERY_CLOUD
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][0])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][0])
     assert valid
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][1])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][1])
     assert not valid
     assert conf[CONF_DEVICES][1][CONF_DISCOVERY] == DISCOVERY_WAIT
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][1])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][1])
     assert valid
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][2])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][2])
     assert not valid
     assert conf[CONF_DEVICES][2][CONF_DISCOVERY] == DISCOVERY_LAN
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][3])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][3])
     assert not valid
     assert conf[CONF_DEVICES][3][CONF_DISCOVERY] == DISCOVERY_CLOUD
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][4])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][4])
     assert valid
     assert conf[CONF_DEVICES][4][CONF_DISCOVERY] == DISCOVERY_CLOUD
     conf.pop(CONF_PASSWORD)
-    valid = assure_valid_device_configuration(conf, conf[CONF_DEVICES][5])
+    valid = _assure_valid_device_configuration(conf, conf[CONF_DEVICES][5])
     assert not valid
     assert conf[CONF_DEVICES][5][CONF_DISCOVERY] == DISCOVERY_IGNORE
