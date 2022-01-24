@@ -106,3 +106,7 @@ APPLIANCE_SCAN_INTERVALS = {
     360: "6 hours",
     1440: "24 hours",
 }
+
+# Default period of failed updates before appliance is declared unavailable
+# 5 minutes == 300 seconds
+DEFAULT_TIME_TO_LEAVE: Final = 300
