@@ -19,6 +19,7 @@ from homeassistant.const import (
     CONF_NAME,
     CONF_PASSWORD,
     CONF_TOKEN,
+    CONF_TTL,
     CONF_TYPE,
     CONF_UNIQUE_ID,
     CONF_USERNAME,
@@ -38,6 +39,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD_OBSOLETE,
     CURRENT_CONFIG_VERSION,
+    DEFAULT_TIME_TO_LEAVE,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
@@ -69,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 
 async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    # TODO This method can be removed after 0.7.0
+    # This method can be removed after 0.7.0
     entity_registry = await async_get_registry(hass)
 
     conf = config_entry.data
@@ -153,6 +155,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 CONF_TOKEN_KEY: old.get(CONF_TOKEN_KEY),
                 CONF_TYPE: old.get(CONF_TYPE),
                 CONF_UNIQUE_ID: old.get(CONF_UNIQUE_ID),
+                CONF_TTL: old.get(CONF_TTL, DEFAULT_TIME_TO_LEAVE),
             }
 
             discovery_mode = new.get(CONF_DISCOVERY)
