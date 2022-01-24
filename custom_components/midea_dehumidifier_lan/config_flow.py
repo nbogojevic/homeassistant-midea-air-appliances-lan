@@ -20,6 +20,7 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_SCAN_INTERVAL,
     CONF_TOKEN,
+    CONF_TTL,
     CONF_TYPE,
     CONF_UNIQUE_ID,
     CONF_USERNAME,
@@ -65,6 +66,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DEFAULT_DISCOVERY_MODE,
     DEFAULT_PASSWORD,
     DEFAULT_SCAN_INTERVAL,
+    DEFAULT_TIME_TO_LEAVE,
     DEFAULT_USERNAME,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
@@ -83,6 +85,7 @@ _LOGGER = logging.getLogger(__name__)
 def _appliance_schema(
     name: str,
     address: str = UNKNOWN_IP,
+    ttl: int = DEFAULT_TIME_TO_LEAVE,
     token: str = "",
     token_key: str = "",
     discovery_mode=DISCOVERY_WAIT,
@@ -97,6 +100,7 @@ def _appliance_schema(
                 default=address or UNKNOWN_IP,
             ): cv.string,
             vol.Required(CONF_NAME, default=name): cv.string,
+            vol.Required(CONF_TTL, default=ttl): cv.positive_int,
             vol.Optional(CONF_TOKEN, default=token or ""): cv.string,
             vol.Optional(CONF_TOKEN_KEY, default=token_key or ""): cv.string,
         }
@@ -137,12 +141,14 @@ def _advanced_settings_schema(
 
 
 def _reauth_schema(
+    username: str,
     password: str,
     appkey: str,
     appid: int,
 ) -> vol.Schema:
     return vol.Schema(
         {
+            vol.Required(CONF_USERNAME, default=username): cv.string,
             vol.Required(CONF_PASSWORD, default=password): cv.string,
             vol.Required(CONF_APPKEY, default=appkey): cv.string,
             vol.Required(CONF_APPID, default=appid): cv.positive_int,
@@ -332,14 +338,14 @@ class _MideaFlow(FlowHandler):
 
         errors: dict = {}
         self.error_cause = ""
-        _LOGGER.debug("Processing step %d", self.appliance_idx)
+        _LOGGER.debug("Processing page %d for %s", self.appliance_idx, step_id)
         appliance = self.appliances[self.appliance_idx]
         device_conf = self.devices_conf[self.appliance_idx]
         discovery_mode = device_conf.get(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
+        ttl = device_conf.get(CONF_TTL, DEFAULT_TIME_TO_LEAVE)
         ip_address = appliance.address or UNKNOWN_IP
         if user_input is not None:
             try:
-                _LOGGER.debug("appliance user_input %s", user_input)
 
                 ip_address = user_input.get(
                     CONF_IP_ADDRESS, device_conf.get(CONF_IP_ADDRESS, UNKNOWN_IP)
@@ -359,7 +365,7 @@ class _MideaFlow(FlowHandler):
                         else DISCOVERY_CLOUD
                     )
                 device_conf[CONF_DISCOVERY] = discovery_mode
-
+                device_conf[CONF_TTL] = user_input.get(CONF_TTL, ttl)
                 appliance.address = ip_address
                 appliance.name = user_input.get(CONF_NAME, appliance.name)
                 appliance.token = user_input.get(CONF_TOKEN, "")
@@ -386,6 +392,7 @@ class _MideaFlow(FlowHandler):
                 ip_address = appliance.address or UNKNOWN_IP
                 user_input = None
                 discovery_mode = DEFAULT_DISCOVERY_MODE
+                ttl = DEFAULT_TIME_TO_LEAVE
 
             except _FlowException as ex:
                 self.error_cause = str(ex.cause)
@@ -406,9 +413,9 @@ class _MideaFlow(FlowHandler):
             "address": device_conf.get(CONF_IP_ADDRESS, ip_address),
             "token": device_conf.get(CONF_TOKEN, appliance.token),
             "token_key": device_conf.get(CONF_TOKEN_KEY, appliance.key),
+            "ttl": device_conf.get(CONF_TTL, ttl),
             "discovery_mode": device_conf.get(CONF_DISCOVERY, discovery_mode),
         }
-        _LOGGER.debug("appliance form arguments %s", schema_arg)
         schema = _appliance_schema(**schema_arg)
         return self.async_show_form(
             step_id=step_id,
@@ -479,9 +486,8 @@ class _FlowException(Exception):
 
 # pylint: disable=too-many-instance-attributes
 class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
-    """
-    Configuration flow for Midea dehumidifiers on local network uses discovery based on
-    Midea cloud, so it first requires credentials for it.
+    """Configuration flow for Midea dehumidifiers on local network uses
+    discovery based on Midea cloud, so it first requires credentials for it.
     If some appliances are registered in the cloud, but not discovered, configuration
     flow will prompt for additional information.
     """
@@ -668,10 +674,12 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         """Handle reauthorization flow."""
         self.errors = {}
         password = ""
+        username = self.conf.get(CONF_USERNAME, "")
         appkey = self.conf.get(CONF_APPKEY, DEFAULT_APPKEY)
         appid = self.conf.get(CONF_APPID, DEFAULT_APP_ID)
         if user_input is not None:
             extra_conf = {
+                CONF_USERNAME: user_input.get(CONF_USERNAME, ""),
                 CONF_PASSWORD: user_input.get(CONF_PASSWORD, ""),
                 CONF_APPKEY: user_input.get(CONF_APPKEY, appkey),
                 CONF_APPID: user_input.get(CONF_APPID, appid),
@@ -683,6 +691,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             except Exception as ex:  # pylint: disable=broad-except
                 self._process_exception(ex)
             else:
+                self.conf[CONF_USERNAME] = username
                 self.conf[CONF_PASSWORD] = password
                 self.conf[CONF_APPKEY] = appkey
                 self.conf[CONF_APPID] = appid
@@ -691,6 +700,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=_reauth_schema(
+                username=username,
                 password=password,
                 appkey=appkey,
                 appid=appid,
