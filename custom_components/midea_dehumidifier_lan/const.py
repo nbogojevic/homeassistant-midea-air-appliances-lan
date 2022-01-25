@@ -5,7 +5,11 @@ from typing import Final
 
 from homeassistant.const import Platform
 
-from midea_beautiful.midea import SUPPORTED_APPS
+from midea_beautiful.midea import (
+    APPLIANCE_TYPE_AIRCON,
+    APPLIANCE_TYPE_DEHUMIDIFIER,
+    SUPPORTED_APPS,
+)
 
 __version__ = "0.6.0"
 
@@ -96,7 +100,7 @@ DISCOVERY_MODE_EXPLANATION = {
     DISCOVERY_CLOUD: "polled using cloud",
 }
 
-APPLIANCE_SCAN_INTERVALS = {
+SCAN_INTERVALS_LIST = {
     2: "2 minutes",
     5: "5 minutes",
     10: "10 minutes",
@@ -107,6 +111,25 @@ APPLIANCE_SCAN_INTERVALS = {
     1440: "24 hours",
 }
 
+TTL_LIST = {
+    2: "2 minutes",
+    5: "5 minutes",
+    10: "10 minutes",
+    15: "15 minutes",
+    20: "20 minutes",
+    30: "30 minutes",
+    45: "45 minutes",
+    60: "1 hour",
+    120: "2 hours",
+    360: "6 hours",
+}
+
+SUPPORTED_APPLIANCES = {
+    APPLIANCE_TYPE_AIRCON: "Air conditioner",
+    APPLIANCE_TYPE_DEHUMIDIFIER: "Dehumidifier",
+}
+
+
 # Default period of failed updates before appliance is declared unavailable
-# 5 minutes == 300 seconds
-DEFAULT_TIME_TO_LEAVE: Final = 300
+# 5 minutes
+DEFAULT_TTL: Final = 5
