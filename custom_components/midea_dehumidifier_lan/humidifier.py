@@ -15,7 +15,6 @@ from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     MAX_TARGET_HUMIDITY,
     MIN_TARGET_HUMIDITY,
-    NAME,
 )
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
@@ -111,7 +110,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         self._attr_mode = next((i[1] for i in _MODES if i[0] == curr_mode), None)
         if self._attr_mode is None:
             self._attr_mode = MODE_SET
-            _LOGGER.warning("Mode %s is not supported by %s.", curr_mode, NAME)
+            _LOGGER.warning("Mode %s is not supported by %s.", curr_mode, self.name)
         self._attr_target_humidity = dehumidifier.target_humidity
         self._attr_is_on = dehumidifier.running
         self._error_code = dehumidifier.error_code
