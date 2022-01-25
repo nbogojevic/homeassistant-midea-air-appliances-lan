@@ -357,12 +357,10 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
         if scan_interval:
             _LOGGER.debug(
                 "Starting periodic discovery with interval %s minute(s),"
-                " broadcast %s, configured %s, previous %s, myself %s",
+                " broadcast %s, configured %s",
                 scan_interval,
                 self.broadcast_addresses,
                 self.conf_addresses,
-                self.remove_discovery,
-                self,
             )
             self.remove_discovery = async_track_time_interval(
                 self.hass, self._async_discover, timedelta(minutes=scan_interval)
