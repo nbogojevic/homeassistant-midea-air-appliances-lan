@@ -371,7 +371,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
     def stop(self) -> None:
         """Stops periodic disovery of devices"""
         if self.remove_discovery:
-            _LOGGER.debug("Stopping %s", self.remove_discovery)
+            _LOGGER.debug("Stopping periodic discovery")
 
             self.remove_discovery()
             self.remove_discovery = None
@@ -384,7 +384,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
         if not addresses:
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses += [str(address) for address in iface_broadcast]
-        _LOGGER.debug("Initiated discovery via %s %s", addresses, self)
+        _LOGGER.debug("Initiated discovery via %s", addresses)
         result = self.hub.client.find_appliances(
             addresses=addresses, retries=1, timeout=1
         )
