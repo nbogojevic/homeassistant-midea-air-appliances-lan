@@ -50,9 +50,12 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     """Entity for managing dehumidifer fan"""
 
     _attr_supported_features = SUPPORT_PRESET_MODE
+    _attr_preset_modes = PRESET_MODES_7
+    _attr_speed_count = len(PRESET_MODES_7)
     _name_suffix = " Fan"
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
+
         super().__init__(coordinator)
         self._fan_speeds = {
             MODE_NONE: 0,
@@ -68,8 +71,8 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         return self._attr_is_on
 
     def on_online(self, update: bool) -> None:
-        supports = self.coordinator.appliance.state.capabilities
-        fan_capability = supports.get("fan_speed", 0)
+        supports = self.dehumidifier().capabilities
+        fan_capability = supports.get("fan_speed")
 
         if fan_capability == 3:
             self._attr_preset_modes = PRESET_MODES_3
