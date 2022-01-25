@@ -31,15 +31,13 @@ from midea_beautiful.exceptions import MideaError
 from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
 
-from custom_components.midea_dehumidifier_lan.api import MideaClient
-
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_APPID,
     CONF_APPKEY,
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD_OBSOLETE,
     CURRENT_CONFIG_VERSION,
-    DEFAULT_TIME_TO_LEAVE,
+    DEFAULT_TTL,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DISCOVERY_LAN,
@@ -51,6 +49,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     UNKNOWN_IP,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
+from custom_components.midea_dehumidifier_lan.util import MideaClient, address_ok
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -149,17 +148,17 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 CONF_API_VERSION: old.get(CONF_API_VERSION),
                 CONF_DISCOVERY: old.get(CONF_DISCOVERY),
                 CONF_ID: old.get(CONF_ID),
-                CONF_IP_ADDRESS: old.get(CONF_IP_ADDRESS),
+                CONF_IP_ADDRESS: old.get(CONF_IP_ADDRESS, UNKNOWN_IP),
                 CONF_NAME: old.get(CONF_NAME),
                 CONF_TOKEN: old.get(CONF_TOKEN),
                 CONF_TOKEN_KEY: old.get(CONF_TOKEN_KEY),
                 CONF_TYPE: old.get(CONF_TYPE),
                 CONF_UNIQUE_ID: old.get(CONF_UNIQUE_ID),
-                CONF_TTL: old.get(CONF_TTL, DEFAULT_TIME_TO_LEAVE),
+                CONF_TTL: old.get(CONF_TTL, DEFAULT_TTL),
             }
 
             discovery_mode = new.get(CONF_DISCOVERY)
-            if not discovery_mode or discovery_mode not in [
+            if discovery_mode not in [
                 DISCOVERY_WAIT,
                 DISCOVERY_LAN,
                 DISCOVERY_IGNORE,
@@ -169,13 +168,11 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                     new[CONF_DISCOVERY] = DISCOVERY_CLOUD
                 elif old.get(CONF_EXCLUDE):
                     new[CONF_DISCOVERY] = DISCOVERY_IGNORE
-                elif old.get(CONF_IP_ADDRESS) == UNKNOWN_IP:
+                elif not address_ok(old.get(CONF_IP_ADDRESS)):
                     new[CONF_DISCOVERY] = DISCOVERY_WAIT
                 else:
                     new[CONF_DISCOVERY] = DISCOVERY_LAN
 
-            if not new.get(CONF_IP_ADDRESS):
-                new[CONF_IP_ADDRESS] = UNKNOWN_IP
             await id_resolver.async_get_unique_id_if_missing(new_conf, new)
             new_devices.append(new)
 

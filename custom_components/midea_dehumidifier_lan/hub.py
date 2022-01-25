@@ -42,7 +42,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     UNKNOWN_IP,
 )
-from custom_components.midea_dehumidifier_lan.util import AbstractHub, RedactedConf
+from custom_components.midea_dehumidifier_lan.util import (
+    AbstractHub,
+    RedactedConf,
+    address_ok,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,7 +70,7 @@ def _assure_valid_device_configuration(
     ip_address = device.get(CONF_IP_ADDRESS)
     token = device.get(CONF_TOKEN)
     key = device.get(CONF_TOKEN_KEY)
-    if ip_address and ip_address != UNKNOWN_IP:
+    if address_ok(ip_address):
         device[CONF_DISCOVERY] = DISCOVERY_LAN if token and key else DISCOVERY_WAIT
     elif token and key:
         device[CONF_DISCOVERY] = DISCOVERY_WAIT
@@ -110,6 +114,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
         """Stops discovery and coordinators"""
         _LOGGER.debug("Unloading hub")
 
+        self.discovery.stop()
         for coordinator in self.coordinators:
             # Stop coordinators
             coordinator.update_interval = None

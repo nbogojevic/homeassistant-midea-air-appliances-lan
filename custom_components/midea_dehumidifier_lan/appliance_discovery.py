@@ -27,9 +27,6 @@ from homeassistant.const import (
 from homeassistant.helpers.event import async_track_time_interval
 from midea_beautiful.lan import LanDevice
 
-from custom_components.midea_dehumidifier_lan.api import (
-    supported_appliance,
-)
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceUpdateCoordinator,
 )
@@ -46,7 +43,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     NAME,
     UNKNOWN_IP,
 )
-from custom_components.midea_dehumidifier_lan.util import AbstractHub
+from custom_components.midea_dehumidifier_lan.util import (
+    AbstractHub,
+    address_ok,
+    supported_appliance,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ def empty_address_iterator():
 
 def _add_if_discoverable(conf_addresses: list[str], device: dict[str, Any]):
     if device.get(CONF_DISCOVERY) != DISCOVERY_LAN:
-        if device[CONF_IP_ADDRESS] and device[CONF_IP_ADDRESS] != UNKNOWN_IP:
+        if address_ok(device[CONF_IP_ADDRESS]):
             conf_addresses.append(device[CONF_IP_ADDRESS])
 
 
@@ -197,7 +198,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
                 message=msg,
                 notification_id=f"midea_wait_discovery_{new.serial_number}",
             )
-            known.update(update)
+            known |= update
             need_reload = True
         elif new.address and known[CONF_DISCOVERY] != DISCOVERY_LAN:
             self._possible_lan_notification(new, known, new.address)
@@ -350,24 +351,28 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
 
     def start(self) -> None:
         """Starts periodic disovery of devices"""
+        self.stop()
         self._setup()
         scan_interval = self.hub.config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
         if scan_interval:
             _LOGGER.debug(
-                "Staring periodic discovery with interval %s minute(s),"
-                " broadcast %s, configured %s",
+                "Starting periodic discovery with interval %s minute(s),"
+                " broadcast %s, configured %s, previous %s, myself %s",
                 scan_interval,
                 self.broadcast_addresses,
                 self.conf_addresses,
+                self.remove_discovery,
+                self,
             )
-        self.stop()
-        self.remove_discovery = async_track_time_interval(
-            self.hass, self._async_discover, timedelta(minutes=scan_interval)
-        )
+            self.remove_discovery = async_track_time_interval(
+                self.hass, self._async_discover, timedelta(minutes=scan_interval)
+            )
 
     def stop(self) -> None:
         """Stops periodic disovery of devices"""
         if self.remove_discovery:
+            _LOGGER.debug("Stopping %s", self.remove_discovery)
+
             self.remove_discovery()
             self.remove_discovery = None
 
@@ -379,7 +384,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
         if not addresses:
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses += [str(address) for address in iface_broadcast]
-        _LOGGER.debug("Initiated discovery via %s", addresses)
+        _LOGGER.debug("Initiated discovery via %s %s", addresses, self)
         result = self.hub.client.find_appliances(
             addresses=addresses, retries=1, timeout=1
         )

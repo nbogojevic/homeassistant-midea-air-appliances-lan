@@ -23,11 +23,11 @@ from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
 from midea_beautiful.lan import LanDevice
 
-from custom_components.midea_dehumidifier_lan.api import is_climate, is_dehumidifier
 from custom_components.midea_dehumidifier_lan.const import (
     APPLIANCE_REFRESH_COOLDOWN,
     APPLIANCE_REFRESH_INTERVAL,
     CONF_TOKEN_KEY,
+    DEFAULT_TTL,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
     DOMAIN,
@@ -78,7 +78,8 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator, ApplianceCoordinator):
         self.discovery_mode = device.get(CONF_DISCOVERY, DISCOVERY_IGNORE)
         self.use_cloud: bool = self.discovery_mode == DISCOVERY_CLOUD
         self.available = available
-        self.time_to_leave = device.get(CONF_TTL, 100)  # TTL is in seconds
+        # TTL is in minutes
+        self.time_to_leave = 60 * int(device.get(CONF_TTL, DEFAULT_TTL))
         self.has_failure = False
         self.first_failure_time: float = 0
 
@@ -142,24 +143,6 @@ class ApplianceUpdateCoordinator(DataUpdateCoordinator, ApplianceCoordinator):
         self.appliance = appliance
         await self.hub.async_update_config()
         self.available = True
-
-    def is_climate(self) -> bool:
-        """True if appliance is air conditioner"""
-        return is_climate(self.appliance)
-
-    def is_dehumidifier(self) -> bool:
-        """True if appliance is dehumidifier"""
-        return is_dehumidifier(self.appliance)
-
-    @final
-    def dehumidifier(self) -> DehumidifierAppliance:
-        """Returns state as dehumidifier"""
-        return cast(DehumidifierAppliance, self.appliance.state)
-
-    @final
-    def airconditioner(self) -> AirConditionerAppliance:
-        """Returns state as air conditioner"""
-        return cast(AirConditionerAppliance, self.appliance.state)
 
     async def async_apply(self, args: dict) -> None:
         """Applies changes to device"""
