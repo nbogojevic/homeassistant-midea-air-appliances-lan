@@ -162,7 +162,7 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
         descriptor: _MideaSwitchDescriptor,
     ) -> None:
         self._switch_descriptor = descriptor
-        self._capability_attr = self._switch_descriptor.capability
+        self._capability_attr = descriptor.capability
         self._unique_id_prefix = descriptor.prefix
         self._name_suffix = " " + descriptor.name.strip()
         super().__init__(coordinator)

@@ -190,13 +190,16 @@ class ApplianceEntity(CoordinatorEntity):
         if not capability:
             return
         if capability == ENTITY_ENABLED_BY_DEFAULT:
-            self._attr_entity_registry_enabled_default = True
+            enabled = True
         elif capability == ENTITY_DISABLED_BY_DEFAULT:
-            self._attr_entity_registry_enabled_default = False
+            enabled = False
         elif capabilities := self.appliance.state.capabilities:
-            self._attr_entity_registry_enabled_default = capabilities.get(
-                capability, False
-            )
+            enabled = capabilities.get(capability, False)
+        elif hasattr(self, "_attr_entity_registry_enabled_default"):
+            return
+        else:
+            enabled = False
+        self._attr_entity_registry_enabled_default = enabled
 
     def on_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""
