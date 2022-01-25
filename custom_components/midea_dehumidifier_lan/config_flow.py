@@ -1,7 +1,7 @@
 """Config flow for Midea Air Appliance (Local) integration."""
 from __future__ import annotations
 
-import ipaddress
+from ipaddress import IPv4Address, IPv4Network
 import logging
 from typing import Any, Final
 
@@ -42,7 +42,6 @@ from midea_beautiful.exceptions import (
 )
 from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import (
-    APPLIANCE_TYPE_AIRCON,
     APPLIANCE_TYPE_DEHUMIDIFIER,
     DEFAULT_APP_ID,
     DEFAULT_APPKEY,
@@ -50,12 +49,11 @@ from midea_beautiful.midea import (
 )
 
 from custom_components.midea_dehumidifier_lan import Hub
-from custom_components.midea_dehumidifier_lan.api import (
-    MideaClient,
-    supported_appliance,
-)
 from custom_components.midea_dehumidifier_lan.const import (
-    APPLIANCE_SCAN_INTERVALS,
+    NAME,
+    SCAN_INTERVALS_LIST,
+    SUPPORTED_APPLIANCES,
+    TTL_LIST,
     CONF_ADVANCED_SETTINGS,
     CONF_APPID,
     CONF_APPKEY,
@@ -66,7 +64,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     DEFAULT_DISCOVERY_MODE,
     DEFAULT_PASSWORD,
     DEFAULT_SCAN_INTERVAL,
-    DEFAULT_TIME_TO_LEAVE,
+    DEFAULT_TTL,
     DEFAULT_USERNAME,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
@@ -77,15 +75,20 @@ from custom_components.midea_dehumidifier_lan.const import (
     LOCAL_BROADCAST,
     UNKNOWN_IP,
 )
-from custom_components.midea_dehumidifier_lan.util import RedactedConf
+from custom_components.midea_dehumidifier_lan.util import (
+    MideaClient,
+    RedactedConf,
+    address_ok,
+    supported_appliance,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def _appliance_schema(
+def _appliance_schema(  # pylint: disable=too-many-arguments
     name: str,
     address: str = UNKNOWN_IP,
-    ttl: int = DEFAULT_TIME_TO_LEAVE,
+    ttl: int = DEFAULT_TTL,
     token: str = "",
     token_key: str = "",
     discovery_mode=DISCOVERY_WAIT,
@@ -100,7 +103,7 @@ def _appliance_schema(
                 default=address or UNKNOWN_IP,
             ): cv.string,
             vol.Required(CONF_NAME, default=name): cv.string,
-            vol.Required(CONF_TTL, default=ttl): cv.positive_int,
+            vol.Required(CONF_TTL, default=ttl): vol.In(TTL_LIST),
             vol.Optional(CONF_TOKEN, default=token or ""): cv.string,
             vol.Optional(CONF_TOKEN_KEY, default=token_key or ""): cv.string,
         }
@@ -125,15 +128,10 @@ def _advanced_settings_schema(
             vol.Required(CONF_APPID, default=appid): cv.positive_int,
             vol.Optional(CONF_BROADCAST_ADDRESS, default=broadcast_address): cv.string,
             vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.In(
-                APPLIANCE_SCAN_INTERVALS
+                SCAN_INTERVALS_LIST
             ),
             vol.Required(CONF_INCLUDE, default=appliances): vol.All(
-                cv.multi_select(
-                    {
-                        APPLIANCE_TYPE_AIRCON: "Air conditioner",
-                        APPLIANCE_TYPE_DEHUMIDIFIER: "Dehumidifier",
-                    }
-                ),
+                cv.multi_select(SUPPORTED_APPLIANCES),
                 vol.Length(min=1, msg="Must select at least one appliance category"),
             ),
         }
@@ -207,13 +205,13 @@ class _MideaFlow(FlowHandler):
 
     def _connect_to_cloud(self: _MideaFlow, extra_conf: dict[str, Any] = None) -> None:
         """Validates that cloud credentials are valid"""
-        extra_conf = extra_conf or {}
+        cfg = self.conf | (extra_conf or {})
         try:
             self.cloud = self.client.connect_to_cloud(
-                account=self.conf[CONF_USERNAME],
-                password=extra_conf.get(CONF_PASSWORD, self.conf[CONF_PASSWORD]),
-                appkey=extra_conf.get(CONF_APPKEY, self.conf[CONF_APPKEY]),
-                appid=extra_conf.get(CONF_APPID, self.conf[CONF_APPID]),
+                account=cfg[CONF_USERNAME],
+                password=cfg[CONF_PASSWORD],
+                appkey=cfg[CONF_APPKEY],
+                appid=cfg[CONF_APPID],
             )
         except MideaError as ex:
             raise _FlowException("no_cloud", str(ex)) from ex
@@ -243,20 +241,16 @@ class _MideaFlow(FlowHandler):
                     use_cloud=True,
                 )
             else:  # DISCOVERY_LAN
-                if appliance.address == UNKNOWN_IP:
-                    raise _FlowException("invalid_ip_address", appliance.address)
+                ip_address = appliance.address
+                if not address_ok(ip_address):
+                    raise _FlowException("invalid_ip_address", ip_address)
                 try:
-                    ipaddress.IPv4Address(appliance.address)
+                    IPv4Address(ip_address)
                 except Exception as ex:
-                    _LOGGER.debug(
-                        "Invalid appliance address %s", appliance.address, exc_info=True
-                    )
-                    raise _FlowException(
-                        "invalid_ip_address", appliance.address
-                    ) from ex
+                    _LOGGER.debug("Invalid appliance address %s: %s", ip_address, ex)
+                    raise _FlowException("invalid_ip_address", ip_address) from ex
                 discovered = self.client.appliance_state(
-                    address=appliance.address,
-                    cloud=self.cloud,
+                    address=ip_address, cloud=self.cloud
                 )
         except ProtocolError as ex:
             raise _FlowException("connection_error", str(ex)) from ex
@@ -278,25 +272,21 @@ class _MideaFlow(FlowHandler):
             device_conf = self.devices_conf[i]
 
             if device_conf.get(CONF_DISCOVERY) != DISCOVERY_IGNORE:
-                device_conf.update(
-                    {
-                        CONF_API_VERSION: appliance.version,
-                        CONF_ID: appliance.appliance_id,
-                        CONF_IP_ADDRESS: (
-                            appliance.address
-                            or device_conf[CONF_IP_ADDRESS]
-                            or UNKNOWN_IP
-                        ),
-                        CONF_NAME: appliance.name,
-                        CONF_TOKEN_KEY: appliance.key,
-                        CONF_TOKEN: appliance.token,
-                        CONF_TYPE: appliance.type,
-                        CONF_UNIQUE_ID: appliance.serial_number,
-                    }
-                )
+                device_conf |= {
+                    CONF_API_VERSION: appliance.version,
+                    CONF_ID: appliance.appliance_id,
+                    CONF_IP_ADDRESS: (
+                        appliance.address or device_conf[CONF_IP_ADDRESS] or UNKNOWN_IP
+                    ),
+                    CONF_NAME: appliance.name,
+                    CONF_TOKEN_KEY: appliance.key,
+                    CONF_TOKEN: appliance.token,
+                    CONF_TYPE: appliance.type,
+                    CONF_UNIQUE_ID: appliance.serial_number,
+                }
                 suggested_discovery = (
                     DISCOVERY_LAN
-                    if device_conf[CONF_IP_ADDRESS] != UNKNOWN_IP
+                    if address_ok(device_conf[CONF_IP_ADDRESS])
                     else DISCOVERY_WAIT
                 )
                 device_conf.get(CONF_DISCOVERY, suggested_discovery)
@@ -310,24 +300,18 @@ class _MideaFlow(FlowHandler):
         if self.config_entry:
             _LOGGER.debug("Updating configuration data %s", RedactedConf(self.conf))
             self.hass.config_entries.async_update_entry(
-                entry=self.config_entry,
-                data=self.conf,
+                entry=self.config_entry, data=self.conf
             )
             # Reload the config entry otherwise devices will remain unavailable
             self.hass.async_create_task(
                 self.hass.config_entries.async_reload(self.config_entry.entry_id)
             )
 
-        if len(self.devices_conf) == 0:
-            _LOGGER.debug(
-                "There are no configured appliances %s", RedactedConf(self.conf)
-            )
+        if not self.devices_conf:
+            _LOGGER.debug("No configured appliances %s", RedactedConf(self.conf))
             return self.async_abort(reason="no_configured_devices")
         _LOGGER.debug("Creating configuration data %s", RedactedConf(self.conf))
-        return self.async_create_entry(
-            title="Midea Air Appliance",
-            data=self.conf,
-        )
+        return self.async_create_entry(title=NAME, data=self.conf)
 
     async def _async_step_appliance(  # pylint: disable=too-many-locals
         self: _MideaFlow,
@@ -338,11 +322,10 @@ class _MideaFlow(FlowHandler):
 
         errors: dict = {}
         self.error_cause = ""
-        _LOGGER.debug("Processing page %d for %s", self.appliance_idx, step_id)
         appliance = self.appliances[self.appliance_idx]
         device_conf = self.devices_conf[self.appliance_idx]
         discovery_mode = device_conf.get(CONF_DISCOVERY, DEFAULT_DISCOVERY_MODE)
-        ttl = device_conf.get(CONF_TTL, DEFAULT_TIME_TO_LEAVE)
+        ttl = device_conf.get(CONF_TTL, DEFAULT_TTL)
         ip_address = appliance.address or UNKNOWN_IP
         if user_input is not None:
             try:
@@ -360,9 +343,7 @@ class _MideaFlow(FlowHandler):
                     DISCOVERY_CLOUD,
                 ]:
                     discovery_mode = (
-                        DISCOVERY_LAN
-                        if ip_address and ip_address != UNKNOWN_IP
-                        else DISCOVERY_CLOUD
+                        DISCOVERY_LAN if address_ok(ip_address) else DISCOVERY_CLOUD
                     )
                 device_conf[CONF_DISCOVERY] = discovery_mode
                 device_conf[CONF_TTL] = user_input.get(CONF_TTL, ttl)
@@ -392,7 +373,7 @@ class _MideaFlow(FlowHandler):
                 ip_address = appliance.address or UNKNOWN_IP
                 user_input = None
                 discovery_mode = DEFAULT_DISCOVERY_MODE
-                ttl = DEFAULT_TIME_TO_LEAVE
+                ttl = DEFAULT_TTL
 
             except _FlowException as ex:
                 self.error_cause = str(ex.cause)
@@ -426,7 +407,7 @@ class _MideaFlow(FlowHandler):
         )
 
     def _check_ip_address_unique(self, ip_address) -> None:
-        if ip_address and ip_address != UNKNOWN_IP:
+        if address_ok(ip_address):
             for i in range(self.appliance_idx):
                 if self.devices_conf[i].get(CONF_IP_ADDRESS) == ip_address:
                     raise _FlowException(
@@ -444,11 +425,11 @@ class _MideaFlow(FlowHandler):
     def _placeholders(
         self: _MideaFlow, appliance: LanDevice = None, extra: dict[str, str] = None
     ) -> dict[str, str]:
+        extra = extra or {}
         placeholders = {
             "cause": self.error_cause or "",
+            **extra,
         }
-        if extra:
-            placeholders.update(extra)
         if appliance:
             placeholders[ATTR_ID] = (
                 appliance.serial_number or f"{appliance.appliance_id} (Missing S/N)"
@@ -467,7 +448,7 @@ def _get_broadcast_addresses(user_input: dict[str, Any]) -> list[str]:
     for addr in specified_addresses:
         _LOGGER.debug("Trying IPv4 %s", addr)
         try:
-            ipaddress.IPv4Network(addr)
+            IPv4Network(addr)
             addresses.append(addr)
         except ValueError as ex:
             raise _FlowException("invalid_ip_range", str(ex)) from ex
@@ -516,14 +497,12 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         conf_addresses = self.conf.get(CONF_BROADCAST_ADDRESS, [])
         if isinstance(conf_addresses, str):
             conf_addresses = [conf_addresses]
-        addresses = []
-        for addr in conf_addresses:
-            addresses.append(str(ipaddress.IPv4Network(addr).broadcast_address))
-        self.appliances = self.client.find_appliances(self.cloud, addresses=addresses)
-        if self.appliances:
-            self.devices_conf = [{} for _ in self.appliances]
-        else:
-            self.devices_conf = []
+        addresses = [
+            str(IPv4Network(addr).broadcast_address) for addr in conf_addresses
+        ]
+        self.appliances.clear()
+        self.appliances += self.client.find_appliances(self.cloud, addresses=addresses)
+        self.devices_conf = [{} for _ in self.appliances]
 
     async def _validate_discovery_phase(
         self, user_input: dict[str, Any] | None
@@ -536,13 +515,14 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             assert self.conf is not None
             self.conf[CONF_APPID] = user_input[CONF_APPID]
             self.conf[CONF_APPKEY] = user_input[CONF_APPKEY]
-            self.conf[CONF_BROADCAST_ADDRESS] = _get_broadcast_addresses(user_input)
             self.conf[CONF_INCLUDE] = user_input[CONF_INCLUDE]
             self.conf[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL]
+            self.conf[CONF_BROADCAST_ADDRESS] = _get_broadcast_addresses(user_input)
+
             _LOGGER.debug("include=%s", self.conf[CONF_INCLUDE])
         else:
             app = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
-            self.conf.update(SUPPORTED_APPS.get(app, SUPPORTED_APPS[DEFAULT_APP]))
+            self.conf |= SUPPORTED_APPS.get(app, SUPPORTED_APPS[DEFAULT_APP])
             if user_input.get(CONF_ADVANCED_SETTINGS):
                 return await self.async_step_advanced_settings()
 
@@ -552,15 +532,13 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
 
         await self.hass.async_add_executor_job(self._connect_and_discover)
 
-        self.indexes_to_process = []
-
-        for i, appliance in enumerate(self.appliances):
-            if supported_appliance(self.conf, appliance) and (
-                not appliance.address or appliance.address == UNKNOWN_IP
-            ):
-                self.indexes_to_process.append(i)
+        self.indexes_to_process = [
+            index
+            for index, appliance in enumerate(self.appliances)
+            if supported_appliance(self.conf, appliance)
+            and not address_ok(appliance.address)
+        ]
         if self.indexes_to_process:
-            _LOGGER.debug("Pages to show %s", self.indexes_to_process)
             self.appliance_idx = self.indexes_to_process.pop(0)
             self.discovered_appliances = [None] * len(self.devices_conf)
             return await self.async_step_unreachable_appliance()
@@ -581,7 +559,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_allowed")
 
-        self.errors = {}
+        self.errors.clear()
         self.error_cause = ""
 
         username = DEFAULT_USERNAME
@@ -610,9 +588,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         self.error_cause = ""
         self.advanced_settings = True
         if user_input is not None:
-
-            res = await self._do_validate(user_input)
-            if res:
+            if res := await self._do_validate(user_input):
                 return res
         else:
             user_input = {}
@@ -646,11 +622,6 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the appliances that were not discovered automatically on LAN."""
-        _LOGGER.debug("Pages to show %s", self.indexes_to_process)
-        _LOGGER.debug("Current configuration %s", self.conf)
-        _LOGGER.debug(
-            "Saved configuration %s", self.config_entry and self.config_entry.data
-        )
 
         return await self._async_step_appliance(
             step_id="unreachable_appliance",
@@ -672,7 +643,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle reauthorization flow."""
-        self.errors = {}
+        self.errors.clear()
         password = ""
         username = self.conf.get(CONF_USERNAME, "")
         appkey = self.conf.get(CONF_APPKEY, DEFAULT_APPKEY)
@@ -740,9 +711,8 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
     def _build_appliance_list(self) -> None:
         assert self.config_entry
         hub: Hub = self.hass.data[DOMAIN][self.config_entry.entry_id]
-        self.appliances = []
+        self.appliances.clear()
         self.devices_conf = self.conf[CONF_DEVICES]
-        device: dict[str, Any]
         for device in self.devices_conf:
             for coord in hub.coordinators:
                 if device[CONF_UNIQUE_ID] == coord.appliance.serial_number:
