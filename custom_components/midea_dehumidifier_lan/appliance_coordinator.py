@@ -156,11 +156,13 @@ class ApplianceEntity(CoordinatorEntity):
 
     _unique_id_prefx = UNIQUE_DEHUMIDIFIER_PREFIX
     _name_suffix = ""
+    _capability_attr = ""
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
-        super().__init__(coordinator)
         self.coordinator = coordinator
         self.appliance = coordinator.appliance
+        self._set_enabled_for_capability()
+        super().__init__(coordinator)
         self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.serial_number}"
         self._attr_name = str(self.appliance.name or self.unique_id) + self.name_suffix
 
@@ -179,19 +181,22 @@ class ApplianceEntity(CoordinatorEntity):
         self._attr_available = self.appliance.online
         if not self.coordinator.available:
             self.on_online(False)
-        self.on_update()
+        if self.appliance.online:
+            self.on_update()
         self.async_write_ha_state()
 
-    def _set_enabled_for_capability(self, capability: str) -> None:
+    def _set_enabled_for_capability(self) -> None:
+        capability = self._capability_attr
+        if not capability:
+            return
         if capability == ENTITY_ENABLED_BY_DEFAULT:
-            res = True
+            self._attr_entity_registry_enabled_default = True
         elif capability == ENTITY_DISABLED_BY_DEFAULT:
-            res = False
-        elif (capabilities := self.appliance.state.capabilities) :
-            res = getattr(capabilities, capability, False)
-        else:
-            res = False
-        self._attr_entity_registry_enabled_default = res
+            self._attr_entity_registry_enabled_default = False
+        elif capabilities := self.appliance.state.capabilities:
+            self._attr_entity_registry_enabled_default = capabilities.get(
+                capability, False
+            )
 
     def on_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""

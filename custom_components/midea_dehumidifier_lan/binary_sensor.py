@@ -81,11 +81,7 @@ class TankRemovedSensor(ApplianceEntity, BinarySensorEntity):
 
     _attr_device_class = DEVICE_CLASS_PROBLEM
     _name_suffix = " Tank Removed"
-
-    def on_online(self, update: bool) -> None:
-        super()._set_enabled_for_capability("pump")
-
-        return super().on_online(update)
+    _capability_attr = "pump"
 
     def on_update(self) -> None:
         self._attr_is_on = self.dehumidifier().error_code == ERROR_CODE_BUCKET_REMOVED
@@ -99,16 +95,12 @@ class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
     _attr_device_class = DEVICE_CLASS_PROBLEM
     _attr_entity_registry_enabled_default = False
     _name_suffix = " Replace Filter"
+    _capability_attr = "filter"
 
     @property
     def unique_id_prefix(self) -> str:
         """Prefix for entity id"""
         return f"{UNIQUE_DEHUMIDIFIER_PREFIX}filter_"
-
-    def on_online(self, update: bool) -> None:
-        super()._set_enabled_for_capability("filter")
-
-        return super().on_online(update)
 
     def on_update(self) -> None:
         self._attr_is_on = self.dehumidifier().filter_indicator

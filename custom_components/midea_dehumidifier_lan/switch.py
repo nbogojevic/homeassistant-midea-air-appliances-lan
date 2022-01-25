@@ -162,17 +162,13 @@ class MideaSwitch(ApplianceEntity, SwitchEntity):
         descriptor: _MideaSwitchDescriptor,
     ) -> None:
         self._switch_descriptor = descriptor
+        self._capability_attr = self._switch_descriptor.capability
         self._unique_id_prefix = descriptor.prefix
         self._name_suffix = " " + descriptor.name.strip()
         super().__init__(coordinator)
 
         self._attr_icon = descriptor.icon
         self._attribute_name = descriptor.attr
-
-    def on_online(self, update: bool) -> None:
-        super()._set_enabled_for_capability(self._switch_descriptor.capability)
-
-        return super().on_online(update)
 
     def on_update(self) -> None:
         self._attr_is_on = getattr(self.appliance.state, self._attribute_name, None)
