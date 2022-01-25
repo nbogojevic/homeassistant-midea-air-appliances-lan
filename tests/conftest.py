@@ -9,7 +9,7 @@ import pytest
 from midea_beautiful.exceptions import CloudAuthenticationError, MideaError
 from midea_beautiful.midea import APPLIANCE_TYPE_DEHUMIDIFIER, APPLIANCE_TYPE_AIRCON
 
-from custom_components.midea_dehumidifier_lan.api import MideaClient
+from custom_components.midea_dehumidifier_lan.util import MideaClient
 
 pytest_plugins = "pytest_homeassistant_custom_component"  # pylint: disable=invalid-name
 
@@ -39,7 +39,9 @@ def midea_invalid_auth():
     """Skip calls to get data from API."""
     with patch.multiple(
         MideaClient,
-        connect_to_cloud=Mock(side_effect=CloudAuthenticationError(34, "45")),
+        connect_to_cloud=Mock(
+            side_effect=CloudAuthenticationError(34, "45", "some@example.com")
+        ),
         appliance_state=Mock(),
         find_appliances=Mock(return_value=[]),
     ):
