@@ -26,11 +26,12 @@
       },
       "unreachable_appliance": {
         "data": {
+          "discovery": "Choose action (discovery mode)",
           "ip_address": "IPv4 address",
           "name": "Device name",
           "token": "Token",
           "token_key": "Token key",
-          "discovery": "Choose action (discovery mode)"
+          "ttl": "Minutes before unavailable"
         },
         "description": "We were unable to discover an appliance called {name} with the serial number {id}.\n\nPlease choose if you want to exclude appliance, search for it later, use cloud API to poll it, or provide its IPv4 address if you know it.\n\nYou can also provide token and key if you have them. If not, we will try to obtain them from Midea cloud.",
         "title": "Unable to discover appliance"
@@ -70,11 +71,12 @@
       "appliance": {
         "description": "Appliance {index} of {count}",
         "data": {
+          "discovery": "Choose action (discovery mode)",
           "ip_address": "IPv4 address",
           "name": "Device name",
           "token": "Token",
           "token_key": "Token key",
-          "discovery": "Choose action (discovery mode)"
+          "ttl": "Minutes before unavailable"
         }
       }
     },
