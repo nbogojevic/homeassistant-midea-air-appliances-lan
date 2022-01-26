@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from ipaddress import IPv4Address, IPv4Network
 import logging
-from typing import Any, Final
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import (
@@ -180,7 +180,7 @@ class _MideaFlow(FlowHandler):
         super().__init__()
         self.appliance_idx = -1
         self.appliances: list[LanDevice] = []
-        self.client: Final = MideaClient()
+        self._client: MideaClient | None = None
         self.cloud: MideaCloud | None = None  # type: ignore
         self.conf = {}
         self.config_entry: ConfigEntry | None = None
@@ -189,6 +189,12 @@ class _MideaFlow(FlowHandler):
         self.error_cause: str = ""
         self.errors: dict[str, Any] = {}
         self.indexes_to_process = []
+
+    @property
+    def client(self) -> MideaClient:
+        if not self._client:
+            self._client = MideaClient(self.hass)
+        return self._client
 
     def _process_exception(self: _MideaFlow, ex: Exception) -> None:
         if isinstance(ex, _FlowException):
@@ -213,12 +219,7 @@ class _MideaFlow(FlowHandler):
         """Validates that cloud credentials are valid"""
         cfg = self.conf | (extra_conf or {})
         try:
-            self.cloud = self.client.connect_to_cloud(
-                account=cfg[CONF_USERNAME],
-                password=cfg[CONF_PASSWORD],
-                appkey=cfg[CONF_APPKEY],
-                appid=cfg[CONF_APPID],
-            )
+            self.cloud = self.client.connect_to_cloud(cfg)
         except MideaError as ex:
             raise _FlowException("no_cloud", str(ex)) from ex
 
@@ -507,7 +508,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             str(IPv4Network(addr).broadcast_address) for addr in conf_addresses
         ]
         self.appliances.clear()
-        self.appliances += self.client.find_appliances(self.cloud, addresses=addresses)
+        self.appliances += self.client.find_appliances(self.cloud, addresses)
         self.devices_conf = [{} for _ in self.appliances]
 
     async def _validate_discovery_phase(

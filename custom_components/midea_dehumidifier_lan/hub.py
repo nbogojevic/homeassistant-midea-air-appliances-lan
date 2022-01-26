@@ -32,8 +32,6 @@ from custom_components.midea_dehumidifier_lan.appliance_discovery import (
     ApplianceDiscoveryHelper,
 )
 from custom_components.midea_dehumidifier_lan.const import (
-    CONF_APPID,
-    CONF_APPKEY,
     CONF_TOKEN_KEY,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
@@ -253,13 +251,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
         if need_cloud and self.cloud is None:
             self._validate_auth_config_complete(device, need_token)
             try:
-                self.cloud = await self.hass.async_add_executor_job(
-                    self.client.connect_to_cloud,
-                    self.config[CONF_USERNAME],
-                    self.config[CONF_PASSWORD],
-                    self.config[CONF_APPKEY],
-                    self.config[CONF_APPID],
-                )
+                self.cloud = await self.client.async_connect_to_cloud(self.config)
             except AuthenticationError as ex:
                 raise ConfigEntryAuthFailed(
                     f"Unable to login to Midea cloud {ex}"

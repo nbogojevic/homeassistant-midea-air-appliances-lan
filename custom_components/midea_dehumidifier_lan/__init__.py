@@ -198,23 +198,15 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
 class _ApplianceIdResolver:
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
-        self.client = MideaClient()
+        self.client = MideaClient(hass)
         self.cloud: MideaCloud | None = None
-        self.list_appliances: list[dict] | None = None
+        self.descriptors: list[dict] | None = None
         self.success = True
 
     async def _start(self, conf: dict[str, Any]) -> None:
         try:
-            self.cloud = await self.hass.async_add_executor_job(
-                self.client.connect_to_cloud,
-                conf[CONF_USERNAME],
-                conf[CONF_PASSWORD],
-                conf[CONF_APPKEY],
-                conf[CONF_APPID],
-            )
-            self.list_appliances = await self.hass.async_add_executor_job(
-                self.cloud.list_appliances
-            )
+            self.cloud = await self.client.async_connect_to_cloud(conf)
+            self.descriptors = await self.client.async_list_appliances(self.cloud)
         except MideaError as ex:
             _LOGGER.error(
                 "Unable to get list of appliances during configuration migration %s.",
@@ -246,8 +238,8 @@ class _ApplianceIdResolver:
                 self.success = False
 
     def _find_unique_id_in_appliance_list(self, device_conf) -> None:
-        if self.list_appliances is not None:
-            for app in self.list_appliances:
+        if self.descriptors is not None:
+            for app in self.descriptors:
                 if app["id"] == device_conf[CONF_ID]:
                     if app["sn"] and app["sn"] != "Unknown":
                         device_conf[CONF_UNIQUE_ID] = app["sn"]
