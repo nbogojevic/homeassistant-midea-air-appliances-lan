@@ -167,7 +167,10 @@ class ApplianceEntity(CoordinatorEntity):
         self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.serial_number}"
         self._attr_name = str(self.appliance.name or self.unique_id) + self.name_suffix
         if self._add_extra_attrs:
-            self._attr_extra_state_attributes = {}
+            self._attr_extra_state_attributes = {
+                "last_error_code": 0,
+                "last_error_time": datetime.now(),
+            }
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
@@ -211,8 +214,8 @@ class ApplianceEntity(CoordinatorEntity):
             _error_code = state.error_code
 
             self._attr_extra_state_attributes |= {
+                "capabilities": str(state.capabilities),
                 "capabilities_data": state.capabilities_data.hex(),
-                "capabilities": state.capabilities,
                 "error_code": _error_code,
                 "last_data": state.latest_data.hex(),
             }
