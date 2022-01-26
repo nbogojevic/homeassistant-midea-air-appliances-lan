@@ -51,9 +51,7 @@ from midea_beautiful.midea import (
 from custom_components.midea_dehumidifier_lan import Hub
 from custom_components.midea_dehumidifier_lan.const import (
     NAME,
-    SCAN_INTERVALS_LIST,
     SUPPORTED_APPLIANCES,
-    TTL_LIST,
     CONF_ADVANCED_SETTINGS,
     CONF_APPID,
     CONF_APPKEY,
@@ -103,7 +101,12 @@ def _appliance_schema(  # pylint: disable=too-many-arguments
                 default=address or UNKNOWN_IP,
             ): cv.string,
             vol.Required(CONF_NAME, default=name): cv.string,
-            vol.Required(CONF_TTL, default=ttl): vol.In(TTL_LIST),
+            vol.Required(
+                CONF_TTL,
+                msg="Test",
+                default=ttl,
+                description={"suffix": "minutes"},
+            ): cv.positive_int,
             vol.Optional(CONF_TOKEN, default=token or ""): cv.string,
             vol.Optional(CONF_TOKEN_KEY, default=token_key or ""): cv.string,
         }
@@ -127,9 +130,12 @@ def _advanced_settings_schema(
             vol.Required(CONF_APPKEY, default=appkey): cv.string,
             vol.Required(CONF_APPID, default=appid): cv.positive_int,
             vol.Optional(CONF_BROADCAST_ADDRESS, default=broadcast_address): cv.string,
-            vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.In(
-                SCAN_INTERVALS_LIST
-            ),
+            vol.Required(
+                CONF_SCAN_INTERVAL,
+                msg="Test",
+                default=DEFAULT_SCAN_INTERVAL,
+                description={"suffix": "minutes"},
+            ): cv.positive_int,
             vol.Required(CONF_INCLUDE, default=appliances): vol.All(
                 cv.multi_select(SUPPORTED_APPLIANCES),
                 vol.Length(min=1, msg="Must select at least one appliance category"),
@@ -518,8 +524,6 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             self.conf[CONF_INCLUDE] = user_input[CONF_INCLUDE]
             self.conf[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL]
             self.conf[CONF_BROADCAST_ADDRESS] = _get_broadcast_addresses(user_input)
-
-            _LOGGER.debug("include=%s", self.conf[CONF_INCLUDE])
         else:
             app = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
             self.conf |= SUPPORTED_APPS.get(app, SUPPORTED_APPS[DEFAULT_APP])

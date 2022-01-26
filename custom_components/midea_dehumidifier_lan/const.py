@@ -90,7 +90,7 @@ DISCOVERY_MODE_LABELS = {
     DISCOVERY_IGNORE: "Exclude appliance",
     DISCOVERY_LAN: "Provide appliance's IPv4 address",
     DISCOVERY_WAIT: "Wait for appliance to come online",
-    DISCOVERY_CLOUD: "Use cloud API to poll devices",
+    DISCOVERY_CLOUD: "Use cloud API to poll appliance",
 }
 
 DISCOVERY_MODE_EXPLANATION = {
@@ -100,35 +100,10 @@ DISCOVERY_MODE_EXPLANATION = {
     DISCOVERY_CLOUD: "polled using cloud",
 }
 
-SCAN_INTERVALS_LIST = {
-    2: "2 minutes",
-    5: "5 minutes",
-    10: "10 minutes",
-    15: "15 minutes",
-    30: "30 minutes",
-    60: "1 hour",
-    360: "6 hours",
-    1440: "24 hours",
-}
-
-TTL_LIST = {
-    2: "2 minutes",
-    5: "5 minutes",
-    10: "10 minutes",
-    15: "15 minutes",
-    20: "20 minutes",
-    30: "30 minutes",
-    45: "45 minutes",
-    60: "1 hour",
-    120: "2 hours",
-    360: "6 hours",
-}
-
 SUPPORTED_APPLIANCES = {
     APPLIANCE_TYPE_AIRCON: "Air conditioner",
     APPLIANCE_TYPE_DEHUMIDIFIER: "Dehumidifier",
 }
-
 
 # Default period of failed updates before appliance is declared unavailable
 # 5 minutes
