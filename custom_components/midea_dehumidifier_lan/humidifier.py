@@ -1,8 +1,7 @@
 """Adds dehumidifer entity for each dehumidifer appliance."""
 
-from datetime import datetime
 import logging
-from typing import Any, Final
+from typing import Final
 
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
 from homeassistant.components.humidifier.const import SUPPORT_MODES
@@ -67,17 +66,12 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     _attr_min_humidity = MIN_TARGET_HUMIDITY
     _attr_supported_features = SUPPORT_MODES
     _name_suffix = ""
+    _add_extra_attrs = True
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         super().__init__(coordinator)
 
         self._attr_mode = None
-        self._error_code = None
-        self._last_error_code = None
-        self._last_error_code_time = datetime.now()
-        self._capabilities = None
-        self._last_data = None
-        self._capabilities_data = None
         self._attr_available_modes = [MODE_SET]
 
     def on_online(self, update: bool) -> None:
@@ -104,7 +98,6 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         super().on_online(update)
 
     def on_update(self) -> None:
-        """Allows additional processing after the coordinator updates data"""
         dehumidifier = self.dehumidifier()
         curr_mode = dehumidifier.mode
         self._attr_mode = next((i[1] for i in _MODES if i[0] == curr_mode), None)
@@ -113,27 +106,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
             _LOGGER.warning("Mode %s is not supported by %s.", curr_mode, self.name)
         self._attr_target_humidity = dehumidifier.target_humidity
         self._attr_is_on = dehumidifier.running
-        self._error_code = dehumidifier.error_code
-        if self._error_code:
-            self._last_error_code = self._error_code
-            self._last_error_code_time = datetime.now()
-        self._capabilities = self.appliance.state.capabilities
-        self._last_data = self.appliance.state.latest_data.hex()
-        self._capabilities_data = str(self.appliance.state.capabilities_data.hex())
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return entity specific state attributes."""
-        data = {
-            "capabilities": self._capabilities,
-            "last_data": self._last_data,
-            "capabilities_data": self._capabilities_data,
-            "error_code": self._error_code,
-            "last_error_code": self._last_error_code,
-            "last_error_time": self._last_error_code_time,
-        }
-
-        return data
+        super().on_update()
 
     def turn_on(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """Turn the entity on."""

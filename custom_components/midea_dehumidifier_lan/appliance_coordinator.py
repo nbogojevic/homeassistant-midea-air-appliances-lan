@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 from time import monotonic
 from typing import Any, cast, final
@@ -157,6 +157,7 @@ class ApplianceEntity(CoordinatorEntity):
     _unique_id_prefx = UNIQUE_DEHUMIDIFIER_PREFIX
     _name_suffix = ""
     _capability_attr = ""
+    _add_extra_attrs = False
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         self.coordinator = coordinator
@@ -165,6 +166,8 @@ class ApplianceEntity(CoordinatorEntity):
         super().__init__(coordinator)
         self._attr_unique_id = f"{self.unique_id_prefix}{self.appliance.serial_number}"
         self._attr_name = str(self.appliance.name or self.unique_id) + self.name_suffix
+        if self._add_extra_attrs:
+            self._attr_extra_state_attributes = {}
 
     async def async_added_to_hass(self) -> None:
         """When entity is added to hass."""
@@ -203,6 +206,21 @@ class ApplianceEntity(CoordinatorEntity):
 
     def on_update(self) -> None:
         """Allows additional processing after the coordinator updates data"""
+        if self._add_extra_attrs:
+            state = self.appliance.state
+            _error_code = state.error_code
+
+            self._attr_extra_state_attributes |= {
+                "capabilities_data": state.capabilities_data.hex(),
+                "capabilities": state.capabilities,
+                "error_code": _error_code,
+                "last_data": state.latest_data.hex(),
+            }
+            if _error_code:
+                self._attr_extra_state_attributes |= {
+                    "last_error_code": _error_code,
+                    "last_error_time": datetime.now(),
+                }
 
     def on_online(self, update: bool) -> None:
         """To be called when appliance comes online for the first time"""

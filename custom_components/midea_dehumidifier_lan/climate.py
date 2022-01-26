@@ -1,8 +1,7 @@
 """Adds climate entity for each air conditioner appliance."""
 
-from datetime import datetime
 import logging
-from typing import Any, Final
+from typing import Final
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
@@ -41,7 +40,6 @@ from custom_components.midea_dehumidifier_lan.const import (
 )
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
-    ApplianceUpdateCoordinator,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 
@@ -71,6 +69,23 @@ SWING_MODES: Final = [SWING_OFF, SWING_HORIZONTAL, SWING_VERTICAL, SWING_BOTH]
 
 PRESET_MODES: Final = [PRESET_NONE, PRESET_ECO, PRESET_BOOST, PRESET_SLEEP]
 
+_FAN_SPEEDS = {
+    FAN_AUTO: 102,
+    FAN_FULL: 100,
+    FAN_HIGH: 80,
+    FAN_MEDIUM: 60,
+    FAN_LOW: 40,
+    FAN_SILENT: 20,
+}
+
+_MODES_MAPPING = [
+    (1, HVAC_MODE_AUTO),
+    (2, HVAC_MODE_COOL),
+    (3, HVAC_MODE_HEAT),
+    (4, HVAC_MODE_DRY),
+    (5, HVAC_MODE_FAN_ONLY),
+]
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -97,8 +112,6 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     _attr_precision = PRECISION_HALVES
     _attr_temperature_unit = TEMP_CELSIUS
 
-    _name_suffix = ""
-
     _attr_supported_features = (
         SUPPORT_TARGET_TEMPERATURE
         | SUPPORT_FAN_MODE
@@ -106,43 +119,31 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         | SUPPORT_PRESET_MODE
     )
 
-    def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
-        super().__init__(coordinator)
-        self._last_error_code = 0
-        self._last_error_code_time = datetime.now()
+    _name_suffix = ""
+    _add_extra_attrs = True
 
     @property
     def is_on(self) -> bool:
         """Return True if entity is on."""
         return self.airconditioner().running
 
-    @property
-    def current_temperature(self) -> float:
-        """Return the current temperature."""
-        return self.airconditioner().indoor_temperature
+    def on_update(self) -> None:
+        aircon = self.airconditioner()
+        self._attr_current_temperature = aircon.indoor_temperature
+        self._attr_target_temperature = aircon.target_temperature
+        self._attr_fan_mode = self._fan_mode()
+        self._attr_preset_mode = self._preset_mode()
+        self._attr_swing_mode = self._swing_mode()
+        self._attr_hvac_mode = self._hvac_mode()
 
-    @property
-    def target_temperature(self) -> float:
-        """Return the temperature we try to reach."""
-        return self.airconditioner().target_temperature
-
-    @property
-    def fan_mode(self) -> str:
-        fan = self.airconditioner().fan_speed
-        if fan <= 20:
-            return FAN_SILENT
-        if fan <= 40:
-            return FAN_LOW
-        if fan <= 60:
-            return FAN_MEDIUM
-        if fan <= 80:
-            return FAN_HIGH
-        if fan <= 100:
-            return FAN_FULL
+    def _fan_mode(self) -> str:
+        fan_speed = self.airconditioner().fan_speed
+        for mode, mode_speed in _FAN_SPEEDS.items():
+            if fan_speed <= mode_speed:
+                return mode
         return FAN_AUTO
 
-    @property
-    def preset_mode(self) -> str:
+    def _preset_mode(self) -> str:
         if self.airconditioner().turbo:
             return PRESET_BOOST
         if self.airconditioner().eco_mode:
@@ -151,8 +152,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
             return PRESET_SLEEP
         return PRESET_NONE
 
-    @property
-    def swing_mode(self) -> str:
+    def _swing_mode(self) -> str:
         if self.airconditioner().vertical_swing:
             if self.airconditioner().horizontal_swing:
                 return SWING_BOTH
@@ -161,40 +161,13 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
             return SWING_HORIZONTAL
         return SWING_OFF
 
-    @property
-    def hvac_mode(self) -> str:
+    def _hvac_mode(self) -> str:
         curr_mode = self.airconditioner().mode
-        mode = next((i[1] for i in self._MODES if i[0] == curr_mode), None)
+        mode = next((i[1] for i in _MODES_MAPPING if i[0] == curr_mode), None)
         if mode is None:
             _LOGGER.warning("Unknown mode %d", curr_mode)
             return HVAC_MODE_AUTO
         return mode
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return entity specific state attributes."""
-        new_error_code = self.dehumidifier().error_code
-        if new_error_code:
-            self._last_error_code = new_error_code
-            self._last_error_code_time = datetime.now()
-        data = {
-            "capabilities": str(self.appliance.state.capabilities),
-            "last_data": self.appliance.state.latest_data.hex(),
-            "capabilities_data": str(self.appliance.state.capabilities_data.hex()),
-            "error_code": new_error_code,
-            "last_error_code": self._last_error_code,
-            "last_error_time": self._last_error_code_time,
-        }
-
-        return data
-
-    _MODES = [
-        (1, HVAC_MODE_AUTO),
-        (2, HVAC_MODE_COOL),
-        (3, HVAC_MODE_HEAT),
-        (4, HVAC_MODE_DRY),
-        (5, HVAC_MODE_FAN_ONLY),
-    ]
 
     def turn_on(self, **kwargs) -> None:  # pylint: disable=unused-argument
         """Turn the entity on."""
@@ -206,7 +179,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
 
     def set_hvac_mode(self, hvac_mode: str) -> None:
         """Set new target hvac mode."""
-        midea_mode = next((i[0] for i in self._MODES if i[1] == hvac_mode), None)
+        midea_mode = next((i[0] for i in _MODES_MAPPING if i[1] == hvac_mode), None)
         if midea_mode is None:
             _LOGGER.warning("Unsupported climate mode %s", hvac_mode)
             midea_mode = 1
@@ -228,18 +201,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
             self.apply(vertical_swing=False, horizontal_swing=False)
 
     def set_fan_mode(self, fan_mode: str) -> None:
-        if fan_mode == FAN_AUTO:
-            self.apply(fan_speed=102)
-        elif fan_mode == FAN_FULL:
-            self.apply(fan_speed=100)
-        elif fan_mode == FAN_HIGH:
-            self.apply(fan_speed=80)
-        elif fan_mode == FAN_MEDIUM:
-            self.apply(fan_speed=60)
-        elif fan_mode == FAN_LOW:
-            self.apply(fan_speed=40)
-        else:
-            self.apply(fan_speed=20)
+        self.apply(fan_speed=_FAN_SPEEDS.get(fan_mode, 20))
 
     def set_preset_mode(self, preset_mode: str) -> None:
         if preset_mode == PRESET_BOOST:
