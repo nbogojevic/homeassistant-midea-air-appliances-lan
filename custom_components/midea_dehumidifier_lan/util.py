@@ -24,12 +24,12 @@ from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import (
     APPLIANCE_TYPE_AIRCON,
     APPLIANCE_TYPE_DEHUMIDIFIER,
-    DEFAULT_APP_ID,
-    DEFAULT_APPKEY,
 )
 
 from custom_components.midea_dehumidifier_lan.const import (
     _ALWAYS_CREATE,
+    CONF_APPID,
+    CONF_APPKEY,
     CONF_TOKEN_KEY,
     UNKNOWN_IP,
 )
@@ -145,7 +145,7 @@ class AbstractHub(ABC):
     errors: dict[str, Any]
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-        self.client = MideaClient()
+        self.client = MideaClient(hass)
         self.cloud: MideaCloud | None = None
         self.hass = hass
         self.config_entry = config_entry
@@ -165,12 +165,25 @@ class AbstractHub(ABC):
 class MideaClient:
     """Delegate to midea API"""
 
-    def connect_to_cloud(  # pylint: disable=no-self-use
-        self, account: str, password: str, appkey=DEFAULT_APPKEY, appid=DEFAULT_APP_ID
-    ):
+    def __init__(self, hass: HomeAssistant) -> None:
+        self.hass = hass
+
+    # pylint: disable=no-self-use
+    async def async_connect_to_cloud(self, conf: dict[str, Any]) -> MideaCloud:
+        """Delegate to midea_beautiful_api.connect_to_cloud"""
+        return await self.hass.async_add_executor_job(
+            self.connect_to_cloud,
+            conf,
+        )
+
+    # pylint: disable=no-self-use
+    def connect_to_cloud(self, conf: dict[str, Any]) -> MideaCloud:
         """Delegate to midea_beautiful_api.connect_to_cloud"""
         return midea_beautiful_api.connect_to_cloud(
-            account=account, password=password, appkey=appkey, appid=appid
+            account=conf[CONF_USERNAME],
+            password=conf[CONF_PASSWORD],
+            appkey=conf[CONF_APPKEY],
+            appid=conf[CONF_APPID],
         )
 
     def appliance_state(  # pylint: disable=too-many-arguments,no-self-use
@@ -197,10 +210,6 @@ class MideaClient:
     def find_appliances(  # pylint: disable=too-many-arguments,no-self-use
         self,
         cloud: MideaCloud = None,
-        appkey: str = None,
-        account: str = None,
-        password: str = None,
-        appid: str = None,
         addresses: list[str] = None,
         retries: int = 3,
         timeout: int = 3,
@@ -208,13 +217,16 @@ class MideaClient:
         """Delegate to midea_beautiful_api.find_appliances"""
         return midea_beautiful_api.find_appliances(
             cloud=cloud,
-            appkey=appkey,
-            account=account,
-            password=password,
-            appid=appid,
             addresses=addresses,
             retries=retries,
             timeout=timeout,
+        )
+
+    # pylint: disable=no-self-use
+    async def async_list_appliances(self, cloud: MideaCloud) -> list:
+        """Delegate to midea_beautiful_api.connect_to_cloud"""
+        return await self.hass.async_add_executor_job(
+            cloud.list_appliances,
         )
 
 
