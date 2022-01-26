@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import ipaddress
-import itertools
+from itertools import chain, cycle
 import logging
 from typing import Any, Iterator, cast
 
@@ -86,122 +86,89 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
         self.remove_discovery: CALLBACK_TYPE | None = None
         self.conf_addresses: list[str] = []
 
-    @staticmethod
-    def iterator(conf_addresses, batch_size: int = DISCOVERY_BATCH_SIZE):
-        """Generator for one batch of ip addresses to scan"""
-        net_addrs = []
-        addr_count = 0
-        for addr in conf_addresses:
-            # If local broadcast address we don't need to expand it
-            if addr == LOCAL_BROADCAST:
-                continue
-            # Get network corresponding to address
-            net = ipaddress.IPv4Network(addr)
-            # If network references a block:
-            if net.num_addresses > 1:
-                _LOGGER.debug(
-                    "Got network block %s with %d addresses", net, net.num_addresses
-                )
-                # collect all hosts from the block
-                net_addrs.append(net.hosts())
-                addr_count += net.num_addresses
-
-        # If we do have addresses to scan
-        if net_addrs:
-            # we will iterate over all of available addresses in batches
-            # having batch_size items
-            all_addrs = itertools.chain(*net_addrs)
-            for _ in range(0, addr_count, batch_size):
-                yield list(
-                    # We use filter to remove empty addresses
-                    filter(
-                        None,
-                        map(
-                            (lambda _: (x := next(all_addrs)) and str(x)),
-                            range(batch_size),
-                        ),
-                    )
-                )
-
     def _admit_new(self) -> bool:
         """Admits new devices into configurations"""
         need_reload = False
-        added_devices = []
+        added_devices: list[dict[str, Any]] = []
         dev_confs = self.hub.config[CONF_DEVICES]
         for new in self.new_devices:
             for known in dev_confs:
-                if known[CONF_UNIQUE_ID] == new.serial_number:
-                    if self._admit_known_device(known, new):
-                        need_reload = True
-                    break
+                if self._admitted_known_device(known, new):
+                    need_reload = True
+                break
             else:
-                name = f"{new.model} {new.mac[-4] if new.mac else new.serial_number}"
+                added_devices.append(self._admit_not_known_device(new))
+                need_reload = True
+
+        if added_devices:
+            dev_confs += added_devices
+        return need_reload
+
+    def _admit_not_known_device(self, new: LanDevice) -> dict[str, Any]:
+        name = f"{new.model} {new.mac[-4] if new.mac else new.serial_number}"
+        new_device = {
+            CONF_DISCOVERY: DISCOVERY_IGNORE,
+            CONF_API_VERSION: new.version,
+            CONF_ID: new.appliance_id,
+            CONF_IP_ADDRESS: new.address,
+            CONF_NAME: name,
+            CONF_TOKEN_KEY: new.key,
+            CONF_TOKEN: new.token,
+            CONF_TYPE: new.type,
+            CONF_UNIQUE_ID: new.serial_number,
+        }
+
+        _LOGGER.debug("Found unknown device %s at %s.", name, new.address)
+        msg = (
+            f"Found previously unknown device {name} found on {new.address}."
+            f" [Check it out.](/config/integrations)"
+        )
+        self.hass.components.persistent_notification.async_create(
+            title=NAME,
+            message=msg,
+            notification_id=f"midea_unknown_{new.serial_number}",
+        )
+        return new_device
+
+    def _admitted_known_device(self, known: dict[str, Any], new: LanDevice) -> bool:
+        need_reload = False
+        if known[CONF_UNIQUE_ID] == new.serial_number:
+            if known[CONF_DISCOVERY] == DISCOVERY_WAIT:
                 update = {
-                    CONF_DISCOVERY: DISCOVERY_IGNORE,
+                    CONF_DISCOVERY: DISCOVERY_LAN,
                     CONF_API_VERSION: new.version,
                     CONF_ID: new.appliance_id,
                     CONF_IP_ADDRESS: new.address,
-                    CONF_NAME: name,
                     CONF_TOKEN_KEY: new.key,
                     CONF_TOKEN: new.token,
                     CONF_TYPE: new.type,
                     CONF_UNIQUE_ID: new.serial_number,
                 }
-                added_devices.append(update)
-                need_reload = True
-
-                _LOGGER.debug("Found unknown device %s at %s.", name, new.address)
-                msg = (
-                    f"Found previously unknown device {name} found on {new.address}."
-                    f" [Check it out.](/config/integrations)"
+                _LOGGER.debug(
+                    "Updating discovered device %s, previous conf %s, conf update %s",
+                    new,
+                    known,
+                    update,
                 )
+
+                msg = (
+                    "Device %(name)s,"
+                    " which was waiting to be discovered,"
+                    " was found on address %(address)s."
+                    " It will now be activated."
+                ) % {
+                    "name": known[CONF_NAME],
+                    "address": new.address,
+                }
                 self.hass.components.persistent_notification.async_create(
                     title=NAME,
                     message=msg,
-                    notification_id=f"midea_unknown_{new.serial_number}",
+                    notification_id=f"midea_wait_discovery_{new.serial_number}",
                 )
-        if added_devices:
-            dev_confs += added_devices
-        return need_reload
-
-    def _admit_known_device(self, known: dict[str, Any], new: LanDevice) -> bool:
-        need_reload = False
-        if known[CONF_DISCOVERY] == DISCOVERY_WAIT:
-            update = {
-                CONF_DISCOVERY: DISCOVERY_LAN,
-                CONF_API_VERSION: new.version,
-                CONF_ID: new.appliance_id,
-                CONF_IP_ADDRESS: new.address,
-                CONF_TOKEN_KEY: new.key,
-                CONF_TOKEN: new.token,
-                CONF_TYPE: new.type,
-                CONF_UNIQUE_ID: new.serial_number,
-            }
-            _LOGGER.debug(
-                "Updating discovered device %s, previous conf %s, conf update %s",
-                new,
-                known,
-                update,
-            )
-
-            msg = (
-                "Device %(name)s,"
-                " which was waiting to be discovered,"
-                " was found on address %(address)s."
-                " It will now be activated."
-            ) % {
-                "name": known[CONF_NAME],
-                "address": new.address,
-            }
-            self.hass.components.persistent_notification.async_create(
-                title=NAME,
-                message=msg,
-                notification_id=f"midea_wait_discovery_{new.serial_number}",
-            )
-            known |= update
-            need_reload = True
-        elif new.address and known[CONF_DISCOVERY] != DISCOVERY_LAN:
-            self._possible_lan_notification(new, known, new.address)
+                known |= update
+                need_reload = True
+            elif new.address and known[CONF_DISCOVERY] != DISCOVERY_LAN:
+                self._possible_lan_notification(new, known, new.address)
 
         return need_reload
 
@@ -238,6 +205,40 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
                 message=msg,
                 notification_id=f"midea_non_lan_discovery_{device.serial_number}",
             )
+
+    def _address_generator(self, batch_size: int = DISCOVERY_BATCH_SIZE):
+        """Generator for one batch of ip addresses to scan"""
+        net_addrs = []
+        addr_count = 0
+        for addr in self.conf_addresses:
+            # If local broadcast address we don't need to expand it
+            if addr == LOCAL_BROADCAST:
+                continue
+            # Get network corresponding to address
+            net = ipaddress.IPv4Network(addr)
+            # If network references a block:
+            if net.num_addresses > 1:
+                _LOGGER.debug("Block %s with %d addresses", net, net.num_addresses)
+                # collect all hosts from the block
+                net_addrs.append(net.hosts())
+                addr_count += net.num_addresses
+
+        # If we do have addresses to scan
+        if net_addrs:
+            # we will iterate over all of available addresses in batches
+            # having batch_size items
+            all_addrs = chain(*net_addrs)
+            for _ in range(0, addr_count, batch_size):
+                yield list(
+                    # We use filter to remove empty addresses
+                    filter(
+                        None,
+                        map(
+                            (lambda _: (x := next(all_addrs)) and str(x)),
+                            range(batch_size),
+                        ),
+                    )
+                )
 
     async def _async_run_discovery(self, devices: list[LanDevice]) -> None:
         """Trigger config flows for discovered devices."""
@@ -341,11 +342,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
 
         if has_discoverable and self.conf_addresses:
             _LOGGER.debug("Discovery via configured addresses %s", self.conf_addresses)
-            self.address_iterator = itertools.cycle(
-                ApplianceDiscoveryHelper.iterator(
-                    self.conf_addresses, DISCOVERY_BATCH_SIZE
-                )
-            )
+            self.address_iterator = cycle(self._address_generator())
         else:
             self.address_iterator = empty_address_iterator()
 
@@ -383,8 +380,6 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
             iface_broadcast = await async_get_ipv4_broadcast_addresses(self.hass)
             addresses += [str(address) for address in iface_broadcast]
         _LOGGER.debug("Initiated discovery via %s", addresses)
-        result = self.hub.client.find_appliances(
-            addresses=addresses, retries=1, timeout=1
-        )
+        result = self.hub.client.find_appliances(None, addresses, retries=1, timeout=1)
         if result:
             await self._async_run_discovery(result)

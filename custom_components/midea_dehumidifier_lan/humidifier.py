@@ -56,6 +56,13 @@ _MODES = [
     (7, MODE_ANTIMOULD),
 ]
 
+_MODES_FROM_CAPABILITY = {
+    1: [MODE_PURIFIER],
+    2: [MODE_ANTIMOULD],
+    3: [MODE_PURIFIER, MODE_ANTIMOULD],
+    4: [MODE_FAN],
+}
+
 
 # pylint: disable=too-many-ancestors,too-many-instance-attributes
 class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
@@ -75,37 +82,25 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         self._attr_available_modes = [MODE_SET]
 
     def on_online(self, update: bool) -> None:
-        supports = self.coordinator.appliance.state.capabilities
+        capbilities = self.coordinator.appliance.state.capabilities
 
         self._attr_available_modes = [MODE_SET]
-        if supports.get("auto"):
+        if capbilities.get("auto"):
             self._attr_available_modes.append(MODE_SMART)
         self._attr_available_modes.append(MODE_CONTINOUS)
-        if supports.get("dry_clothes"):
+        if capbilities.get("dry_clothes"):
             self._attr_available_modes.append(MODE_DRY)
 
-        more_modes = supports.get("mode")
-        if more_modes == 1:
-            self._attr_available_modes.append(MODE_PURIFIER)
-        elif more_modes == 2:
-            self._attr_available_modes.append(MODE_ANTIMOULD)
-        elif more_modes == 3:
-            self._attr_available_modes.append(MODE_PURIFIER)
-            self._attr_available_modes.append(MODE_ANTIMOULD)
-        elif more_modes == 4:
-            self._attr_available_modes.append(MODE_FAN)
+        more_modes = capbilities.get("mode", 0)
+        self._attr_available_modes += _MODES_FROM_CAPABILITY.get(more_modes, [])
 
         super().on_online(update)
 
     def on_update(self) -> None:
-        dehumidifier = self.dehumidifier()
-        curr_mode = dehumidifier.mode
-        self._attr_mode = next((i[1] for i in _MODES if i[0] == curr_mode), None)
-        if self._attr_mode is None:
-            self._attr_mode = MODE_SET
-            _LOGGER.warning("Mode %s is not supported by %s.", curr_mode, self.name)
-        self._attr_target_humidity = dehumidifier.target_humidity
-        self._attr_is_on = dehumidifier.running
+        dehumi = self.dehumidifier()
+        self._attr_mode = next((i[1] for i in _MODES if i[0] == dehumi.mode), MODE_SET)
+        self._attr_target_humidity = dehumi.target_humidity
+        self._attr_is_on = dehumi.running
         super().on_update()
 
     def turn_on(self, **kwargs) -> None:  # pylint: disable=unused-argument
