@@ -30,6 +30,8 @@ PRESET_MODES_7: Final = [MODE_LOW, MODE_MEDIUM, MODE_HIGH]
 PRESET_MODES_3: Final = [MODE_LOW, MODE_HIGH]
 PRESET_MODES_2: Final = [MODE_AUTO]
 
+_FAN_SPEEDS = {2: PRESET_MODES_2, 3: PRESET_MODES_3, 7: PRESET_MODES_7}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -72,29 +74,22 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
 
     def on_online(self, update: bool) -> None:
         supports = self.dehumidifier().capabilities
-        fan_capability = supports.get("fan_speed")
-
-        if fan_capability == 3:
-            self._attr_preset_modes = PRESET_MODES_3
-        elif fan_capability == 2:
-            self._attr_preset_modes = PRESET_MODES_2
-        else:
-            self._attr_preset_modes = PRESET_MODES_7
+        fan_capability = supports.get("fan_speed", 0)
+        self._attr_preset_modes = _FAN_SPEEDS.get(fan_capability, PRESET_MODES_7)
         self._attr_speed_count = len(self._attr_preset_modes)
         self._fan_speeds[MODE_HIGH] = 80 if self._attr_speed_count == 3 else 60
         return super().on_online(update)
 
     def on_update(self) -> None:
-        self._attr_percentage = self.dehumidifier().fan_speed
-        self._attr_is_on = self._attr_percentage > self._fan_speeds[MODE_LOW]
-        self._attr_preset_mode = self._preset_mode()
-
-    def _preset_mode(self) -> str:
         fan_speed = self.dehumidifier().fan_speed
+        self._attr_percentage = fan_speed
+        self._attr_is_on = fan_speed > self._fan_speeds[MODE_LOW]
         for mode, mode_speed in self._fan_speeds.items():
             if fan_speed <= mode_speed:
-                return mode
-        return MODE_NONE
+                self._attr_preset_mode = mode
+                break
+        else:
+            self._attr_preset_mode = MODE_NONE
 
     def set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan."""
