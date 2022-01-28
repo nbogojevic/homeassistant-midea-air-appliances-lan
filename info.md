@@ -71,13 +71,9 @@ In addition to this, humidifier entity will have additonal attributes describing
 Platform | Description
 -- | --
 `climate` | Climate entity.
-`binary_sensor` | Problem sensor indicating when tank is full.
-`binary_sensor` | Problem sensor indicating when filter needs replacement (_disabled by default_).
-`binary_sensor` | Cold sensor indicating defrosting is active (_disabled by default_).
 `sensor` | Sensor for outside temperature measured by air conditioner.
 `switch` | Switch purifier mode on and off (_enabled if device announces that it is supported_).
 `switch` | Switch dryer mode on and off (_disabled by default_).
-`switch` | Switch sleep mode on and off (_disabled by default_).
 `switch` | Switch to activate beep on action (_disabled by default_).
 `switch` | Switch display to Fahrenheit degrees (_enabled if device announces that it is supported_).
 `switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
