@@ -89,7 +89,8 @@ In addition to this, climate entity will have additonal attributes describing ca
 ## Installation
 
 1. Click Install.
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Midea Air Appliances (LAN)".
+2. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Midea Air Appliances (LAN)".
+3. If you want to use integration with air conditioner unit(s), please select the checkbox on "Advanced settings" page.
 
 {% endif %}
 
@@ -100,7 +101,7 @@ In addition to this, climate entity will have additonal attributes describing ca
 ![Search for "Midea Air Appliances (LAN)"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-choice.png)
 * Sign-in with Midea app account - you may choose Midea app that corresponds to one you use (anyone should work).
 ![Setup Midea App account"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-account.png)
-* On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces.
+* On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces. If you want to use custom component with an air conditioner unit, please select the appropriate checkbox.
 ![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/advanced-options.png)
 * For devices that are known to cloud service, but not discovered locally, you will have another prompt to enter details if you know them or to specify that you want to rely on cloud polling for that device.
 ![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/appliance-missing.png)

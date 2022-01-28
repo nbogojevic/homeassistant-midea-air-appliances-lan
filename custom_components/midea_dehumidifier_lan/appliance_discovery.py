@@ -45,6 +45,7 @@ from custom_components.midea_dehumidifier_lan.const import (
 )
 from custom_components.midea_dehumidifier_lan.util import (
     AbstractHub,
+    RedactedConf,
     address_ok,
     supported_appliance,
 )
@@ -332,7 +333,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
                     has_discoverable = True
         self.conf_addresses += [
             item
-            for item in self.hub.config.get(CONF_BROADCAST_ADDRESS, [])
+            for item in self.hub.config.get(CONF_BROADCAST_ADDRESS, []) or []
             if item and item != LOCAL_BROADCAST
         ]
         self.broadcast_addresses = [LOCAL_BROADCAST]
@@ -349,19 +350,34 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
     def start(self) -> None:
         """Starts periodic disovery of devices"""
         self.stop()
-        self._setup()
-        scan_interval = self.hub.config.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
-        if scan_interval:
-            _LOGGER.debug(
-                "Starting periodic discovery with interval %s minute(s),"
-                " broadcast %s, configured %s",
-                scan_interval,
-                self.broadcast_addresses,
-                self.conf_addresses,
+        try:
+            self._setup()
+            scan_interval = self.hub.config.get(
+                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
             )
-            self.remove_discovery = async_track_time_interval(
-                self.hass, self._async_discover, timedelta(minutes=scan_interval)
+            if scan_interval:
+                _LOGGER.debug(
+                    "Starting periodic discovery with interval %s minute(s),"
+                    " broadcast %s, configured %s",
+                    scan_interval,
+                    self.broadcast_addresses,
+                    self.conf_addresses,
+                )
+                self.remove_discovery = async_track_time_interval(
+                    self.hass, self._async_discover, timedelta(minutes=scan_interval)
+                )
+        except Exception as ex:
+            _LOGGER.error(
+                "Unable to setup up periodic discovery."
+                " Please remove integration and then reinstall it to check if problem"
+                " can be fixed."
+                " Cause: %s"
+                " Configuration: %s",
+                ex,
+                RedactedConf(self.hub.config),
             )
+            self.stop()
+            raise ex
 
     def stop(self) -> None:
         """Stops periodic disovery of devices"""
@@ -373,6 +389,7 @@ class ApplianceDiscoveryHelper:  # pylint: disable=too-many-instance-attributes
 
     async def _async_discover(self, _: datetime) -> None:
         """Discover Midea appliances on configured network interfaces."""
+
         addresses = list(address for address in self.broadcast_addresses)
         if new_addresses := next(self.address_iterator, None):
             addresses += new_addresses

@@ -28,6 +28,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
 3. The integration will discover appliance on local network(s).
 4. If an appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
+5. If you want to use integration with air conditioner unit(s), please select the checkbox on "Advanced settings" page.
 
 ## Known issues
 
@@ -38,6 +39,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See tables below for more information.
 * Temperature sensor on dehumidifier is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm, or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
+* Some Midea appliances, built in 2021 and later, use Tuya based patform and this integration will not work with them. In some cases those appliances have  have same model names as old ones.
 
 ## Supported appliances
 
