@@ -168,7 +168,6 @@ class MideaClient:
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
 
-    # pylint: disable=no-self-use
     async def async_connect_to_cloud(self, conf: dict[str, Any]) -> MideaCloud:
         """Delegate to midea_beautiful_api.connect_to_cloud"""
         return await self.hass.async_add_executor_job(

@@ -192,6 +192,7 @@ class _MideaFlow(FlowHandler):
 
     @property
     def client(self) -> MideaClient:
+        """Returns instance of MideaClient."""
         if not self._client:
             self._client = MideaClient(self.hass)
         return self._client
@@ -525,6 +526,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             self.conf[CONF_INCLUDE] = user_input[CONF_INCLUDE]
             self.conf[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL]
             self.conf[CONF_BROADCAST_ADDRESS] = _get_broadcast_addresses(user_input)
+
         else:
             app = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
             self.conf |= SUPPORTED_APPS.get(app, SUPPORTED_APPS[DEFAULT_APP])

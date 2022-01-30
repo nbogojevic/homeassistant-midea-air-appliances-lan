@@ -28,7 +28,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
 3. The integration will discover appliance on local network(s).
 4. If an appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
-5. If you want to use integration with air conditioner unit(s), please select the checkbox on "Advanced settings" page.
+5. If you want to use integration with air conditioner unit(s), please select the checkbox on `Advanced settings` page.
 
 ## Known issues
 
@@ -90,6 +90,43 @@ Platform | Description
 
 In addition to this, `climate` entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
+## Troubleshooting
+
+If there are problems while using integration setup, a debug logging can be activated.
+
+Debug logging can be activated without restarting Home Assistant by clicking on link below:
+
+[![Logging service][ha-service-badge]][ha-service]
+
+On entry page, paste following content:
+
+```yaml
+service: logger.set_level
+data:
+    custom_components.midea_dehumidifier_lan: debug
+    midea_beautiful: debug
+```
+
+Once activated, logs can be see by clicking at:
+
+[![Home Assistant Logs][ha-logs-badge]][ha-logs]
+
+Select `Load Full Home Assistant Log` to see all debug mode logs. Please include as much logs as possible if you open an [issue](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/issues/new?assignees=&labels=&template=issue.md).
+
+It is possible to activate debug logging on Home Assistent start. To do this, open `configuration.yaml` file on your machine, and add following to `logger` configuration:
+
+```yaml
+logger:
+  # Begging of lines to add
+  logs:
+    custom_components.midea_dehumidifier_lan: debug
+    midea_beautiful: debug
+  # End of lines to add
+```
+
+Home Assistant needs to be restarted after this change.
+
+
 ## See also
 
 https://github.com/nbogojevic/midea-beautiful-air
@@ -111,6 +148,10 @@ Midea, Inventor, Comfee', Pro Breeze, and other names are trademarks of their re
 [hacs]: https://hacs.xyz
 [hacs-download]: https://hacs.xyz/docs/setup/download
 [hacsbadge]: https://img.shields.io/badge/HACS-Default-blue.svg?style=flat
+[ha-logs]: https://my.home-assistant.io/redirect/logs
+[ha-logs-badge]: https://my.home-assistant.io/badges/logs.svg
+[ha-service]: https://my.home-assistant.io/redirect/developer_call_service/?service=logger.set_level
+[ha-service-badge]: https://my.home-assistant.io/badges/developer_call_service.svg
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Nenad%20Bogojević-blue.svg?style=flat
 [releases-shield]: https://img.shields.io/github/release/nbogojevic/homeassistant-midea-air-appliances-lan.svg?style=flat
 [releases]: https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/releases
