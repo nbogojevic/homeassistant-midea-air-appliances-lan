@@ -25,6 +25,7 @@ ISSUE_URL: Final = "https://github.com/nbogojevic/homeassistant-midea-air-applia
 CONF_ADVANCED_SETTINGS: Final = "advanced_settings"
 CONF_APPID: Final = "appid"
 CONF_APPKEY: Final = "appkey"
+CONF_DEBUG: Final = "debug"
 CONF_MOBILE_APP: Final = "mobile_app"
 CONF_TOKEN_KEY: Final = "token_key"
 CONF_USE_CLOUD_OBSOLETE: Final = "use_cloud"

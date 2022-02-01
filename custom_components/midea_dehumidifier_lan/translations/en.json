@@ -19,7 +19,8 @@
           "appid": "Mobile app id",
           "broadcast_address": "Appliance address or network range",
           "include": "Discover following appliance categories:",
-          "scan_interval": "Network scan interval"
+          "scan_interval": "Network scan interval",
+          "debug": "Advanced debug mode"
         },
         "description": "You can provide specific Midea mobile app key and app id if the default ones don't work.\n\nYou can also specify network address (e.g. 192.0.2.2) or range (e.g. 192.0.2.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
         "title": "Advanced settings"
@@ -51,7 +52,7 @@
     "error": {
       "cannot_connect": "Unable to connect to appliance ({cause}).",
       "connection_error": "Connection error ({cause}).",
-      "duplicate_ip_provided": "Same IPv4 address was used for {cause}. Please specify different address for different appliances.",
+      "duplicate_ip_provided": "Same IPv4 address was used for {cause}. Please specify different addresses for different appliances.",
       "invalid_auth": "Invalid username or password ({cause})",
       "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
       "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",

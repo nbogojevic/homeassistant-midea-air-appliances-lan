@@ -55,6 +55,7 @@ from custom_components.midea_dehumidifier_lan.const import (
     CONF_ADVANCED_SETTINGS,
     CONF_APPID,
     CONF_APPKEY,
+    CONF_DEBUG,
     CONF_MOBILE_APP,
     CONF_TOKEN_KEY,
     CURRENT_CONFIG_VERSION,
@@ -121,6 +122,7 @@ def _advanced_settings_schema(
     appid: int = None,
     broadcast_address: str = "",
     appliances: list[str] = None,
+    debug: bool = False,
 ) -> vol.Schema:
     appliances = appliances or [APPLIANCE_TYPE_DEHUMIDIFIER]
     return vol.Schema(
@@ -140,6 +142,7 @@ def _advanced_settings_schema(
                 cv.multi_select(SUPPORTED_APPLIANCES),
                 vol.Length(min=1, msg="Must select at least one appliance category"),
             ),
+            vol.Required(CONF_DEBUG, default=debug): bool,
         }
     )
 
@@ -199,6 +202,9 @@ class _MideaFlow(FlowHandler):
 
     def _process_exception(self: _MideaFlow, ex: Exception) -> None:
         if isinstance(ex, _FlowException):
+            _LOGGER.warning(
+                "Caught flow exception during appliance step %s", ex, exc_info=True
+            )
             self.error_cause = str(ex.cause)
             self.errors["base"] = ex.message
         elif isinstance(ex, CloudAuthenticationError):
@@ -328,7 +334,7 @@ class _MideaFlow(FlowHandler):
     ) -> FlowResult:
         """Manage an appliances"""
 
-        errors: dict = {}
+        self.errors.clear()
         self.error_cause = ""
         appliance = self.appliances[self.appliance_idx]
         device_conf = self.devices_conf[self.appliance_idx]
@@ -383,10 +389,6 @@ class _MideaFlow(FlowHandler):
                 discovery_mode = DEFAULT_DISCOVERY_MODE
                 ttl = DEFAULT_TTL
 
-            except _FlowException as ex:
-                self.error_cause = str(ex.cause)
-                errors["base"] = ex.message
-
             except Exception as ex:  # pylint: disable=broad-except
                 self._process_exception(ex)
 
@@ -410,16 +412,19 @@ class _MideaFlow(FlowHandler):
             step_id=step_id,
             data_schema=schema,
             description_placeholders=placeholders,
-            errors=errors,
+            errors=self.errors,
             last_step=len(self.indexes_to_process) == 0,
         )
 
     def _check_ip_address_unique(self, ip_address) -> None:
         if address_ok(ip_address):
             for i in range(self.appliance_idx):
-                if self.devices_conf[i].get(CONF_IP_ADDRESS) == ip_address:
+                if (
+                    self.devices_conf[i].get(CONF_IP_ADDRESS) == ip_address
+                    or ip_address == self.appliances[i].address
+                ):
                     raise _FlowException(
-                        "duplicate_ip_provided", self.devices_conf[i][CONF_NAME]
+                        "duplicate_ip_provided", self.appliances[i].name
                     )
 
     def _update_appliances_after_flow(self) -> None:
@@ -525,6 +530,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             self.conf[CONF_APPKEY] = user_input[CONF_APPKEY]
             self.conf[CONF_INCLUDE] = user_input[CONF_INCLUDE]
             self.conf[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL]
+            self.conf[CONF_DEBUG] = user_input[CONF_DEBUG]
             self.conf[CONF_BROADCAST_ADDRESS] = _get_broadcast_addresses(user_input)
 
         else:
@@ -537,6 +543,8 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             self.conf[CONF_INCLUDE] = [APPLIANCE_TYPE_DEHUMIDIFIER]
             self.conf[CONF_SCAN_INTERVAL] = DEFAULT_SCAN_INTERVAL
 
+        if self.conf.get(CONF_DEBUG, False):
+            await self.client.async_debug_mode(True)
         await self.hass.async_add_executor_job(self._connect_and_discover)
 
         self.indexes_to_process = [

@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import Any, Tuple, cast, final
 
+import homeassistant.components.logger as hass_logger
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_DEVICES,
@@ -25,6 +26,7 @@ from midea_beautiful.midea import (
     APPLIANCE_TYPE_AIRCON,
     APPLIANCE_TYPE_DEHUMIDIFIER,
 )
+from midea_beautiful.util import very_verbose
 
 from custom_components.midea_dehumidifier_lan.const import (
     _ALWAYS_CREATE,
@@ -167,6 +169,16 @@ class MideaClient:
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
+
+    async def async_debug_mode(self, activate: bool) -> None:
+        """Activated advanced debug mode."""
+        very_verbose(activate)
+        if activate:
+            await self.hass.services.async_call(
+                domain=hass_logger.DOMAIN,
+                service=hass_logger.SERVICE_SET_LEVEL,
+                service_data={"midea_beautiful": "DEBUG"},
+            )
 
     async def async_connect_to_cloud(self, conf: dict[str, Any]) -> MideaCloud:
         """Delegate to midea_beautiful_api.connect_to_cloud"""

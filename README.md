@@ -92,9 +92,15 @@ In addition to this, `climate` entity will have additonal attributes describing 
 
 ## Troubleshooting
 
-If there are problems while using integration setup, a debug logging can be activated.
+If there are problems while using integration setup, an advanced debug logging can be activated via `Advanced settings` page.
 
-Debug logging can be activated without restarting Home Assistant by clicking on link below:
+Once activated, logs can be see by clicking at:
+
+Select `Load Full Home Assistant Log` to see all debug mode logs. Please include as much logs as possible if you open an [issue](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/issues/new?assignees=&labels=&template=issue.md).
+
+[![Home Assistant Logs][ha-logs-badge]][ha-logs]
+
+Debug logging can be activated without going through setup process:
 
 [![Logging service][ha-service-badge]][ha-service]
 
@@ -103,17 +109,11 @@ On entry page, paste following content:
 ```yaml
 service: logger.set_level
 data:
-    custom_components.midea_dehumidifier_lan: debug
-    midea_beautiful: debug
+    custom_components.midea_dehumidifier_lan: DEBUG
+    midea_beautiful: DEBUG
 ```
 
-Once activated, logs can be see by clicking at:
-
-[![Home Assistant Logs][ha-logs-badge]][ha-logs]
-
-Select `Load Full Home Assistant Log` to see all debug mode logs. Please include as much logs as possible if you open an [issue](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/issues/new?assignees=&labels=&template=issue.md).
-
-It is possible to activate debug logging on Home Assistent start. To do this, open `configuration.yaml` file on your machine, and add following to `logger` configuration:
+It is possible to activate debug logging on Home Assistent start. To do this, open Home Assistant's `configuration.yaml` file on your machine, and add following to `logger` configuration:
 
 ```yaml
 logger:
