@@ -1,6 +1,6 @@
 {
   "name": "Midea Air Appliances (LAN)",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "domains": [
     "binary_sensor",
     "climate",
