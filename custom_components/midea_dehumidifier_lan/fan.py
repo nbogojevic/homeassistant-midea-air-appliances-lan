@@ -77,7 +77,6 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         fan_capability = supports.get("fan_speed", 0)
         self._attr_preset_modes = _FAN_SPEEDS.get(fan_capability, PRESET_MODES_7)
         self._attr_speed_count = len(self._attr_preset_modes)
-        self._fan_speeds[MODE_HIGH] = 80 if self._attr_speed_count == 3 else 60
         return super().on_online(update)
 
     def on_update(self) -> None:
