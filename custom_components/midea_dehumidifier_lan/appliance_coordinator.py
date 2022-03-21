@@ -158,6 +158,7 @@ class ApplianceEntity(CoordinatorEntity):
     _name_suffix = ""
     _capability_attr = ""
     _add_extra_attrs = False
+    _was_online_registered = False
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         self.coordinator = coordinator
@@ -178,6 +179,7 @@ class ApplianceEntity(CoordinatorEntity):
         self.async_on_remove(self.coordinator.async_add_listener(self._updated_data))
         if self.coordinator.available:
             self.on_online(True)
+            self._was_online_registered = True
 
     @callback
     def _updated_data(self) -> None:
@@ -187,6 +189,9 @@ class ApplianceEntity(CoordinatorEntity):
         self._attr_available = self.appliance.online
         if not self.coordinator.available:
             self.on_online(False)
+        elif not self._was_online_registered:
+            self.on_online(True)
+
         if self.appliance.online:
             self.on_update()
         self.async_write_ha_state()
@@ -227,6 +232,7 @@ class ApplianceEntity(CoordinatorEntity):
 
     def on_online(self, update: bool) -> None:
         """To be called when appliance comes online for the first time"""
+
         if update:
             self.on_update()
         self.async_write_ha_state()

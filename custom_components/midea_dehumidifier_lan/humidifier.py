@@ -82,16 +82,16 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         self._attr_available_modes = [MODE_SET]
 
     def on_online(self, update: bool) -> None:
-        capbilities = self.coordinator.appliance.state.capabilities
+        capabilities = self.coordinator.appliance.state.capabilities
 
         self._attr_available_modes = [MODE_SET]
-        if capbilities.get("auto"):
+        if capabilities.get("auto"):
             self._attr_available_modes.append(MODE_SMART)
         self._attr_available_modes.append(MODE_CONTINOUS)
-        if capbilities.get("dry_clothes"):
+        if capabilities.get("dry_clothes"):
             self._attr_available_modes.append(MODE_DRY)
 
-        more_modes = capbilities.get("mode", 0)
+        more_modes = capabilities.get("mode", 0)
         self._attr_available_modes += _MODES_FROM_CAPABILITY.get(more_modes, [])
 
         super().on_online(update)
