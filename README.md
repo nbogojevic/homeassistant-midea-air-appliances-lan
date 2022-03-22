@@ -109,8 +109,8 @@ On entry page, paste following content:
 ```yaml
 service: logger.set_level
 data:
-    custom_components.midea_dehumidifier_lan: DEBUG
-    midea_beautiful: DEBUG
+    custom_components.midea_dehumidifier_lan: debug
+    midea_beautiful: debug
 ```
 
 It is possible to activate debug logging on Home Assistent start. To do this, open Home Assistant's `configuration.yaml` file on your machine, and add following to `logger` configuration:
