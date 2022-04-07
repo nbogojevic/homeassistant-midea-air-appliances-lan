@@ -12,14 +12,10 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 
-from midea_beautiful.midea import SUPPORTED_APPS
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.midea_dehumidifier_lan.config_flow import MideaConfigFlow
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_ADVANCED_SETTINGS,
-    CONF_APPID,
-    CONF_APPKEY,
     CONF_MOBILE_APP,
     DEFAULT_APP,
     DOMAIN,
@@ -63,7 +59,7 @@ async def test_successful_config_flow(hass: HomeAssistant, midea_single_applianc
     # Check that the config flow is complete and a new entry is created with
     # the input data
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "Midea Air Appliance"
+    assert result["title"] == "Midea Air Appliance (LAN)"
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
     assert len(result["data"]["devices"]) == 1
@@ -90,7 +86,7 @@ async def test_successful_config_flow_midea_two_appliances_only_dehumidifier(
     # Check that the config flow is complete and a new entry is created with
     # the input data
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "Midea Air Appliance"
+    assert result["title"] == "Midea Air Appliance (LAN)"
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
     assert len(result["data"]["devices"]) == 1
@@ -116,8 +112,7 @@ async def test_advanced_settings_config_flow(hass: HomeAssistant):
     values = result["data_schema"]({})
     assert values[CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert values[CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
-    assert values[CONF_APPID] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPID]
-    assert values[CONF_APPKEY] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPKEY]
+    assert values[CONF_MOBILE_APP] == DEFAULT_APP
     assert values[CONF_BROADCAST_ADDRESS] == ""
     assert values[CONF_INCLUDE] == ["0xa1"]
 
@@ -137,18 +132,16 @@ async def test_advanced_settings_config_flow_success(
     user_input = {
         CONF_USERNAME: "test_username",
         CONF_PASSWORD: "test_password",
-        CONF_APPKEY: "test_appkey",
-        CONF_APPID: 1000,
+        CONF_MOBILE_APP: "MSmartHome",
     }
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input=user_input
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "Midea Air Appliance"
+    assert result["title"] == "Midea Air Appliance (LAN)"
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
-    assert result["data"][CONF_APPKEY] == "test_appkey"
-    assert result["data"][CONF_APPID] == 1000
+    assert result["data"][CONF_MOBILE_APP] == "MSmartHome"
     assert len(result["data"]["devices"]) == 1
     assert result["result"]
 
@@ -168,21 +161,19 @@ async def test_advanced_settings_config_flow_success_network(
     user_input = {
         CONF_USERNAME: "test_username",
         CONF_PASSWORD: "test_password",
-        CONF_APPKEY: "test_appkey",
+        CONF_MOBILE_APP: "MSmartHome",
         CONF_BROADCAST_ADDRESS: "192.0.2.255",
-        CONF_APPID: 1000,
     }
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input=user_input
     )
     print(result)
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "Midea Air Appliance"
+    assert result["title"] == "Midea Air Appliance (LAN)"
     assert result["data"]
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
-    assert result["data"][CONF_APPKEY] == "test_appkey"
-    assert result["data"][CONF_APPID] == 1000
+    assert result["data"][CONF_MOBILE_APP] == "MSmartHome"
     assert result["data"][CONF_BROADCAST_ADDRESS] == ["255.255.255.255", "192.0.2.255"]
     assert len(result["data"]["devices"]) == 1
     assert result["result"]
@@ -211,14 +202,13 @@ async def test_advanced_settings_config_invalid_network(hass: HomeAssistant):
     values = result["data_schema"]({})
     assert values[CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert values[CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
-    assert values[CONF_APPID] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPID]
-    assert values[CONF_APPKEY] == SUPPORTED_APPS[DEFAULT_APP][CONF_APPKEY]
+    assert values[CONF_MOBILE_APP] == "NetHome Plus"
     assert values[CONF_BROADCAST_ADDRESS] == "655.123.123.333"
     assert result["description_placeholders"]
     assert (
         result["description_placeholders"].get("cause")
         == "Octet 655 (> 255) not permitted in '655.123.123.333'"
-    )  # noqa: E501
+    )
     assert values[CONF_INCLUDE] == ["0xa1"]
 
 
@@ -237,8 +227,7 @@ async def test_advanced_settings_config_flow_success_use_cloud(
     user_input = {
         CONF_USERNAME: "test_username",
         CONF_PASSWORD: "test_password",
-        CONF_APPKEY: "test_appkey_cloud",
-        CONF_APPID: 1001,
+        CONF_MOBILE_APP: "MSmartHome",
         CONF_INCLUDE: ["0xa1", "0xac"],
     }
     result = await hass.config_entries.flow.async_configure(
@@ -246,11 +235,10 @@ async def test_advanced_settings_config_flow_success_use_cloud(
     )
     print(result)
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["title"] == "Midea Air Appliance"
+    assert result["title"] == "Midea Air Appliance (LAN)"
     assert result["data"][CONF_USERNAME] == MOCK_BASIC_CONFIG_PAGE[CONF_USERNAME]
     assert result["data"][CONF_PASSWORD] == MOCK_BASIC_CONFIG_PAGE[CONF_PASSWORD]
-    assert result["data"][CONF_APPKEY] == "test_appkey_cloud"
-    assert result["data"][CONF_APPID] == 1001
+    assert result["data"][CONF_MOBILE_APP] == "MSmartHome"
     assert result["data"][CONF_INCLUDE] == ["0xa1", "0xac"]
     assert len(result["data"]["devices"]) == 1
     assert result["result"]
@@ -270,7 +258,10 @@ async def test_midea_invalid_auth_config_flow(hass: HomeAssistant, midea_invalid
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "user"
     assert result["description_placeholders"]
-    assert result["description_placeholders"].get("cause") == "Authentication 34 45"
+    assert (
+        result["description_placeholders"].get("cause")
+        == "Cloud authentication error: 45 (34)"
+    )
 
 
 async def test_midea_internal_exception(hass: HomeAssistant, midea_internal_exception):
@@ -310,8 +301,7 @@ async def test_step_reauth(hass: HomeAssistant, midea_no_appliances):
     conf = {
         CONF_USERNAME: "user@example.com",
         CONF_PASSWORD: "password",
-        CONF_APPKEY: "test-appkey",
-        CONF_APPID: 1000,
+        CONF_MOBILE_APP: "MSmartHome",
     }
     MockConfigEntry(
         domain=DOMAIN,
@@ -344,8 +334,7 @@ async def test_step_reauth_invalid_password(hass: HomeAssistant, midea_invalid_a
     conf = {
         CONF_USERNAME: "user@example.com",
         CONF_PASSWORD: "password",
-        CONF_APPKEY: "test-appkey",
-        CONF_APPID: 1000,
+        CONF_MOBILE_APP: "MSmartHome",
     }
     MockConfigEntry(
         domain=DOMAIN,
