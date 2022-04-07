@@ -22,7 +22,7 @@
           "scan_interval": "Network scan interval",
           "debug": "Advanced debug mode"
         },
-        "description": "You can provide specific Midea mobile app key and app id if the default ones don't work.\n\nYou can also specify network address (e.g. 192.0.2.2) or range (e.g. 192.0.2.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
+        "description": "You can specify network address (e.g. 192.0.2.2) or range (e.g. 192.0.2.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
         "title": "Advanced settings"
       },
       "unreachable_appliance": {
@@ -64,7 +64,7 @@
     "abort": {
       "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea Air Appliances (LAN).",
       "reauth_successful": "Re-authentication was successful",
-      "no_configured_devices": "Nothing to configure"
+      "no_configured_devices": "There are no devices to configure"
     }
   },
   "options": {

@@ -8,7 +8,7 @@ from homeassistant.const import Platform
 from midea_beautiful.midea import (
     APPLIANCE_TYPE_AIRCON,
     APPLIANCE_TYPE_DEHUMIDIFIER,
-    SUPPORTED_APPS,
+    DEFAULT_APP as DEFAULT_APP_FROM_LIB,
 )
 
 __version__ = "0.7.0"
@@ -23,8 +23,8 @@ DOMAIN: Final = f"{UNIQUE_DEHUMIDIFIER_PREFIX}lan"
 ISSUE_URL: Final = "https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/issues/new/choose"  # noqa: E501
 
 CONF_ADVANCED_SETTINGS: Final = "advanced_settings"
-CONF_APPID: Final = "appid"
-CONF_APPKEY: Final = "appkey"
+OBSOLETE_CONF_APPID: Final = "appid"
+OBSOLETE_CONF_APPKEY: Final = "appkey"
 CONF_DEBUG: Final = "debug"
 CONF_MOBILE_APP: Final = "mobile_app"
 CONF_TOKEN_KEY: Final = "token_key"
@@ -36,7 +36,7 @@ MIN_TARGET_HUMIDITY: Final = 35
 MAX_TARGET_TEMPERATURE: Final = 32
 MIN_TARGET_TEMPERATURE: Final = 16
 
-CURRENT_CONFIG_VERSION: Final = 2
+CURRENT_CONFIG_VERSION: Final = 3
 
 # Wait half a second between successive refresh calls
 APPLIANCE_REFRESH_COOLDOWN: Final = 0.5
@@ -72,7 +72,7 @@ DEFAULT_DISCOVERY_MODE = DISCOVERY_LAN
 
 DISCOVERY_BATCH_SIZE: Final = 64
 
-DEFAULT_APP: Final = next(app for app in SUPPORTED_APPS)
+DEFAULT_APP: Final = DEFAULT_APP_FROM_LIB
 
 DEFAULT_USERNAME: Final = ""
 DEFAULT_PASSWORD: Final = ""

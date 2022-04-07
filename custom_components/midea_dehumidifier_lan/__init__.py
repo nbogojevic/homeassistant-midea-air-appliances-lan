@@ -29,14 +29,13 @@ from homeassistant.helpers.entity_registry import async_get_registry
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY
+from midea_beautiful.midea import SUPPORTED_APPS, DEFAULT_APP_ID, DEFAULT_APPKEY
 
 from custom_components.midea_dehumidifier_lan.const import (
-    CONF_APPID,
-    CONF_APPKEY,
+    CONF_MOBILE_APP,
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD_OBSOLETE,
-    CURRENT_CONFIG_VERSION,
+    DEFAULT_APP,
     DEFAULT_TTL,
     DISCOVERY_CLOUD,
     DISCOVERY_IGNORE,
@@ -45,12 +44,14 @@ from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     LOCAL_BROADCAST,
     NAME,
+    CURRENT_CONFIG_VERSION,
+    OBSOLETE_CONF_APPID,
+    OBSOLETE_CONF_APPKEY,
     PLATFORMS,
     UNKNOWN_IP,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 from custom_components.midea_dehumidifier_lan.util import MideaClient, address_ok
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -127,15 +128,28 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         if not old_broadcast:
             old_broadcast = [LOCAL_BROADCAST]
         new_conf = {
-            CONF_APPKEY: old_conf.get(CONF_APPKEY),
-            CONF_APPID: old_conf.get(CONF_APPID),
+            CONF_MOBILE_APP: old_conf.get(CONF_MOBILE_APP),
             CONF_BROADCAST_ADDRESS: old_broadcast,
             CONF_USERNAME: old_conf.get(CONF_USERNAME),
             CONF_PASSWORD: old_conf.get(CONF_PASSWORD),
         }
-        if not new_conf.get(CONF_APPID) or not new_conf.get(CONF_APPKEY):
-            new_conf[CONF_APPKEY] = DEFAULT_APPKEY
-            new_conf[CONF_APPID] = DEFAULT_APP_ID
+        if not old_conf.get(OBSOLETE_CONF_APPID) or not old_conf.get(
+            OBSOLETE_CONF_APPKEY
+        ):
+            new_conf[CONF_MOBILE_APP] = DEFAULT_APP
+        else:
+            appkey = old_conf.get(OBSOLETE_CONF_APPKEY, DEFAULT_APPKEY)
+            if appkey:
+                for appname, appconf in SUPPORTED_APPS.items():
+                    if appconf["appkey"] == appkey:
+                        new_conf[CONF_MOBILE_APP] = appname
+                        break
+            else:
+                appid = old_conf.get(OBSOLETE_CONF_APPID, DEFAULT_APP_ID)
+                for appname, appconf in SUPPORTED_APPS.items():
+                    if appconf["appid"] == appid:
+                        new_conf[CONF_MOBILE_APP] = appname
+                        break
 
         new_devices = []
         new_conf[CONF_DEVICES] = new_devices

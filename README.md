@@ -25,7 +25,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 
 ### Configuring
 1. Add `Midea Air Appliances (LAN)` integration via UI.
-2. Enter Midea cloud username and password. Those are the same used in NetHome Plus mobile application.
+2. Enter Midea cloud username and password and select mobile application you use.
 3. The integration will discover appliance on local network(s).
 4. If an appliance is not automatically discovered, but is registered to the cloud account, user is prompted to enter IPv4 address of the appliance.
 5. If you want to use integration with air conditioner unit(s), please select the checkbox on `Advanced settings` page.
@@ -39,7 +39,8 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See tables below for more information.
 * Temperature sensor on dehumidifier is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm, or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
-* Some Midea appliances, built in 2021 and later, use Tuya based patform and this integration will not work with them. In some cases those appliances have  have same model names as old ones.
+* Some Midea appliances, built in 2021 and later, use Tuya based patform and this integration will not work with them. In some cases those appliances have have same model names as old ones.
+* When migrating from version 0.6 or 0.7 to 0.8, integration may fail. Please remove and re-install integration.
 
 ## Supported appliances
 
@@ -109,8 +110,8 @@ On entry page, paste following content:
 ```yaml
 service: logger.set_level
 data:
-    custom_components.midea_dehumidifier_lan: debug
-    midea_beautiful: debug
+    custom_components.midea_dehumidifier_lan: DEBUG
+    midea_beautiful: DEBUG
 ```
 
 It is possible to activate debug logging on Home Assistent start. To do this, open Home Assistant's `configuration.yaml` file on your machine, and add following to `logger` configuration:

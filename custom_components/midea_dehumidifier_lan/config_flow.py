@@ -43,22 +43,18 @@ from midea_beautiful.exceptions import (
 from midea_beautiful.lan import LanDevice
 from midea_beautiful.midea import (
     APPLIANCE_TYPE_DEHUMIDIFIER,
-    DEFAULT_APP_ID,
-    DEFAULT_APPKEY,
     SUPPORTED_APPS,
 )
 
 from custom_components.midea_dehumidifier_lan import Hub
 from custom_components.midea_dehumidifier_lan.const import (
     NAME,
+    CURRENT_CONFIG_VERSION,
     SUPPORTED_APPLIANCES,
     CONF_ADVANCED_SETTINGS,
-    CONF_APPID,
-    CONF_APPKEY,
     CONF_DEBUG,
     CONF_MOBILE_APP,
     CONF_TOKEN_KEY,
-    CURRENT_CONFIG_VERSION,
     DEFAULT_APP,
     DEFAULT_DISCOVERY_MODE,
     DEFAULT_PASSWORD,
@@ -118,8 +114,7 @@ def _appliance_schema(  # pylint: disable=too-many-arguments
 def _advanced_settings_schema(
     username: str = "",
     password: str = "",
-    appkey: str = "",
-    appid: int = None,
+    app: str = DEFAULT_APP,
     broadcast_address: str = "",
     appliances: list[str] = None,
     debug: bool = False,
@@ -129,8 +124,7 @@ def _advanced_settings_schema(
         {
             vol.Required(CONF_USERNAME, default=username): cv.string,
             vol.Required(CONF_PASSWORD, default=password): cv.string,
-            vol.Required(CONF_APPKEY, default=appkey): cv.string,
-            vol.Required(CONF_APPID, default=appid): cv.positive_int,
+            vol.Optional(CONF_MOBILE_APP, default=app): vol.In(SUPPORTED_APPS.keys()),
             vol.Optional(CONF_BROADCAST_ADDRESS, default=broadcast_address): cv.string,
             vol.Required(
                 CONF_SCAN_INTERVAL,
@@ -150,15 +144,11 @@ def _advanced_settings_schema(
 def _reauth_schema(
     username: str,
     password: str,
-    appkey: str,
-    appid: int,
 ) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(CONF_USERNAME, default=username): cv.string,
             vol.Required(CONF_PASSWORD, default=password): cv.string,
-            vol.Required(CONF_APPKEY, default=appkey): cv.string,
-            vol.Required(CONF_APPID, default=appid): cv.positive_int,
         }
     )
 
@@ -310,7 +300,6 @@ class _MideaFlow(FlowHandler):
 
         # Remove not used elements
         self.conf.pop(CONF_ADVANCED_SETTINGS, None)
-        self.conf.pop(CONF_MOBILE_APP, None)
         if self.config_entry:
             _LOGGER.debug("Updating configuration data %s", RedactedConf(self.conf))
             self.hass.config_entries.async_update_entry(
@@ -526,16 +515,14 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
 
         if self.advanced_settings:
             assert self.conf is not None
-            self.conf[CONF_APPID] = user_input[CONF_APPID]
-            self.conf[CONF_APPKEY] = user_input[CONF_APPKEY]
+            self.conf[CONF_MOBILE_APP] = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
             self.conf[CONF_INCLUDE] = user_input[CONF_INCLUDE]
             self.conf[CONF_SCAN_INTERVAL] = user_input[CONF_SCAN_INTERVAL]
             self.conf[CONF_DEBUG] = user_input[CONF_DEBUG]
             self.conf[CONF_BROADCAST_ADDRESS] = _get_broadcast_addresses(user_input)
 
         else:
-            app = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
-            self.conf |= SUPPORTED_APPS.get(app, SUPPORTED_APPS[DEFAULT_APP])
+            self.conf[CONF_MOBILE_APP] = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
             if user_input.get(CONF_ADVANCED_SETTINGS):
                 return await self.async_step_advanced_settings()
 
@@ -614,8 +601,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         password = user_input.get(
             CONF_PASSWORD, self.conf.get(CONF_PASSWORD, DEFAULT_PASSWORD)
         )
-        appkey = user_input.get(CONF_APPKEY, DEFAULT_APPKEY)
-        appid = user_input.get(CONF_APPID, DEFAULT_APP_ID)
+        app = user_input.get(CONF_MOBILE_APP, DEFAULT_APP)
         broadcast_addresses = user_input.get(
             CONF_BROADCAST_ADDRESS, ",".join(self.conf.get(CONF_BROADCAST_ADDRESS, []))
         )
@@ -625,8 +611,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             data_schema=_advanced_settings_schema(
                 username=username,
                 password=password,
-                appkey=appkey,
-                appid=appid,
+                app=app,
                 broadcast_address=broadcast_addresses,
             ),
             description_placeholders=self._placeholders(),
@@ -661,14 +646,12 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         self.errors.clear()
         password = ""
         username = self.conf.get(CONF_USERNAME, "")
-        appkey = self.conf.get(CONF_APPKEY, DEFAULT_APPKEY)
-        appid = self.conf.get(CONF_APPID, DEFAULT_APP_ID)
+        app = self.conf.get(CONF_MOBILE_APP, DEFAULT_APP)
         if user_input is not None:
             extra_conf = {
                 CONF_USERNAME: user_input.get(CONF_USERNAME, ""),
                 CONF_PASSWORD: user_input.get(CONF_PASSWORD, ""),
-                CONF_APPKEY: user_input.get(CONF_APPKEY, appkey),
-                CONF_APPID: user_input.get(CONF_APPID, appid),
+                CONF_MOBILE_APP: user_input.get(CONF_MOBILE_APP, app),
             }
             try:
                 await self.hass.async_add_executor_job(
@@ -679,8 +662,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             else:
                 self.conf[CONF_USERNAME] = username
                 self.conf[CONF_PASSWORD] = password
-                self.conf[CONF_APPKEY] = appkey
-                self.conf[CONF_APPID] = appid
+                self.conf[CONF_MOBILE_APP] = app
                 return await self._async_add_entry()
 
         return self.async_show_form(
@@ -688,8 +670,6 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             data_schema=_reauth_schema(
                 username=username,
                 password=password,
-                appkey=appkey,
-                appid=appid,
             ),
             description_placeholders=self._placeholders(),
             errors=self.errors,

@@ -12,6 +12,10 @@
 ## Breaking Changes
 - Unique id of entities changed. Using serial number now instead of cloud API id. Old entites are updated with new unique id.
 - Removed sleep switch.
+{% if (version_installed.split(".")[1] | int) < 8 %}
+- Removed application key from advanced settings page. Only application name is used for configuration.
+- When migrating from version 0.6 or 0.7 new configuration may fail. Please remove and re-install integration.
+{% endif %}
 
 ## Major changes
 - Added support for air conditioners (**beta**)

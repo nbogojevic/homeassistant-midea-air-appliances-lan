@@ -30,8 +30,7 @@ from midea_beautiful.util import very_verbose
 
 from custom_components.midea_dehumidifier_lan.const import (
     _ALWAYS_CREATE,
-    CONF_APPID,
-    CONF_APPKEY,
+    CONF_MOBILE_APP,
     CONF_TOKEN_KEY,
     UNKNOWN_IP,
 )
@@ -193,8 +192,7 @@ class MideaClient:
         return midea_beautiful_api.connect_to_cloud(
             account=conf[CONF_USERNAME],
             password=conf[CONF_PASSWORD],
-            appkey=conf[CONF_APPKEY],
-            appid=conf[CONF_APPID],
+            appname=conf[CONF_MOBILE_APP],
         )
 
     def appliance_state(  # pylint: disable=too-many-arguments,no-self-use
