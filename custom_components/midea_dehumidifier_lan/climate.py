@@ -14,6 +14,7 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_DRY,
     HVAC_MODE_FAN_ONLY,
     HVAC_MODE_HEAT,
+    HVAC_MODE_OFF,
     PRESET_BOOST,
     PRESET_ECO,
     PRESET_NONE,
@@ -50,6 +51,7 @@ FAN_SILENT = "Silent"
 FAN_FULL = "Full"
 
 HVAC_MODES: Final = [
+    HVAC_MODE_OFF,
     HVAC_MODE_AUTO,
     HVAC_MODE_COOL,
     HVAC_MODE_HEAT,
@@ -81,8 +83,8 @@ _FAN_SPEEDS = {
 _MODES_MAPPING = [
     (1, HVAC_MODE_AUTO),
     (2, HVAC_MODE_COOL),
-    (3, HVAC_MODE_HEAT),
-    (4, HVAC_MODE_DRY),
+    (3, HVAC_MODE_DRY),
+    (4, HVAC_MODE_HEAT),
     (5, HVAC_MODE_FAN_ONLY),
 ]
 
@@ -181,14 +183,19 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         """Set new target hvac mode."""
         midea_mode = next((i[0] for i in _MODES_MAPPING if i[1] == hvac_mode), None)
         if midea_mode is None:
-            _LOGGER.warning("Unsupported climate mode %s", hvac_mode)
-            midea_mode = 1
+            if hvac_mode == HVAC_MODE_OFF:
+                self.turn_off()
+            else:
+                _LOGGER.warning("Unsupported climate mode %s", hvac_mode)
+                midea_mode = 1
         self.apply("mode", midea_mode)
 
     def set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         if kwargs.get(ATTR_TEMPERATURE):
             self.apply("current_temperature", kwargs.get(ATTR_TEMPERATURE))
+        else:
+            _LOGGER.warning("set_temperature called with %s", kwargs)
 
     def set_swing_mode(self, swing_mode: str) -> None:
         if swing_mode == SWING_VERTICAL:
