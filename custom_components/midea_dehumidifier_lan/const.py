@@ -11,7 +11,7 @@ from midea_beautiful.midea import (
     DEFAULT_APP as DEFAULT_APP_FROM_LIB,
 )
 
-__version__ = "0.8.1"
+__version__ = "0.8.2"
 
 # Base component constants
 NAME: Final = "Midea Air Appliance (LAN)"
