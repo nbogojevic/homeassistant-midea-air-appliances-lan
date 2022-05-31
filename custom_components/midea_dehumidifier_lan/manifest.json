@@ -1,7 +1,7 @@
 {
   "domain": "midea_dehumidifier_lan",
   "name": "Midea Air Appliances (LAN)",
-  "version": "0-gamma",
+  "version": "0.8.3",
   "config_flow": true,
   "documentation": "https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/blob/main/README.md",
   "issue_tracker": "https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/issues",
