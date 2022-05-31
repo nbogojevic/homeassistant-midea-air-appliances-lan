@@ -1,12 +1,4 @@
 {
   "name": "Midea Air Appliances (LAN)",
-  "domains": [
-    "binary_sensor",
-    "climate",
-    "fan",
-    "humidifier",
-    "sensor",
-    "switch"
-  ],
   "homeassistant": "2022.5.0"
 }
