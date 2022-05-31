@@ -5,16 +5,13 @@ from typing import Final
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
+    ATTR_FAN_MODE,
+    ATTR_HVAC_MODE,
+    ATTR_SWING_MODE,
     FAN_AUTO,
     FAN_HIGH,
     FAN_LOW,
     FAN_MEDIUM,
-    HVAC_MODE_AUTO,
-    HVAC_MODE_COOL,
-    HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_OFF,
     PRESET_BOOST,
     PRESET_ECO,
     PRESET_NONE,
@@ -27,20 +24,22 @@ from homeassistant.components.climate.const import (
     SWING_HORIZONTAL,
     SWING_OFF,
     SWING_VERTICAL,
+    HVACAction,
+    HVACMode,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, PRECISION_HALVES, TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
+    ApplianceEntity,
+)
 from custom_components.midea_dehumidifier_lan.const import (
     ATTR_RUNNING,
     DOMAIN,
     MAX_TARGET_TEMPERATURE,
     MIN_TARGET_TEMPERATURE,
-)
-from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
-    ApplianceEntity,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 
@@ -51,12 +50,12 @@ FAN_SILENT = "Silent"
 FAN_FULL = "Full"
 
 HVAC_MODES: Final = [
-    HVAC_MODE_OFF,
-    HVAC_MODE_AUTO,
-    HVAC_MODE_COOL,
-    HVAC_MODE_HEAT,
-    HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY,
+    HVACMode.OFF,
+    HVACMode.AUTO,
+    HVACMode.COOL,
+    HVACMode.HEAT,
+    HVACMode.DRY,
+    HVACMode.FAN_ONLY,
 ]
 FAN_MODES: Final = [
     FAN_SILENT,
@@ -80,13 +79,30 @@ _FAN_SPEEDS = {
     FAN_SILENT: 20,
 }
 
-_MODES_MAPPING = [
-    (1, HVAC_MODE_AUTO),
-    (2, HVAC_MODE_COOL),
-    (3, HVAC_MODE_DRY),
-    (4, HVAC_MODE_HEAT),
-    (5, HVAC_MODE_FAN_ONLY),
-]
+_MODES_TO_MIDEA = {
+    HVACMode.AUTO: 1,
+    HVACMode.COOL: 2,
+    HVACMode.DRY: 3,
+    HVACMode.HEAT: 4,
+    HVACMode.FAN_ONLY: 5,
+}
+
+_MIDEA_TO_MODES = {
+    1: HVACMode.AUTO,
+    2: HVACMode.COOL,
+    3: HVACMode.DRY,
+    4: HVACMode.HEAT,
+    5: HVACMode.FAN_ONLY,
+}
+
+_HVAC_ACTIONS = {
+    HVACMode.OFF: HVACAction.OFF,
+    HVACMode.AUTO: None,
+    HVACMode.COOL: HVACAction.COOLING,
+    HVACMode.DRY: HVACAction.COOLING,
+    HVACMode.HEAT: HVACAction.COOLING,
+    HVACMode.FAN_ONLY: HVACAction.COOLING,
+}
 
 
 async def async_setup_entry(
@@ -124,11 +140,6 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     _name_suffix = ""
     _add_extra_attrs = True
 
-    @property
-    def is_on(self) -> bool:
-        """Return True if entity is on."""
-        return self.airconditioner().running
-
     def on_update(self) -> None:
         aircon = self.airconditioner()
         self._attr_current_temperature = aircon.indoor_temperature
@@ -137,6 +148,8 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         self._attr_preset_mode = self._preset_mode()
         self._attr_swing_mode = self._swing_mode()
         self._attr_hvac_mode = self._hvac_mode()
+        self._attr_hvac_action = _HVAC_ACTIONS.get(self._attr_hvac_mode)
+        super().on_update()
 
     def _fan_mode(self) -> str:
         fan_speed = self.airconditioner().fan_speed
@@ -164,11 +177,15 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         return SWING_OFF
 
     def _hvac_mode(self) -> str:
+        if not self.airconditioner().running:
+            return HVACMode.OFF
+
         curr_mode = self.airconditioner().mode
-        mode = next((i[1] for i in _MODES_MAPPING if i[0] == curr_mode), None)
+        mode = _MIDEA_TO_MODES.get(curr_mode)
         if mode is None:
-            _LOGGER.warning("Unknown mode %d", curr_mode)
-            return HVAC_MODE_AUTO
+            mode = HVACMode.AUTO
+            _LOGGER.warning("Unknown mode %d, reporting %s", curr_mode, mode)
+
         return mode
 
     def turn_on(self, **kwargs) -> None:  # pylint: disable=unused-argument
@@ -179,23 +196,30 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
         """Turn the entity off."""
         self.apply(ATTR_RUNNING, False)
 
-    def set_hvac_mode(self, hvac_mode: str) -> None:
+    def set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Set new target hvac mode."""
-        midea_mode = next((i[0] for i in _MODES_MAPPING if i[1] == hvac_mode), None)
+        if hvac_mode == HVACMode.OFF:
+            self.turn_off()
+            return
+        midea_mode = _MODES_TO_MIDEA.get(hvac_mode)
         if midea_mode is None:
-            if hvac_mode == HVAC_MODE_OFF:
-                self.turn_off()
-            else:
-                _LOGGER.warning("Unsupported climate mode %s", hvac_mode)
-                midea_mode = 1
+            _LOGGER.warning("Unsupported climate mode %s", hvac_mode)
+            return
+        # Make sure we are running
+        if not self.airconditioner().running:
+            self.turn_on()
         self.apply("mode", midea_mode)
 
     def set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         if kwargs.get(ATTR_TEMPERATURE):
             self.apply("current_temperature", kwargs.get(ATTR_TEMPERATURE))
-        else:
-            _LOGGER.warning("set_temperature called with %s", kwargs)
+        if kwargs.get(ATTR_HVAC_MODE):
+            self.set_hvac_mode(kwargs.get(ATTR_HVAC_MODE))
+        if kwargs.get(ATTR_SWING_MODE):
+            self.set_swing_mode(kwargs.get(ATTR_SWING_MODE))
+        if kwargs.get(ATTR_FAN_MODE):
+            self.set_fan_mode(kwargs.get(ATTR_FAN_MODE))
 
     def set_swing_mode(self, swing_mode: str) -> None:
         if swing_mode == SWING_VERTICAL:

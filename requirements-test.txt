@@ -1,2 +1,2 @@
 -r requirements-dev.txt
-pytest-homeassistant-custom-component~=0.8.5
+pytest-homeassistant-custom-component~=0.9.3
