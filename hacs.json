@@ -1,6 +1,5 @@
 {
   "name": "Midea Air Appliances (LAN)",
-  "version": "0.8.2",
   "domains": [
     "binary_sensor",
     "climate",
@@ -9,5 +8,5 @@
     "sensor",
     "switch"
   ],
-  "homeassistant": "2021.12.0"
+  "homeassistant": "2022.5.0"
 }
