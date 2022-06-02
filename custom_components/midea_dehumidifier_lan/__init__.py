@@ -25,7 +25,7 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_registry import async_get_registry
+from homeassistant.helpers.entity_registry import async_get
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
 from midea_beautiful.lan import LanDevice
@@ -71,8 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 
 async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    # This method can be removed after 0.7.0
-    entity_registry = await async_get_registry(hass)
+    entity_registry = await async_get(hass)
 
     conf = config_entry.data
     if devices := conf.get(CONF_DEVICES):
