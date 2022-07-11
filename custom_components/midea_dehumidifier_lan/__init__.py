@@ -71,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
 
 async def _async_migrate_names(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    entity_registry = await async_get(hass)
+    entity_registry = async_get(hass)
 
     conf = config_entry.data
     if devices := conf.get(CONF_DEVICES):
