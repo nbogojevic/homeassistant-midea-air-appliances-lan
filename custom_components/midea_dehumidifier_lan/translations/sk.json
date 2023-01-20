@@ -1,0 +1,96 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Account",
+          "password": "Password",
+          "mobile_app": "Mobile app",
+          "advanced_settings": "Advanced settings"
+        },
+        "description": "Please enter username and password that you use to connect with the selected Midea mobile application.",
+        "title": "Sign-in with Midea app account"
+      },
+      "advanced_settings": {
+        "data": {
+          "username": "Account",
+          "password": "Password",
+          "appkey": "Mobile app key",
+          "appid": "Mobile app id",
+          "broadcast_address": "Appliance address or network range",
+          "include": "Discover following appliance categories:",
+          "scan_interval": "Network scan interval",
+          "debug": "Advanced debug mode"
+        },
+        "description": "You can specify network address (e.g. 192.0.2.2) or range (e.g. 192.0.2.4/24) to search for specific appliance(s) if regular discovery doesn't work.",
+        "title": "Advanced settings"
+      },
+      "unreachable_appliance": {
+        "data": {
+          "discovery": "Choose action (discovery mode)",
+          "ip_address": "IPv4 address",
+          "name": "Device name",
+          "token": "Token",
+          "token_key": "Token key",
+          "ttl": "Minutes before unavailable"
+        },
+        "description": "We were unable to discover an appliance called {name} with the serial number {id}.\n\nPlease choose if you want to exclude appliance, search for it later, use cloud API to poll it, or provide its IPv4 address if you know it.\n\nYou can also provide token and key if you have them. If not, we will try to obtain them from Midea cloud.",
+        "title": "Unable to discover appliance"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "Account",
+          "password": "Password",
+          "appkey": "Mobile app key",
+          "appid": "Mobile app id",
+          "broadcast_address": "Appliance or network broadcast address"
+        },
+        "title": "[%key:common::config_flow::title::reauth%]",
+        "description": "The Midea Air Appliance (LAN) integration needs to re-authenticate your account"
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to appliance ({cause}).",
+      "connection_error": "Connection error ({cause}).",
+      "duplicate_ip_provided": "Same IPv4 address was used for {cause}. Please specify different addresses for different appliances.",
+      "invalid_auth": "Invalid username or password ({cause})",
+      "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
+      "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",
+      "no_cloud": "Unable to connect to Midea cloud API ({cause}).",
+      "not_discovered": "Unable to find appliance at specified IPv4 address.",
+      "midea_client": "An error in communication with Midea API has occurred. See log for more information.",
+      "unknown": "An unknown error has occurred. See log for more information."
+    },
+    "abort": {
+      "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea Air Appliances (LAN).",
+      "reauth_successful": "Re-authentication was successful",
+      "no_configured_devices": "There are no devices to configure"
+    }
+  },
+  "options": {
+    "step": {
+      "appliance": {
+        "description": "Appliance {index} of {count}",
+        "data": {
+          "discovery": "Choose action (discovery mode)",
+          "ip_address": "IPv4 address",
+          "name": "Device name",
+          "token": "Token",
+          "token_key": "Token key",
+          "ttl": "Minutes before unavailable"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to appliance ({cause}).",
+      "connection_error": "Connection error ({cause}).",
+      "duplicate_ip_provided": "Same IPv4 address was used for {cause}. Please specify different address for different appliances.",
+      "invalid_auth": "Invalid username or password ({cause})",
+      "invalid_ip_address": "Invalid IPv4 address ({cause}), please enter a valid IPv4 address (e.g. 192.0.2.2)",
+      "invalid_ip_range": "Invalid IPv4 address or range ({cause}), please enter a valid IPv4 address or range (e.g. 192.0.2.2 or 192.0.2.0/24)",
+      "no_cloud": "Unable to connect to Midea cloud API ({cause}).",
+      "not_discovered": "Unable to find appliance at specified IPv4 address.",
+      "unknown": "An unknown error has occurred. See log for more information."
+    }
+  }
+}
