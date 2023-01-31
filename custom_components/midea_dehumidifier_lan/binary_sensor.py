@@ -1,8 +1,7 @@
 """Adds binary sensors for appliances."""
 
 from homeassistant.components.binary_sensor import (
-    DEVICE_CLASS_COLD,
-    DEVICE_CLASS_PROBLEM,
+    BinarySensorDeviceClass,
     BinarySensorEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -63,7 +62,7 @@ class TankFullSensor(ApplianceEntity, BinarySensorEntity):
     dehumidifier from operating)
     """
 
-    _attr_device_class = DEVICE_CLASS_PROBLEM
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _name_suffix = " Tank Full"
 
     def on_update(self) -> None:
@@ -79,7 +78,7 @@ class TankRemovedSensor(ApplianceEntity, BinarySensorEntity):
     dehumidifier from operating)
     """
 
-    _attr_device_class = DEVICE_CLASS_PROBLEM
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _name_suffix = " Tank Removed"
     _capability_attr = "pump"
 
@@ -92,7 +91,7 @@ class FilterReplacementSensor(ApplianceEntity, BinarySensorEntity):
     Describes filter replacement binary sensors (indicated as problem)
     """
 
-    _attr_device_class = DEVICE_CLASS_PROBLEM
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_registry_enabled_default = False
     _name_suffix = " Replace Filter"
     _capability_attr = "filter"
@@ -111,7 +110,7 @@ class DefrostingSensor(ApplianceEntity, BinarySensorEntity):
     Describes defrosting mode binary sensors (indicated as cold)
     """
 
-    _attr_device_class = DEVICE_CLASS_COLD
+    _attr_device_class = BinarySensorDeviceClass.COLD
     _attr_entity_registry_enabled_default = False
     _name_suffix = " Defrosting"
 
