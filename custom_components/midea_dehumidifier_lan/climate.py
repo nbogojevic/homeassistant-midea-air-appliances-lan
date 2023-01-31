@@ -99,9 +99,9 @@ _HVAC_ACTIONS = {
     HVACMode.OFF: HVACAction.OFF,
     HVACMode.AUTO: None,
     HVACMode.COOL: HVACAction.COOLING,
-    HVACMode.DRY: HVACAction.COOLING,
-    HVACMode.HEAT: HVACAction.COOLING,
-    HVACMode.FAN_ONLY: HVACAction.COOLING,
+    HVACMode.DRY: HVACAction.DRYING,
+    HVACMode.HEAT: HVACAction.HEATING,
+    HVACMode.FAN_ONLY: HVACAction.FAN,
 }
 
 
