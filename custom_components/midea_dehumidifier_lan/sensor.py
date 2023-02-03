@@ -1,9 +1,12 @@
 """Adds sensors for each appliance."""
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorStateClass,
+    SensorDeviceClass
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    SensorDeviceClass,
     PERCENTAGE,
     TEMP_CELSIUS,
 )
