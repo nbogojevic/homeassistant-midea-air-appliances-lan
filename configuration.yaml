@@ -1,0 +1,9 @@
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.midea_dehumidifier_lan: info
+    midea_beautiful: info

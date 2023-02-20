@@ -2,7 +2,7 @@
 
 The easiest way to get started with custom integration development is to use Visual Studio Code with devcontainers. This approach will create a preconfigured development environment with all the tools you need.
 
-In the container you will have a dedicated Home Assistant core instance running with your custom component code. You can configure this instance by updating the `./devcontainer/configuration.yaml` file.
+In the container you will have a dedicated Home Assistant core instance running with your custom component code. You can configure this instance by updating the `./configuration.yaml` file.
 
 **Prerequisites**
 
@@ -37,24 +37,21 @@ The available tasks are:
 
 Task | Description
 -- | --
-Run Home Assistant on port 9123 | Launch Home Assistant with your custom component code and the configuration defined in `.devcontainer/configuration.yaml`.
-Run Home Assistant configuration against /config | Check the configuration.
-Upgrade Home Assistant to latest dev | Upgrade the Home Assistant core version in the container to the latest version of the `dev` branch.
-Install a specific version of Home Assistant | Install a specific version of Home Assistant core in the container.
+Run Home Assistant on port 8123 | Launch Home Assistant with your custom component code and the configuration defined in `./configuration.yaml`.
 
 ### Step by Step debugging
 
 With the development container,
 you can test your custom component in Home Assistant with step by step debugging.
 
-You need to modify the `configuration.yaml` file in `.devcontainer` folder
+You need to modify the `configuration.yaml` file in `./` folder
 by uncommenting the line:
 
 ```yaml
 # debugpy:
 ```
 
-Then launch the task `Run Home Assistant on port 9123`, and launch the debugger
+Then launch the task `Run Home Assistant on port 8123`, and launch the debugger
 with the existing debugging configuration `Python: Attach Local`.
 
 For more information, look at [the Remote Python Debugger integration documentation](https://www.home-assistant.io/integrations/debugpy/).
