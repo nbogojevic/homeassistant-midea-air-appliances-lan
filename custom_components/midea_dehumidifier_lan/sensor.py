@@ -1,10 +1,12 @@
 """Adds sensors for each appliance."""
 
-from homeassistant.components.sensor import SensorEntity, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorStateClass,
+    SensorDeviceClass
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
-    DEVICE_CLASS_HUMIDITY,
-    DEVICE_CLASS_TEMPERATURE,
     PERCENTAGE,
     TEMP_CELSIUS,
 )
@@ -48,7 +50,7 @@ async def async_setup_entry(
 class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
     """Crrent environment humidity sensor"""
 
-    _attr_device_class = DEVICE_CLASS_HUMIDITY
+    _attr_device_class = SensorDeviceClass.HUMIDITY
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Humidity"
@@ -60,7 +62,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
 class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     """Current environment temperature sensor"""
 
-    _attr_device_class = DEVICE_CLASS_TEMPERATURE
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = TEMP_CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Temperature"
@@ -89,7 +91,7 @@ class TankLevelSensor(ApplianceEntity, SensorEntity):
 class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
     """Current outside temperature sensor"""
 
-    _attr_device_class = DEVICE_CLASS_TEMPERATURE
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = TEMP_CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _unique_id_prefx = UNIQUE_CLIMATE_PREFIX
