@@ -100,6 +100,7 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         dehumi = self.dehumidifier()
         self._attr_mode = next((i[1] for i in _MODES if i[0] == dehumi.mode), MODE_SET)
         self._attr_target_humidity = dehumi.target_humidity
+        self._attr_current_humidity = dehumi.current_humidity # add new attribute current_humidity
         self._attr_is_on = dehumi.running
         super().on_update()
 
