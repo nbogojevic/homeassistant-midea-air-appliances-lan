@@ -16,10 +16,7 @@ from homeassistant.components.climate.const import (
     PRESET_ECO,
     PRESET_NONE,
     PRESET_SLEEP,
-    SUPPORT_FAN_MODE,
-    SUPPORT_PRESET_MODE,
-    SUPPORT_SWING_MODE,
-    SUPPORT_TARGET_TEMPERATURE,
+    ClimateEntityFeature,
     SWING_BOTH,
     SWING_HORIZONTAL,
     SWING_OFF,
@@ -131,10 +128,10 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     _attr_temperature_unit = TEMP_CELSIUS
 
     _attr_supported_features = (
-        SUPPORT_TARGET_TEMPERATURE
-        | SUPPORT_FAN_MODE
-        | SUPPORT_SWING_MODE
-        | SUPPORT_PRESET_MODE
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.FAN_MODE
+        | ClimateEntityFeature.SWING_MODE
+        | ClimateEntityFeature.PRESET_MODE
     )
 
     _name_suffix = ""
