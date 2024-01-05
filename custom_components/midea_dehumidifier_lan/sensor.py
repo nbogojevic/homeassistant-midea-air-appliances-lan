@@ -8,7 +8,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
-    TEMP_CELSIUS,
+    UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -63,7 +63,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     """Current environment temperature sensor"""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_native_unit_of_measurement = TEMP_CELSIUS
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Temperature"
 
@@ -92,7 +92,7 @@ class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
     """Current outside temperature sensor"""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_native_unit_of_measurement = TEMP_CELSIUS
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _unique_id_prefx = UNIQUE_CLIMATE_PREFIX
     _name_suffix = " Outdoor Temperature"
