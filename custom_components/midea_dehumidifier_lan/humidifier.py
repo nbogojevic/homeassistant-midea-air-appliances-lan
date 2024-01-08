@@ -4,7 +4,8 @@ import logging
 from typing import Final
 
 from homeassistant.components.humidifier import HumidifierDeviceClass, HumidifierEntity
-from homeassistant.components.humidifier.const import SUPPORT_MODES
+# from homeassistant.components.humidifier.const import SUPPORT_MODES
+from homeassistant.components.humidifier.const import HumidifierEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -71,7 +72,8 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
     _attr_device_class = HumidifierDeviceClass.DEHUMIDIFIER
     _attr_max_humidity = MAX_TARGET_HUMIDITY
     _attr_min_humidity = MIN_TARGET_HUMIDITY
-    _attr_supported_features = SUPPORT_MODES
+    # _attr_supported_features = SUPPORT_MODES
+    _attr_supported_features = HumidifierEntityFeature.MODES
     _name_suffix = ""
     _add_extra_attrs = True
 
