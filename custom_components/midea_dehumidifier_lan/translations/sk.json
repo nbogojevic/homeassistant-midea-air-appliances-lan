@@ -1,0 +1,96 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Účet",
+          "password": "Heslo",
+          "mobile_app": "Mobile app",
+          "advanced_settings": "Pokročilé nastavenia"
+        },
+        "description": "Zadajte používateľské meno a heslo, ktoré používate na pripojenie k vybranej mobilnej aplikácii Midea.",
+        "title": "Prihláste sa pomocou účtu aplikácie Midea"
+      },
+      "advanced_settings": {
+        "data": {
+          "username": "Účet",
+          "password": "Heslo",
+          "appkey": "Mobile app kľúč",
+          "appid": "Mobile app id",
+          "broadcast_address": "Adresa spotrebiča alebo rozsah siete",
+          "include": "Objavte nasledujúce kategórie spotrebičov:",
+          "scan_interval": "Interval skenovania siete",
+          "debug": "Pokročilý režim ladenia"
+        },
+        "description": "Ak bežné zisťovanie nefunguje, môžete zadať sieťovú adresu (napr. 192.0.2.2) alebo rozsah (napr. 192.0.2.4/24) a vyhľadať konkrétne zariadenia.",
+        "title": "Pokročilé nastavenia"
+      },
+      "unreachable_appliance": {
+        "data": {
+          "discovery": "Vyberte akciu (režim objavovania)",
+          "ip_address": "IPv4 addresa",
+          "name": "Názov zariadenia",
+          "token": "Token",
+          "token_key": "Token kľúč",
+          "ttl": "Minúty predtým nedostupné"
+        },
+        "description": "Nepodarilo sa nám nájsť zariadenie s názvom {name} so sériovým číslom {id}.\n\nVyberte, či chcete zariadenie vylúčiť, vyhľadať ho neskôr, použiť cloudové rozhranie API na prieskum alebo poskytnúť jeho adresu IPv4, ak ju poznáte.\n\nMôžete tiež poskytnúť token a kľúč, ak ich máte. Ak nie, pokúsime sa ich získať z cloudu Midea.",
+        "title": "Zariadenie sa nepodarilo nájsť"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "Účet",
+          "password": "Heslo",
+          "appkey": "Mobile app kľúč",
+          "appid": "Mobile app id",
+          "broadcast_address": "Adresa zariadenia alebo sieťového vysielania"
+        },
+        "title": "[%key:common::config_flow::title::reauth%]",
+        "description": "Integrácia zariadenia Midea Air Appliance (LAN) musí znova overiť váš účet"
+      }
+    },
+    "error": {
+      "cannot_connect": "Nedá sa pripojiť k zariadeniu ({cause}).",
+      "connection_error": "Chyba spojenia({cause}).",
+      "duplicate_ip_provided": "Bola použitá rovnaká adresa IPv4 {cause}. Uveďte rôzne adresy pre rôzne spotrebiče.",
+      "invalid_auth": "nesprávne užívateľské meno alebo heslo ({cause})",
+      "invalid_ip_address": "Neplatná adresa IPv4 ({cause}), zadajte platnú adresu IPv4 (napr. 192.0.2.2)",
+      "invalid_ip_range": "Neplatná adresa alebo rozsah IPv4 ({cause}), zadajte platnú adresu IPv4 alebo rozsah (napr. 192.0.2.2 alebo 192.0.2.0/24)",
+      "no_cloud": "Nedá sa pripojiť ku cloudovému API Midea ({cause}).",
+      "not_discovered": "Nemožno nájsť zariadenie na zadanej adrese IPv4.",
+      "midea_client": "Vyskytla sa chyba v komunikácii s Midea API. Viac informácií nájdete v denníku.",
+      "unknown": "Vyskytla sa neznáma chyba. Viac informácií nájdete v denníku."
+    },
+    "abort": {
+      "single_instance_allowed": "Už definovaný účet aplikácie Midea. Pre zariadenia Midea Air Appliance (LAN) je podporovaný iba jeden účet.",
+      "reauth_successful": "Opätovné overenie bolo úspešné",
+      "no_configured_devices": "Neexistujú žiadne zariadenia na konfiguráciu"
+    }
+  },
+  "options": {
+    "step": {
+      "appliance": {
+        "description": "Spotrebič {index} z {count}",
+        "data": {
+          "discovery": "Vyberte akciu (režim objavovania)",
+          "ip_address": "IPv4 addresa",
+          "name": "Názov zariadenia",
+          "token": "Token",
+          "token_key": "Token kľúč",
+          "ttl": "Minúty predtým nedostupné"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Nedá sa pripojiť k zariadeniu ({cause}).",
+      "connection_error": "Chyba spojenia ({cause}).",
+      "duplicate_ip_provided": "Bola použitá rovnaká adresa IPv4 {cause}. Zadajte inú adresu pre rôzne spotrebiče.",
+      "invalid_auth": "Nesprávne užívateľské meno alebo heslo ({cause})",
+      "invalid_ip_address": "Neplatná IPv4 adresa ({cause}), zadajte platnú adresu IPv4 (napr. 192.0.2.2)",
+      "invalid_ip_range": "Neplatná IPv4 adresa alebo rozsah ({cause}), zadajte platnú adresu IPv4 alebo rozsah (napr. 192.0.2.2 alebo 192.0.2.0/24)",
+      "no_cloud": "Nedá sa pripojiť ku cloudovému API Midea ({cause}).",
+      "not_discovered": "Nemožno nájsť zariadenie na zadanej adrese IPv4.",
+      "unknown": "Vyskytla sa neznáma chyba. Viac informácií nájdete v denníku."
+    }
+  }
+}
