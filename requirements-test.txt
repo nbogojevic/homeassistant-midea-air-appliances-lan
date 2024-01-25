@@ -1,2 +1,12 @@
 -r requirements-dev.txt
-pytest-homeassistant-custom-component~=0.9.3
+asynctest~=0.13
+flake8~=6.1
+flake8-docstrings~=1.7
+mypy==1.7.0
+pylint~=3.0
+pylint-strict-informational==0.1
+pytest>=7.2
+pytest-cov>=3.0
+pytest-homeassistant-custom-component>=0.12
+tzdata
+ruff~=0.1
