@@ -4,7 +4,7 @@ import logging
 from typing import Any, Final
 
 from homeassistant.components.fan import (
-    SUPPORT_PRESET_MODE,
+    FanEntityFeature,
     FanEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -52,7 +52,7 @@ async def async_setup_entry(
 class DehumidiferFan(ApplianceEntity, FanEntity):
     """Entity for managing dehumidifer fan"""
 
-    _attr_supported_features = SUPPORT_PRESET_MODE
+    _attr_supported_features = FanEntityFeature.PRESET_MODE
     _attr_preset_modes = PRESET_MODES_7
     _attr_speed_count = len(PRESET_MODES_7)
     _name_suffix = " Fan"
