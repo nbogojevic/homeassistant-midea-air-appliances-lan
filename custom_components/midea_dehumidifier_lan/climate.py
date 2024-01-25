@@ -213,7 +213,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     def set_temperature(self, **kwargs) -> None:
         """Set new target temperature."""
         if kwargs.get(ATTR_TEMPERATURE):
-            self.apply("current_temperature", kwargs.get(ATTR_TEMPERATURE))
+            self.apply("target_temperature", kwargs.get(ATTR_TEMPERATURE))
         if kwargs.get(ATTR_HVAC_MODE):
             self.set_hvac_mode(kwargs.get(ATTR_HVAC_MODE))
         if kwargs.get(ATTR_SWING_MODE):
