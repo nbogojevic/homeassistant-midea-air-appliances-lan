@@ -96,7 +96,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     def set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan."""
         speed = self._fan_speeds.get(preset_mode, None)
-        _LOGGER.warning("Setting speed to %s", speed)
+        _LOGGER.debug("Setting speed to %s", speed)
         if speed is not None:
             self.apply(ATTR_FAN_SPEED, speed)
         else:
@@ -104,7 +104,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
 
     def set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
-        _LOGGER.warning("Setting percentage to %s", percentage)
+        _LOGGER.debug("Setting percentage to %s", percentage)
 
         self.apply(ATTR_FAN_SPEED, percentage)
 
@@ -126,7 +126,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         if speed is not None:
             self.set_speed(speed)
             updated = True
-        _LOGGER.warning("turn_on %s %s", self._attr_percentage, updated)
+        # _LOGGER.debug("turn_on percentage=%s was_updated=%s", self._attr_percentage, updated)
         if (
             not updated
             and (self._attr_percentage or 0) < self._fan_speeds[self._on_speed]
