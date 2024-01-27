@@ -102,18 +102,18 @@ TURBO_FAN_SWITCH: Final = _MideaSwitchDescriptor(
     capability="strong_fan",
     prefix=UNIQUE_CLIMATE_PREFIX,
 )
-SCREEN_SWITCH: Final = _MideaSwitchDescriptor(
-    attr="show_screen",
-    name="Show Screen",
-    icon="mdi:clock-digital",
-    capability="screen_display",
-    prefix=UNIQUE_CLIMATE_PREFIX,
-)
+# SCREEN_SWITCH: Final = _MideaSwitchDescriptor(
+#     attr="show_screen",
+#     name="Show Screen",
+#     icon="mdi:clock-digital",
+#     capability="screen_display",
+#     prefix=UNIQUE_CLIMATE_PREFIX,
+# )
 CLIMATE_SWITCHES: Final = [
     CLIMATE_BEEP_SWITCH,
     DRYER_SWITCH,
     FAHRENHEIT_SWITCH,
-    SCREEN_SWITCH,
+    # SCREEN_SWITCH,
     PURIFIER_SWITCH,
     TURBO_FAN_SWITCH,
 ]

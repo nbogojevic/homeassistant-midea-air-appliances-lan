@@ -1,0 +1,96 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Conta",
+          "password": "Password",
+          "mobile_app": "Aplicação Móvel",
+          "advanced_settings": "Definições Avançadas"
+        },
+        "description": "Por favor, introduza o nome de utilizador e a palavra-passe que utiliza para conectar-se à aplicação móvel Midea selecionada.",
+        "title": "Iniciar sessão com a conta da aplicação Midea"
+      },
+      "advanced_settings": {
+        "data": {
+          "username": "Conta",
+          "password": "Password",
+          "appkey": "Key da Aplicação Móvel",
+          "appid": "Id da Aplicação Móvel",
+          "broadcast_address": "Endereço do AC / Desumificador ou gama de rede",
+          "include": "Desbra as seguintes categorias de AC / Desumificador:",
+          "scan_interval": "Intervalo de scan da rede",
+          "debug": "Modo de depuraçao avançado"
+        },
+        "description": "Pode especificar o endereço de rede (por exemplo, 192.0.2.2) ou gama (por exemplo, 192.0.2.4/24) para procurar AC / Desumificador(es) específico(s) se a descoberta regular não funcionar.",
+        "title": "Definições Avançadas"
+      },
+      "unreachable_appliance": {
+        "data": {
+          "discovery": "Escolha a ação (modo discovery)",
+          "ip_address": "Endereço IPv4",
+          "name": "Nome do dispositivo",
+          "token": "Token",
+          "token_key": "Token key",
+          "ttl": "Minutos antes de ficar indisponível"
+        },
+        "description": "Não conseguimos descobrir um AC / Desumificador chamado {nome} com o número de série {id}.\n\nPor favor, escolha se deseja excluir o AC / Desumificador, procurá-lo mais tarde, usar a API da cloud para verificá-lo ou fornecer o seu endereço IPv4.\n\nPode também fornecer o token e a key se os tiver. Caso contrário, tentaremos obtê-los a partir da cloud da Midea.",
+        "title": "Unable to discover appliance"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "Conta",
+          "password": "Password",
+          "appkey": "Key da aplicação móvel",
+          "appid": "ID da aplicação móvel",
+          "broadcast_address": "AC / Desumificador ou IP de broadcast da rede"
+        },
+        "title": "[%key:common::config_flow::title::reauth%]",
+        "description": "A integração do AC / Desumificador da Midea (LAN) precisa de reautenticar a sua conta"
+      }
+    },
+    "error": {
+      "cannot_connect": "Não é possível conectar ao dispositivo ({cause}).",
+      "connection_error": "Erro de conexão ({cause}).",
+      "duplicate_ip_provided": "O mesmo endereço IPv4 foi usado para {cause}. Por favor, especifique endereços IP diferentes para diferentes dispositivos.",
+      "invalid_auth": "Conta ou password inválido ({cause})",
+      "invalid_ip_address": "Endereço IPv4 inválido ({cause}), por favor insira um endereço IPv4 válido (por exemplo, 192.0.2.2)",
+      "invalid_ip_range": "Endereço ou gama IPv4 inválida ({cause}), por favor insira um endereço ou gama IPv4 válidos (por exemplo, 192.0.2.2 ou 192.0.2.0/24)",
+      "no_cloud": "Não é possível conectar à API da cloud Midea  ({cause}).",
+      "not_discovered": "Não foi possível encontrar o dispositivo no endereço IPv4 especificado.",
+      "midea_client": "Ocorreu um erro na comunicação com a API da Midea. Consulte o log para mais informações.",
+      "unknown": "Ocorreu um erro desconhecido. Consulte o log para mais informações."
+    },
+    "abort": {
+      "single_instance_allowed": "Já está definida uma conta Midea. Apenas uma única conta é suportada para os seus dispositivos Midea (LAN).",
+      "reauth_successful": "A reautenticação foi bem-sucedida",
+      "no_configured_devices": "Não há dispositivos para configurar"
+    }
+  },
+  "options": {
+    "step": {
+      "appliance": {
+        "description": "Dispositivo {index} de {count}",
+        "data": {
+          "discovery": "Escolha a acção (Modo discovery)",
+          "ip_address": "Endereço IPv4",
+          "name": "Nome do Dispositivo",
+          "token": "Token",
+          "token_key": "Token key",
+          "ttl": "Minutos antes de ficar indisponível"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Não é possível conectar ao dispositivo ({cause}).",
+      "connection_error": "Erro de conexão ({cause}).",
+      "duplicate_ip_provided": "O mesmo endereço IPv4 foi usado para {cause}. Por favor, especifique endereços IP diferentes para diferentes dispositivos.",
+      "invalid_auth": "Conta ou password inválido ({cause})",
+      "invalid_ip_address": "Endereço IPv4 inválido ({cause}), por favor insira um endereço IPv4 válido (por exemplo, 192.0.2.2)",
+      "invalid_ip_range": "Endereço ou gama IPv4 inválida ({cause}), por favor insira um endereço ou gama IPv4 válidos (por exemplo, 192.0.2.2 ou 192.0.2.0/24)",
+      "no_cloud": "Não é possível conectar à API da cloud Midea  ({cause}).",
+      "not_discovered": "Não foi possível encontrar o dispositivo no endereço IPv4 especificado.",
+      "unknown": "Ocorreu um erro desconhecido. Consulte o log para mais informações."
+    }
+  }
+}

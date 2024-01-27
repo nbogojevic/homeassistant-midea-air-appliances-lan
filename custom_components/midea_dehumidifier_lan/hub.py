@@ -153,14 +153,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
             if not self.coordinators:
                 raise ConfigEntryNotReady(str(self.errors))
             for unique_id, error in self.errors.items():
-                self.hass.components.persistent_notification.async_create(
-                    title=NAME,
-                    message=(
-                        f"{error}.\n\n"
-                        f"Device may be offline or unreachable, trying again later."
-                    ),
-                    notification_id=f"midea_error_{unique_id}",
-                )
+                _LOGGER.warning("Device may be offline or unreachable, trying again later. %s", error)
 
     async def _process_appliance(
         self, device: dict[str, Any]
