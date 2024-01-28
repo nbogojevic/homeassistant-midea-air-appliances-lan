@@ -31,7 +31,7 @@ PRESET_MODES_3: Final = [MODE_LOW, MODE_HIGH]
 PRESET_MODES_2: Final = [MODE_AUTO]
 
 _FAN_SPEEDS = {2: PRESET_MODES_2, 3: PRESET_MODES_3, 7: PRESET_MODES_7}
-_ON_SPEED = {2: MODE_AUTO, 3: MODE_MEDIUM, 7: MODE_HIGH}
+_ON_SPEED = {2: MODE_AUTO, 3: MODE_HIGH, 7: MODE_HIGH}
 
 
 async def async_setup_entry(
@@ -78,7 +78,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         supports = self.dehumidifier().capabilities
         fan_capability = supports.get("fan_speed", 0)
         self._attr_preset_modes = _FAN_SPEEDS.get(fan_capability, PRESET_MODES_7)
-        self._on_speed = _ON_SPEED.get(fan_capability, MODE_MEDIUM)
+        self._on_speed = _ON_SPEED.get(fan_capability, MODE_HIGH)
         self._attr_speed_count = len(self._attr_preset_modes)
         return super().on_online(update)
 
