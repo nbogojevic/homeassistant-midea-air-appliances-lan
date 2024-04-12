@@ -11,6 +11,7 @@ from typing import Any, cast, final
 from homeassistant.const import CONF_DISCOVERY, CONF_TOKEN, CONF_TTL
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.debounce import Debouncer
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, format_mac
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -268,11 +269,24 @@ class ApplianceEntity(CoordinatorEntity):
         slug = slugify(strip)
         return f"{self._unique_id_prefx}{slug}_"
 
+    # TODO remove as not used
+    def mac_address_converter(mac_as_hex):
+        if len(mac_as_hex) != 12:
+            return mac_as_hex
+        # Split the input into groups of two digits
+        hex_groups = [mac_as_hex[i:i+2] for i in range(0, 12, 2)]
+        # Join the groups with colons
+        mac_address = ":".join(hex_groups)
+        # Return the mac address
+        return mac_address
+
     @property
     def device_info(self) -> DeviceInfo:
         identifier = str(self.appliance.serial_number or self.appliance.serial_number)
+        mac = self.appliance.mac
         return DeviceInfo(
             identifiers={(DOMAIN, str(identifier))},
+            connection={(CONNECTION_NETWORK_MAC, format_mac(self.appliance.mac))},
             name=self.appliance.name,
             manufacturer="Midea",
             model=str(self.appliance.model),
