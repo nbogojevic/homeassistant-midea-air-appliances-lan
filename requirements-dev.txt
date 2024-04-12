@@ -1,4 +1,4 @@
-black==23.11.0
+black==24.3.0
 packaging==23.2
 pre-commit~=3.5
 PyGithub~=2.1
