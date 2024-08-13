@@ -52,7 +52,12 @@ async def async_setup_entry(
 class DehumidiferFan(ApplianceEntity, FanEntity):
     """Entity for managing dehumidifer fan"""
 
-    _attr_supported_features = FanEntityFeature.PRESET_MODE
+    _attr_supported_features = (
+        FanEntityFeature.PRESET_MODE | 
+        FanEntityFeature.TURN_OFF | 
+        FanEntityFeature.TURN_ON
+    )
+
     _attr_preset_modes = PRESET_MODES_7
     _attr_speed_count = len(PRESET_MODES_7)
     _name_suffix = " Fan"
