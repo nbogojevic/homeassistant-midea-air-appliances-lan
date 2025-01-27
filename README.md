@@ -50,6 +50,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * Pro Breeze 30L Smart Dehumidifier with Wifi / App Control
 * Midea SmartDry dehumidifiers (22, 35, 50 pint models)
 * Midea Cube dehumidifiers (20, 35, 50 pint models)
+* Comfee CDDF7-20DEN7-WFI
 
 Supported are V3 and V2 protocols that allow local network access. V3 protocol requires one connection to Midea cloud to get token and key needed for local network access. Some old models use V1 XML based protocol which is not supported. Some newer models use Tuya protocol.
 
