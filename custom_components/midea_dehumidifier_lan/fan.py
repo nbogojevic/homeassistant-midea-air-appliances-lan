@@ -78,6 +78,10 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     def is_on(self):
         # Override parent logic
         return self._attr_is_on
+    
+    @property
+    def translation_key(self):
+        return "fan"
 
     def on_online(self, update: bool) -> None:
         supports = self.dehumidifier().capabilities
