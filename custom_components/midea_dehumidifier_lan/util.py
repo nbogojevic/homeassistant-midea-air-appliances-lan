@@ -22,10 +22,7 @@ import midea_beautiful as midea_beautiful_api
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import (
-    APPLIANCE_TYPE_AIRCON,
-    APPLIANCE_TYPE_DEHUMIDIFIER,
-)
+from midea_beautiful.midea import APPLIANCE_TYPE_AIRCON, APPLIANCE_TYPE_DEHUMIDIFIER
 from midea_beautiful.util import very_verbose
 
 from custom_components.midea_dehumidifier_lan.const import (

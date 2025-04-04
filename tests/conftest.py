@@ -4,10 +4,9 @@
 
 from unittest.mock import MagicMock, Mock, patch
 
-import pytest
-
 from midea_beautiful.exceptions import CloudAuthenticationError, MideaError
-from midea_beautiful.midea import APPLIANCE_TYPE_DEHUMIDIFIER, APPLIANCE_TYPE_AIRCON
+from midea_beautiful.midea import APPLIANCE_TYPE_AIRCON, APPLIANCE_TYPE_DEHUMIDIFIER
+import pytest
 
 from custom_components.midea_dehumidifier_lan.util import MideaClient
 
@@ -28,8 +27,9 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 @pytest.fixture(name="skip_notifications", autouse=True)
 def skip_notifications_fixture():
     """Skip notification calls."""
-    with patch("homeassistant.components.persistent_notification.async_create"), patch(
-        "homeassistant.components.persistent_notification.async_dismiss"
+    with (
+        patch("homeassistant.components.persistent_notification.async_create"),
+        patch("homeassistant.components.persistent_notification.async_dismiss"),
     ):
         yield
 

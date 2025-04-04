@@ -271,7 +271,6 @@ class ApplianceEntity(CoordinatorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         identifier = str(self.appliance.serial_number or self.appliance.serial_number)
-        mac = self.appliance.mac
         return DeviceInfo(
             identifiers={(DOMAIN, str(identifier))},
             name=self.appliance.name,

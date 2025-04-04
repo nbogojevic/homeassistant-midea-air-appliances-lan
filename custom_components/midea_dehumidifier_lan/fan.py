@@ -3,19 +3,16 @@
 import logging
 from typing import Any, Final
 
-from homeassistant.components.fan import (
-    FanEntityFeature,
-    FanEntity,
-)
+from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan.const import ATTR_FAN_SPEED, DOMAIN
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
 )
+from custom_components.midea_dehumidifier_lan.const import ATTR_FAN_SPEED, DOMAIN
 from custom_components.midea_dehumidifier_lan.hub import Hub
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,9 +50,9 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     """Entity for managing dehumidifer fan"""
 
     _attr_supported_features = (
-        FanEntityFeature.PRESET_MODE | 
-        FanEntityFeature.TURN_OFF | 
-        FanEntityFeature.TURN_ON
+        FanEntityFeature.PRESET_MODE
+        | FanEntityFeature.TURN_OFF
+        | FanEntityFeature.TURN_ON
     )
 
     _attr_preset_modes = PRESET_MODES_7
@@ -64,7 +61,6 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     _on_speed = MODE_MEDIUM
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
-
         super().__init__(coordinator)
         self._fan_speeds = {
             MODE_NONE: 0,

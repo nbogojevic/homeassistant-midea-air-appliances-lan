@@ -1,18 +1,19 @@
 """Test integration configuration flow"""
+
 # pylint: disable=unused-argument
 from typing import Any
 from unittest.mock import patch
 
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import (
+    CONF_BROADCAST_ADDRESS,
+    CONF_INCLUDE,
     CONF_PASSWORD,
     CONF_USERNAME,
-    CONF_INCLUDE,
-    CONF_BROADCAST_ADDRESS,
 )
 from homeassistant.core import HomeAssistant
-
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.midea_dehumidifier_lan.config_flow import MideaConfigFlow
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_ADVANCED_SETTINGS,

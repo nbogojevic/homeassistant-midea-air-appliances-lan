@@ -1,4 +1,5 @@
 """Config flow for Midea Air Appliance (Local) integration."""
+
 from __future__ import annotations
 
 from ipaddress import IPv4Address, IPv4Network
@@ -28,8 +29,6 @@ from homeassistant.const import (
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowHandler, FlowResult
 from homeassistant.helpers import config_validation as cv
-import voluptuous as vol
-
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import (
     AuthenticationError,
@@ -41,20 +40,16 @@ from midea_beautiful.exceptions import (
     RetryLaterError,
 )
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import (
-    APPLIANCE_TYPE_DEHUMIDIFIER,
-    SUPPORTED_APPS,
-)
+from midea_beautiful.midea import APPLIANCE_TYPE_DEHUMIDIFIER, SUPPORTED_APPS
+import voluptuous as vol
 
 from custom_components.midea_dehumidifier_lan import Hub
 from custom_components.midea_dehumidifier_lan.const import (
-    NAME,
-    CURRENT_CONFIG_VERSION,
-    SUPPORTED_APPLIANCES,
     CONF_ADVANCED_SETTINGS,
     CONF_DEBUG,
     CONF_MOBILE_APP,
     CONF_TOKEN_KEY,
+    CURRENT_CONFIG_VERSION,
     DEFAULT_APP,
     DEFAULT_DISCOVERY_MODE,
     DEFAULT_PASSWORD,
@@ -68,6 +63,8 @@ from custom_components.midea_dehumidifier_lan.const import (
     DISCOVERY_WAIT,
     DOMAIN,
     LOCAL_BROADCAST,
+    NAME,
+    SUPPORTED_APPLIANCES,
     UNKNOWN_IP,
 )
 from custom_components.midea_dehumidifier_lan.util import (
@@ -154,7 +151,6 @@ def _reauth_schema(
 
 
 def _user_schema(username: str, password: str, app: str) -> vol.Schema:
-
     return vol.Schema(
         {
             vol.Required(CONF_USERNAME, default=username): cv.string,
@@ -332,7 +328,6 @@ class _MideaFlow(FlowHandler):
         ip_address = appliance.address or UNKNOWN_IP
         if user_input is not None:
             try:
-
                 ip_address = user_input.get(
                     CONF_IP_ADDRESS, device_conf.get(CONF_IP_ADDRESS, UNKNOWN_IP)
                 )

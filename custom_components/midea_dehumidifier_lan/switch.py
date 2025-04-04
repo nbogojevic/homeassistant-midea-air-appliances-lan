@@ -2,24 +2,23 @@
 
 from dataclasses import dataclass
 from typing import Final
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from custom_components.midea_dehumidifier_lan.hub import (
-    Hub,
-)
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
 )
 from custom_components.midea_dehumidifier_lan.const import (
-    ENTITY_DISABLED_BY_DEFAULT,
     DOMAIN,
+    ENTITY_DISABLED_BY_DEFAULT,
     UNIQUE_CLIMATE_PREFIX,
     UNIQUE_DEHUMIDIFIER_PREFIX,
 )
+from custom_components.midea_dehumidifier_lan.hub import Hub
 from custom_components.midea_dehumidifier_lan.util import is_enabled_by_capabilities
 
 

@@ -20,13 +20,9 @@ jobs:
         - name: Hassfest validation
           uses: "home-assistant/actions/hassfest@master"
 
-  style:
+  pre-commit:
     runs-on: "ubuntu-latest"
-    name: Check style formatting
+    name: Run pre-commit checks
     steps:
         - uses: "actions/checkout@v4"
-        - uses: "actions/setup-python@v5"
-          with:
-            python-version: "3.x"
-        - run: python3 -m pip install black
-        - run: black .
+        - uses: pre-commit/action@v3.0.1

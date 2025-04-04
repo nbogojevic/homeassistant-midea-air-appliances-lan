@@ -12,17 +12,17 @@ from homeassistant.components.climate.const import (
     FAN_HIGH,
     FAN_LOW,
     FAN_MEDIUM,
+    PRESET_AWAY,
     PRESET_BOOST,
+    PRESET_COMFORT,
     PRESET_ECO,
     PRESET_NONE,
     PRESET_SLEEP,
-    PRESET_AWAY,
-    PRESET_COMFORT,
-    ClimateEntityFeature,
     SWING_BOTH,
     SWING_HORIZONTAL,
     SWING_OFF,
     SWING_VERTICAL,
+    ClimateEntityFeature,
     HVACAction,
     HVACMode,
 )
@@ -67,7 +67,14 @@ FAN_MODES: Final = [
 
 SWING_MODES: Final = [SWING_OFF, SWING_HORIZONTAL, SWING_VERTICAL, SWING_BOTH]
 
-PRESET_MODES: Final = [PRESET_NONE, PRESET_ECO, PRESET_BOOST, PRESET_SLEEP, PRESET_AWAY, PRESET_COMFORT]
+PRESET_MODES: Final = [
+    PRESET_NONE,
+    PRESET_ECO,
+    PRESET_BOOST,
+    PRESET_SLEEP,
+    PRESET_AWAY,
+    PRESET_COMFORT,
+]
 
 _FAN_SPEEDS = {
     FAN_AUTO: 102,
@@ -241,14 +248,50 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
 
     def set_preset_mode(self, preset_mode: str) -> None:
         if preset_mode == PRESET_BOOST:
-            self.apply(turbo=True, eco_mode=False, comfort_sleep=False, frost_protect=False, comfort_mode=False)
+            self.apply(
+                turbo=True,
+                eco_mode=False,
+                comfort_sleep=False,
+                frost_protect=False,
+                comfort_mode=False,
+            )
         elif preset_mode == PRESET_ECO:
-            self.apply(turbo=False, eco_mode=True, comfort_sleep=False, frost_protect=False, comfort_mode=False)
+            self.apply(
+                turbo=False,
+                eco_mode=True,
+                comfort_sleep=False,
+                frost_protect=False,
+                comfort_mode=False,
+            )
         elif preset_mode == PRESET_SLEEP:
-            self.apply(turbo=False, eco_mode=False, comfort_sleep=True, frost_protect=False, comfort_mode=False)
+            self.apply(
+                turbo=False,
+                eco_mode=False,
+                comfort_sleep=True,
+                frost_protect=False,
+                comfort_mode=False,
+            )
         elif preset_mode == PRESET_AWAY:
-            self.apply(turbo=False, eco_mode=False, comfort_sleep=False, frost_protect=True, comfort_mode=False)
+            self.apply(
+                turbo=False,
+                eco_mode=False,
+                comfort_sleep=False,
+                frost_protect=True,
+                comfort_mode=False,
+            )
         elif preset_mode == PRESET_SLEEP:
-            self.apply(turbo=False, eco_mode=False, comfort_sleep=False, frost_protect=False, comfort_mode=True)
+            self.apply(
+                turbo=False,
+                eco_mode=False,
+                comfort_sleep=False,
+                frost_protect=False,
+                comfort_mode=True,
+            )
         else:
-            self.apply(turbo=False, eco_mode=False, comfort_sleep=False, frost_protect=False, comfort_mode=False)
+            self.apply(
+                turbo=False,
+                eco_mode=False,
+                comfort_sleep=False,
+                frost_protect=False,
+                comfort_mode=False,
+            )
