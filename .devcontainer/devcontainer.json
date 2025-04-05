@@ -17,7 +17,8 @@
 				"ms-python.python",
 				"github.vscode-pull-request-github",
 				"ryanluker.vscode-coverage-gutters",
-				"ms-python.vscode-pylance"
+				"ms-python.vscode-pylance",
+				"charliermarsh.ruff"
 			],
 			"settings": {
 				"files.eol": "\n",
@@ -32,12 +33,13 @@
 				"python.analysis.autoSearchPaths": false,
 				"python.linting.pylintEnabled": true,
 				"python.linting.enabled": true,
-				"python.formatting.provider": "black",
-				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
 				"editor.formatOnPaste": false,
 				"editor.formatOnSave": true,
 				"editor.formatOnType": true,
-				"files.trimTrailingWhitespace": true
+				"files.trimTrailingWhitespace": true,
+				"[python]": {
+					"editor.defaultFormatter": "charliermarsh.ruff"
+				},
 			}
 		}
 	},
