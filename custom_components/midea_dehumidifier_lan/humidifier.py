@@ -81,6 +81,10 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         self._attr_mode = None
         self._attr_available_modes = [MODE_SET]
 
+    @property
+    def translation_key(self):
+        return "dehumidifier"
+
     def on_online(self, update: bool) -> None:
         capabilities = self.coordinator.appliance.state.capabilities
 
