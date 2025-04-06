@@ -9,15 +9,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
+    ApplianceEntity,
+    ApplianceUpdateCoordinator,
+)
 from custom_components.midea_dehumidifier_lan.const import (
     ATTR_RUNNING,
     DOMAIN,
     MAX_TARGET_HUMIDITY,
     MIN_TARGET_HUMIDITY,
-)
-from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
-    ApplianceEntity,
-    ApplianceUpdateCoordinator,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 
@@ -100,7 +100,9 @@ class DehumidifierEntity(ApplianceEntity, HumidifierEntity):
         dehumi = self.dehumidifier()
         self._attr_mode = next((i[1] for i in _MODES if i[0] == dehumi.mode), MODE_SET)
         self._attr_target_humidity = dehumi.target_humidity
-        self._attr_current_humidity = dehumi.current_humidity # add new attribute current_humidity
+        self._attr_current_humidity = (
+            dehumi.current_humidity
+        )  # add new attribute current_humidity
         self._attr_is_on = dehumi.running
         super().on_update()
 

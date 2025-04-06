@@ -29,12 +29,13 @@ from homeassistant.helpers.entity_registry import async_get
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
 from midea_beautiful.lan import LanDevice
-from midea_beautiful.midea import SUPPORTED_APPS, DEFAULT_APP_ID, DEFAULT_APPKEY
+from midea_beautiful.midea import DEFAULT_APP_ID, DEFAULT_APPKEY, SUPPORTED_APPS
 
 from custom_components.midea_dehumidifier_lan.const import (
     CONF_MOBILE_APP,
     CONF_TOKEN_KEY,
     CONF_USE_CLOUD_OBSOLETE,
+    CURRENT_CONFIG_VERSION,
     DEFAULT_APP,
     DEFAULT_TTL,
     DISCOVERY_CLOUD,
@@ -44,7 +45,6 @@ from custom_components.midea_dehumidifier_lan.const import (
     DOMAIN,
     LOCAL_BROADCAST,
     NAME,
-    CURRENT_CONFIG_VERSION,
     OBSOLETE_CONF_APPID,
     OBSOLETE_CONF_APPKEY,
     PLATFORMS,

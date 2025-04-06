@@ -9,24 +9,26 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Validate
     steps:
-        - uses: "actions/checkout@v4"
+        - uses: actions/checkout@v4
 
         - name: HACS validation
-          uses: "hacs/action@main"
+          uses: hacs/action@main
           with:
-            category: "integration"
+            category: integration
             ignore: brands
 
         - name: Hassfest validation
-          uses: "home-assistant/actions/hassfest@master"
+          uses: home-assistant/actions/hassfest@master
 
-  style:
-    runs-on: "ubuntu-latest"
-    name: Check style formatting
+  pre-commit:
+    runs-on: ubuntu-latest
+    name: Run pre-commit checks
     steps:
-        - uses: "actions/checkout@v4"
-        - uses: "actions/setup-python@v5"
-          with:
-            python-version: "3.x"
-        - run: python3 -m pip install black
-        - run: black .
+        - uses: actions/checkout@v4
+        - uses: pre-commit/action@v3.0.1
+  ruff:
+    runs-on: ubuntu-latest
+    name: Run ruff check
+    steps:
+        - uses: actions/checkout@v4
+        - uses: astral-sh/ruff-action@v3

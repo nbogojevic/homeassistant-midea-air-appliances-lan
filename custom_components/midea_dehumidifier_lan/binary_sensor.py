@@ -7,16 +7,15 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
 from midea_beautiful.midea import ERROR_CODE_BUCKET_FULL, ERROR_CODE_BUCKET_REMOVED
 
-from custom_components.midea_dehumidifier_lan.const import (
-    DOMAIN,
-    UNIQUE_DEHUMIDIFIER_PREFIX,
-)
 from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
     ApplianceEntity,
     ApplianceUpdateCoordinator,
+)
+from custom_components.midea_dehumidifier_lan.const import (
+    DOMAIN,
+    UNIQUE_DEHUMIDIFIER_PREFIX,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
 from custom_components.midea_dehumidifier_lan.util import is_enabled_by_capabilities
