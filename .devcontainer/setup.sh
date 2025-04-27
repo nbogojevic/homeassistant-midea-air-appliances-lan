@@ -8,4 +8,4 @@ cd "$(dirname "$0")/.."
 touch custom_components/__init__.py
 
 # Install requirements
-python3 -m pip install --requirement requirements.txt
+python3 -m pip install --requirement requirements-test.txt
