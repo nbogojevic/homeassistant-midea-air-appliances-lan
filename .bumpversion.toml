@@ -20,4 +20,3 @@ filename = "custom_components/midea_dehumidifier_lan/manifest.json"
 
 [[tool.bumpversion.files]]
 filename = "custom_components/midea_dehumidifier_lan/const.py"
-
