@@ -1,0 +1,38 @@
+name: Bump version
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump-type:
+        description: 'Bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - major
+        - minor
+        - patch
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Bump version
+        id: bump
+        uses: callowayproject/bump-my-version@1.1.2
+        env:
+          BUMPVERSION_TAG: "true"
+        with:
+          args: ${{ inputs.bump-type }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check
+        if: steps.bump.outputs.bumped == 'true'
+        run: |
+          echo "Version was bumped from ${{ steps.bump.outputs.previous-version }} to ${{ steps.bump.outputs.current-version }}!"
