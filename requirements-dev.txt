@@ -9,3 +9,4 @@ mypy==1.7.0
 pylint~=3.0
 pylint-strict-informational==0.1
 ruff~=0.1
+bump-my-version==1.1.2
