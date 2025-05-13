@@ -1,5 +1,7 @@
 """Adds sensors for each appliance."""
 
+import logging
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -15,6 +17,8 @@ from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
 )
 from custom_components.midea_dehumidifier_lan.const import DOMAIN, UNIQUE_CLIMATE_PREFIX
 from custom_components.midea_dehumidifier_lan.hub import Hub
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(
@@ -53,6 +57,18 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
     _name_suffix = " Humidity"
 
     def on_update(self) -> None:
+        """
+        Set the current humidity only if device is online, otherwise set it to None.
+        """
+
+        if not self.dehumidifier().online:
+            _LOGGER.debug(
+                "%s is offline",
+                self.entity_id,
+            )
+            self._attr_native_value = None
+            return
+
         self._attr_native_value = self.dehumidifier().current_humidity
 
 
@@ -65,6 +81,18 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
     _name_suffix = " Temperature"
 
     def on_update(self) -> None:
+        """
+        Set the current temprature only if device is online, otherwise set it to None.
+        """
+
+        if not self.dehumidifier().online:
+            _LOGGER.debug(
+                "%s is offline",
+                self.entity_id,
+            )
+            self._attr_native_value = None
+            return
+
         self._attr_native_value = self.dehumidifier().current_temperature
 
 
@@ -82,6 +110,19 @@ class TankLevelSensor(ApplianceEntity, SensorEntity):
         return super().on_online(update)
 
     def on_update(self) -> None:
+        """
+        Set the tank level only if device is online, otherwise set it to None.
+        """
+
+        if not self.dehumidifier().online:
+            _LOGGER.debug(
+                "%s is offline",
+                self.entity_id,
+            )
+
+            self._attr_native_value = None
+            return
+
         self._attr_native_value = self.dehumidifier().tank_level
 
 
@@ -95,4 +136,17 @@ class OutsideTemperatureSensor(ApplianceEntity, SensorEntity):
     _name_suffix = " Outdoor Temperature"
 
     def on_update(self) -> None:
+        """
+        Set the outdoor temprature only if device is online, otherwise set it to None.
+        """
+
+        if not self.airconditioner().online:
+            _LOGGER.debug(
+                "%s is offline",
+                self.entity_id,
+            )
+
+            self._attr_native_value = None
+            return
+
         self._attr_native_value = self.airconditioner().outdoor_temperature
