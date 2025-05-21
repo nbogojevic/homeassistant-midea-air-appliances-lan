@@ -1,0 +1,96 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Compte",
+          "password": "Mot de passe",
+          "mobile_app": "Application mobile",
+          "advanced_settings": "Paramètres avancés"
+        },
+        "description": "Veuillez entrer le nom d'utilisateur et le mot de passe que vous utilisez pour vous connecter à l'application mobile Midea sélectionnée.",
+        "title": "Connexion avec un compte Midea"
+      },
+      "advanced_settings": {
+        "data": {
+          "username": "Compte",
+          "password": "Mot de passe",
+          "appkey": "Clé de l'application mobile",
+          "appid": "ID de l'application mobile",
+          "broadcast_address": "Adresse de l'appareil ou plage réseau",
+          "include": "Découvrir les catégories d'appareils suivantes :",
+          "scan_interval": "Intervalle d’analyse du réseau",
+          "debug": "Mode de débogage avancé"
+        },
+        "description": "Vous pouvez spécifier une adresse réseau (ex. 192.0.2.2) ou une plage (ex. 192.0.2.4/24) pour rechercher un ou plusieurs appareils si la détection automatique ne fonctionne pas.",
+        "title": "Paramètres avancés"
+      },
+      "unreachable_appliance": {
+        "data": {
+          "discovery": "Choisir une action (mode de découverte)",
+          "ip_address": "Adresse IPv4",
+          "name": "Nom de l'appareil",
+          "token": "Jeton",
+          "token_key": "Clé du jeton",
+          "ttl": "Minutes avant indisponibilité"
+        },
+        "description": "Nous n’avons pas pu découvrir un appareil nommé {name} avec le numéro de série {id}.\n\nVeuillez choisir si vous souhaitez exclure cet appareil, le rechercher plus tard, utiliser l’API cloud pour l’interroger ou fournir son adresse IPv4 si vous la connaissez.\n\nVous pouvez également fournir un jeton et une clé si vous les possédez. Sinon, nous essaierons de les obtenir depuis le cloud Midea.",
+        "title": "Impossible de découvrir l'appareil"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "Compte",
+          "password": "Mot de passe",
+          "appkey": "Clé de l'application mobile",
+          "appid": "ID de l'application mobile",
+          "broadcast_address": "Adresse de diffusion de l'appareil ou du réseau"
+        },
+        "title": "[%key:common::config_flow::title::reauth%]",
+        "description": "L’intégration Midea Air Appliance (LAN) doit réauthentifier votre compte"
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter à l'appareil ({cause}).",
+      "connection_error": "Erreur de connexion ({cause}).",
+      "duplicate_ip_provided": "La même adresse IPv4 a été utilisée pour {cause}. Veuillez spécifier des adresses différentes pour chaque appareil.",
+      "invalid_auth": "Nom d'utilisateur ou mot de passe invalide ({cause})",
+      "invalid_ip_address": "Adresse IPv4 invalide ({cause}), veuillez entrer une adresse IPv4 valide (ex. 192.0.2.2)",
+      "invalid_ip_range": "Adresse ou plage IPv4 invalide ({cause}), veuillez entrer une adresse ou une plage IPv4 valide (ex. 192.0.2.2 ou 192.0.2.0/24)",
+      "no_cloud": "Impossible de se connecter à l'API cloud de Midea ({cause}).",
+      "not_discovered": "Impossible de trouver l'appareil à l'adresse IPv4 spécifiée.",
+      "midea_client": "Une erreur est survenue lors de la communication avec l’API Midea. Consultez les journaux pour plus d’informations.",
+      "unknown": "Une erreur inconnue est survenue. Consultez les journaux pour plus d’informations."
+    },
+    "abort": {
+      "single_instance_allowed": "Un compte Midea est déjà défini. Un seul compte est pris en charge pour les appareils Midea Air (LAN).",
+      "reauth_successful": "Réauthentification réussie",
+      "no_configured_devices": "Aucun appareil à configurer"
+    }
+  },
+  "options": {
+    "step": {
+      "appliance": {
+        "description": "Appareil {index} sur {count}",
+        "data": {
+          "discovery": "Choisir une action (mode de découverte)",
+          "ip_address": "Adresse IPv4",
+          "name": "Nom de l'appareil",
+          "token": "Jeton",
+          "token_key": "Clé du jeton",
+          "ttl": "Minutes avant indisponibilité"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter à l'appareil ({cause}).",
+      "connection_error": "Erreur de connexion ({cause}).",
+      "duplicate_ip_provided": "La même adresse IPv4 a été utilisée pour {cause}. Veuillez spécifier une adresse différente pour chaque appareil.",
+      "invalid_auth": "Nom d'utilisateur ou mot de passe invalide ({cause})",
+      "invalid_ip_address": "Adresse IPv4 invalide ({cause}), veuillez entrer une adresse IPv4 valide (ex. 192.0.2.2)",
+      "invalid_ip_range": "Adresse ou plage IPv4 invalide ({cause}), veuillez entrer une adresse ou une plage IPv4 valide (ex. 192.0.2.2 ou 192.0.2.0/24)",
+      "no_cloud": "Impossible de se connecter à l'API cloud de Midea ({cause}).",
+      "not_discovered": "Impossible de trouver l'appareil à l'adresse IPv4 spécifiée.",
+      "unknown": "Une erreur inconnue est survenue. Consultez les journaux pour plus d’informations."
+    }
+  }
+}
