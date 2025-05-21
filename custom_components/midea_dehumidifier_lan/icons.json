@@ -1,0 +1,39 @@
+{
+    "entity": {
+        "fan": {
+            "fan": {
+                "default": "mdi:fan",
+                "state_attributes": {
+                    "preset_mode": {
+                        "default": "mdi:fan",
+                        "state": {
+                            "Low": "mdi:fan-speed-1",
+                            "Medium": "mdi:fan-speed-2",
+                            "High": "mdi:fan-speed-3",
+                            "Auto": "mdi:fan-auto"
+                        }
+                    }
+                }
+            }
+        },
+        "humidifier": {
+            "dehumidifier": {
+                "default": "mdi:air-humidifier",
+                "state_attributes": {
+                    "mode": {
+                        "default": "mdi:fan",
+                        "state": {
+                            "Set": "mdi:thermostat",
+                            "Continuous": "mdi:cached",
+                            "Dry": "mdi:water-off",
+                            "Smart": "mdi:lightbulb-on",
+                            "Purifier": "mdi:air-purifier",
+                            "Antimould": "mdi:bacteria-outline",
+                            "Fan": "mdi:fan"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
