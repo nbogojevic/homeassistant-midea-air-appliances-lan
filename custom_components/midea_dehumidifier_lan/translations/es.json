@@ -1,0 +1,96 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "username": "Cuenta",
+          "password": "Contraseña",
+          "mobile_app": "Aplicación móvil",
+          "advanced_settings": "Configuración avanzada"
+        },
+        "description": "Por favor, introduce el usuario y la contraseña que usas para conectarte con la aplicación móvil de Midea seleccionada.",
+        "title": "Iniciar sesión con cuenta de la app Midea"
+      },
+      "advanced_settings": {
+        "data": {
+          "username": "Cuenta",
+          "password": "Contraseña",
+          "appkey": "Clave de la aplicación móvil",
+          "appid": "ID de la aplicación móvil",
+          "broadcast_address": "Dirección del electrodoméstico o rango de red",
+          "include": "Descubrir las siguientes categorías de electrodomésticos:",
+          "scan_interval": "Intervalo de escaneo de red",
+          "debug": "Modo de depuración avanzada"
+        },
+        "description": "Puedes especificar una dirección de red (ej. 192.0.2.2) o un rango (ej. 192.0.2.4/24) para buscar electrodomésticos específicos si el descubrimiento automático no funciona.",
+        "title": "Configuración avanzada"
+      },
+      "unreachable_appliance": {
+        "data": {
+          "discovery": "Elegir acción (modo de descubrimiento)",
+          "ip_address": "Dirección IPv4",
+          "name": "Nombre del dispositivo",
+          "token": "Token",
+          "token_key": "Clave del token",
+          "ttl": "Minutos antes de marcar como no disponible"
+        },
+        "description": "No se pudo descubrir un electrodoméstico llamado {name} con el número de serie {id}.\n\nElige si deseas excluir el dispositivo, buscarlo más tarde, usar la API en la nube para consultarlo, o proporcionar su dirección IPv4 si la conoces.\n\nTambién puedes proporcionar el token y la clave si los tienes. Si no, intentaremos obtenerlos desde la nube de Midea.",
+        "title": "No se pudo descubrir el electrodoméstico"
+      },
+      "reauth_confirm": {
+        "data": {
+          "username": "Cuenta",
+          "password": "Contraseña",
+          "appkey": "Clave de la aplicación móvil",
+          "appid": "ID de la aplicación móvil",
+          "broadcast_address": "Dirección de difusión del electrodoméstico o red"
+        },
+        "title": "Reautenticación requerida",
+        "description": "La integración de Midea Air Appliance (LAN) necesita reautenticar tu cuenta"
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar con el electrodoméstico ({cause}).",
+      "connection_error": "Error de conexión ({cause}).",
+      "duplicate_ip_provided": "Se ha usado la misma dirección IPv4 para {cause}. Especifica direcciones diferentes para cada electrodoméstico.",
+      "invalid_auth": "Usuario o contraseña inválidos ({cause})",
+      "invalid_ip_address": "Dirección IPv4 inválida ({cause}), introduce una dirección válida (ej. 192.0.2.2)",
+      "invalid_ip_range": "Dirección o rango IPv4 inválido ({cause}), introduce una dirección o rango válido (ej. 192.0.2.2 o 192.0.2.0/24)",
+      "no_cloud": "No se puede conectar con la API en la nube de Midea ({cause}).",
+      "not_discovered": "No se encontró el electrodoméstico en la dirección IPv4 especificada.",
+      "midea_client": "Se produjo un error en la comunicación con la API de Midea. Consulta el registro para más información.",
+      "unknown": "Se produjo un error desconocido. Consulta el registro para más información."
+    },
+    "abort": {
+      "single_instance_allowed": "Ya se ha definido una cuenta de la app Midea. Solo se admite una cuenta para los electrodomésticos Midea Air (LAN).",
+      "reauth_successful": "La reautenticación fue exitosa",
+      "no_configured_devices": "No hay dispositivos para configurar"
+    }
+  },
+  "options": {
+    "step": {
+      "appliance": {
+        "description": "Electrodoméstico {index} de {count}",
+        "data": {
+          "discovery": "Elegir acción (modo de descubrimiento)",
+          "ip_address": "Dirección IPv4",
+          "name": "Nombre del dispositivo",
+          "token": "Token",
+          "token_key": "Clave del token",
+          "ttl": "Minutos antes de marcar como no disponible"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar con el electrodoméstico ({cause}).",
+      "connection_error": "Error de conexión ({cause}).",
+      "duplicate_ip_provided": "Se ha usado la misma dirección IPv4 para {cause}. Especifica direcciones diferentes para cada electrodoméstico.",
+      "invalid_auth": "Usuario o contraseña inválidos ({cause})",
+      "invalid_ip_address": "Dirección IPv4 inválida ({cause}), introduce una dirección válida (ej. 192.0.2.2)",
+      "invalid_ip_range": "Dirección o rango IPv4 inválido ({cause}), introduce una dirección o rango válido (ej. 192.0.2.2 o 192.0.2.0/24)",
+      "no_cloud": "No se puede conectar con la API en la nube de Midea ({cause}).",
+      "not_discovered": "No se encontró el electrodoméstico en la dirección IPv4 especificada.",
+      "unknown": "Se produjo un error desconocido. Consulta el registro para más información."
+    }
+  }
+}
