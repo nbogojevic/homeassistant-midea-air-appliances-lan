@@ -185,12 +185,28 @@ class MideaClient:
 
     # pylint: disable=no-self-use
     def connect_to_cloud(self, conf: dict[str, Any]) -> MideaCloud:
-        """Delegate to midea_beautiful_api.connect_to_cloud"""
-        return midea_beautiful_api.connect_to_cloud(
+        """Delegate to midea_beautiful cloud API with stable device identity."""
+        import hashlib
+
+        from midea_beautiful.midea import SUPPORTED_APPS
+
+        appname = conf[CONF_MOBILE_APP]
+        app = SUPPORTED_APPS[appname]
+        cloud = MideaCloud(
+            appkey=app["appkey"],
             account=conf[CONF_USERNAME],
             password=conf[CONF_PASSWORD],
-            appname=conf[CONF_MOBILE_APP],
+            appid=app["appid"],
+            hmac_key=app.get("hmackey"),
+            iot_key=app.get("iotkey"),
+            api_url=app["apiurl"],
+            proxied=app.get("proxied"),
+            sign_key=app["signkey"],
         )
+        stable = hashlib.sha256(conf[CONF_USERNAME].encode()).hexdigest()
+        cloud._pushtoken = stable
+        cloud.authenticate()
+        return cloud
 
     def appliance_state(  # pylint: disable=too-many-arguments,no-self-use
         self,
