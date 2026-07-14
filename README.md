@@ -1,5 +1,3 @@
-This custom component for Home Assistant adds support for Midea air conditioner and dehumidifier appliances via the local area network.
-
 # homeassistant-midea-air-appliances-lan
 
 [![Repository validation](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml)
@@ -12,6 +10,7 @@ Home Assistant custom component for controlling Midea appliance on local network
 ## Installation instruction
 
 ### HACS
+
 The easiest way to install this integration is with [HACS][hacs]. First, install [HACS][hacs-download] if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Air Appliances (LAN)`, and click download. After download, restart Home Assistant.
 
 Once the integration is installed, you can add it to the Home Assistant by going to `Configuration -> Devices & Services`, clicking `+ Add Integration` and searching for `Midea Air Appliances (LAN)` or, using My Home Assistant service, you can click on:
@@ -19,11 +18,13 @@ Once the integration is installed, you can add it to the Home Assistant by going
 [![Add Midea Air Appliances (LAN)][add-integration-badge]][add-integration]
 
 ### Manual installation
+
 1. Update Home Assistant to version 2021.12 or newer.
 2. Clone this repository.
 3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder.
 
 ### Configuring
+
 1. Add `Midea Air Appliances (LAN)` integration via UI.
 2. Enter Midea cloud username and password and select mobile application you use.
 3. The integration will discover appliance on local network(s).
@@ -39,7 +40,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See tables below for more information.
 * Temperature sensor on dehumidifier is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm, or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
-* Some Midea appliances, built in 2021 and later, use Tuya based patform and this integration will not work with them. In some cases those appliances have have same model names as old ones.
+* Some Midea appliances, built in 2021 and later, use Tuya based platform and this integration will not work with them. In some cases those appliances have have same model names as old ones.
 * When migrating from version 0.6 or 0.7 to 0.8, integration may fail. Please remove and re-install integration.
 
 ## Supported appliances
@@ -75,7 +76,7 @@ Platform | Description
 `switch` | Switch to activate beep on action (_disabled by default_).
 
 
-In addition to this, `humidifier` entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, `humidifier` entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
 This custom component creates following entities for each discovered air conditioner:
 
@@ -90,7 +91,7 @@ Platform | Description
 `switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
 `switch` | Switch screen on and off (_enabled if device announces that it is supported_).
 
-In addition to this, `climate` entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, `climate` entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
 ## Troubleshooting
 
@@ -115,7 +116,7 @@ data:
     midea_beautiful: DEBUG
 ```
 
-It is possible to activate debug logging on Home Assistent start. To do this, open Home Assistant's `configuration.yaml` file on your machine, and add following to `logger` configuration:
+It is possible to activate debug logging on Home Assistant start. To do this, open Home Assistant's `configuration.yaml` file on your machine, and add following to `logger` configuration:
 
 ```yaml
 logger:
@@ -128,18 +129,17 @@ logger:
 
 Home Assistant needs to be restarted after this change.
 
-
 ## See also
 
-https://github.com/nbogojevic/midea-beautiful-air
+<https://github.com/nbogojevic/midea-beautiful-air>
 
 ### UI
 
 Following Lovelace cards work well with this integration:
 
-https://github.com/MiguelCosta/Dehumidifier_Comfee_Card
+<https://github.com/MiguelCosta/Dehumidifier_Comfee_Card>
 
-https://github.com/sicknesz/midea-inventor-card
+<https://github.com/sicknesz/midea-inventor-card>
 
 ## Notice
 

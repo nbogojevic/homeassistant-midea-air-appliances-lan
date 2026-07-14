@@ -4,13 +4,15 @@
 {% endif %}
 
 {% if installed %}
+
 ## Changes as compared to your installed version:
 
 {% if (version_installed.split(".")[0] | int) < 1 %}
 {% if (version_installed.split(".")[1] | int) < 6 %}
 
 ## Breaking Changes
-- Unique id of entities changed. Using serial number now instead of cloud API id. Old entites are updated with new unique id.
+
+- Unique id of entities changed. Using serial number now instead of cloud API id. Old entities are updated with new unique id.
 - Removed sleep switch.
 {% if (version_installed.split(".")[1] | int) < 8 %}
 - Removed application key from advanced settings page. Only application name is used for configuration.
@@ -18,6 +20,7 @@
 {% endif %}
 
 ## Major changes
+
 - Added support for air conditioners (**beta**)
 - Added periodic discovery of appliances.
 - Added support for appliance address change.
@@ -29,6 +32,7 @@
 - Reverted to three presets for fan in all cases.
 
 ## Bug fixes
+
 - If appliance doesn't load at start, integration will attempt again to set it up.
 - An error during startup doesn't prevent integration to load.
 - Fixed integration reload failing.
@@ -68,7 +72,7 @@ Platform | Description
 `switch` | Switch to enable pump (_created if device announces that pump is supported_).
 `switch` | Switch to activate beep on action (_disabled by default_).
 
-In addition to this, humidifier entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, humidifier entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
 **This component will set up the following entities for air conditioners.**
 
@@ -83,9 +87,10 @@ Platform | Description
 `switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
 `switch` | Switch screen on and off (_enabled if device announces that it is supported_).
 
-In addition to this, climate entity will have additonal attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, climate entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
 
 {% if not installed %}
+
 ## Installation
 
 1. Click Install.
@@ -97,25 +102,25 @@ In addition to this, climate entity will have additonal attributes describing ca
 ## Configuration
 
 [![Add Midea Air Appliances (LAN)][add-integration-badge]][add-integration]
-* or search for "Midea Air Appliances (LAN)"
+
+- or search for "Midea Air Appliances (LAN)"
 ![Search for "Midea Air Appliances (LAN)"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-choice.png)
-* Sign-in with Midea app account - you may choose Midea app that corresponds to one you use (anyone should work).
+- Sign-in with Midea app account - you may choose Midea app that corresponds to one you use (anyone should work).
 ![Setup Midea App account"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/setup-account.png)
-* On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces. If you want to use custom component with an air conditioner unit, please select the appropriate checkbox.
+- On advanced options dialog you may enter another application key if you want, specify a network range to be used for discovery or choose to rely on cloud polling. If you don't specify network range, the integration will scan all local network interfaces. If you want to use custom component with an air conditioner unit, please select the appropriate checkbox.
 ![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/advanced-options.png)
-* For devices that are known to cloud service, but not discovered locally, you will have another prompt to enter details if you know them or to specify that you want to rely on cloud polling for that device.
+- For devices that are known to cloud service, but not discovered locally, you will have another prompt to enter details if you know them or to specify that you want to rely on cloud polling for that device.
 ![Advanced options"](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/raw/main/assets/appliance-missing.png)
 
-
-***
+---
 
 ## UI
 
 You may look at following Lovelace cards:
 
-https://github.com/MiguelCosta/Dehumidifier_Comfee_Card
+<https://github.com/MiguelCosta/Dehumidifier_Comfee_Card>
 
-https://github.com/sicknesz/midea-inventor-card
+<https://github.com/sicknesz/midea-inventor-card>
 
 
 [commits-shield]: https://img.shields.io/github/commit-activity/y/nbogojevic/midea-dehumidifier-lan.svg?style=for-the-badge
