@@ -9,7 +9,7 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Validate
     steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v7.0.0
 
         - name: HACS validation
           uses: hacs/action@main
@@ -24,11 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     name: Run pre-commit checks
     steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v7.0.0
         - uses: pre-commit/action@v3.0.1
   ruff:
     runs-on: ubuntu-latest
     name: Run ruff check
     steps:
-        - uses: actions/checkout@v4
-        - uses: astral-sh/ruff-action@v3
+        - uses: actions/checkout@v7.0.0
+        - uses: astral-sh/ruff-action@v4.1.0
