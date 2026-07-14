@@ -9,6 +9,7 @@ from itertools import chain, cycle
 import logging
 from typing import Any, Iterator, cast
 
+from homeassistant.components import persistent_notification
 from homeassistant.components.network import async_get_ipv4_broadcast_addresses
 from homeassistant.const import (
     CONF_API_VERSION,
@@ -24,7 +25,6 @@ from homeassistant.const import (
     CONF_UNIQUE_ID,
 )
 from homeassistant.core import CALLBACK_TYPE
-from homeassistant.components import persistent_notification
 from homeassistant.helpers.event import async_track_time_interval
 from midea_beautiful.lan import LanDevice
 
