@@ -6,5 +6,9 @@
     ],
     "files.associations": {
         "*.yaml": "yaml"
-    }
+    },
+    "cSpell.words": [
+        "Comfee",
+        "Midea"
+    ]
 }
