@@ -25,7 +25,7 @@ jobs:
 
       - name: Bump version
         id: bump
-        uses: callowayproject/bump-my-version@1.1.2
+        uses: callowayproject/bump-my-version@1.5.0
         env:
           BUMPVERSION_TAG: "true"
         with:
