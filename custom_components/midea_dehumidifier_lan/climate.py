@@ -85,6 +85,11 @@ _FAN_SPEEDS = {
     FAN_SILENT: 20,
 }
 
+# Ordered by speed so that _fan_mode() can pick the first bucket the reported
+# speed fits into. Iterating _FAN_SPEEDS directly would always yield FAN_AUTO,
+# since it is inserted first and holds the largest value of the mapping.
+_FAN_SPEEDS_BY_SPEED = sorted(_FAN_SPEEDS.items(), key=lambda item: item[1])
+
 _MODES_TO_MIDEA = {
     HVACMode.AUTO: 1,
     HVACMode.COOL: 2,
@@ -161,7 +166,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
 
     def _fan_mode(self) -> str:
         fan_speed = self.airconditioner().fan_speed
-        for mode, mode_speed in _FAN_SPEEDS.items():
+        for mode, mode_speed in _FAN_SPEEDS_BY_SPEED:
             if fan_speed <= mode_speed:
                 return mode
         return FAN_AUTO
