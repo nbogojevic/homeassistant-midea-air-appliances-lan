@@ -172,7 +172,6 @@ class _MideaFlow(FlowHandler):
         self._client: MideaClient | None = None
         self.cloud: MideaCloud | None = None  # type: ignore
         self.conf = {}
-        self.config_entry: ConfigEntry | None = None
         self.devices_conf: list[dict[str, Any]] = []
         self.discovered_appliances: list[LanDevice | None] = []
         self.error_cause: str = ""
@@ -677,7 +676,6 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize Midea options flow."""
         super().__init__()
-        self.config_entry = config_entry
         self.conf = {**config_entry.data}
         self.devices_conf = self.conf.get(CONF_DEVICES, [])
 
