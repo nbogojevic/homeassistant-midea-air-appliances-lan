@@ -238,6 +238,7 @@ class _MideaFlow(FlowHandler):
                     appliance_id=appliance.appliance_id,
                     cloud=self.cloud,
                     use_cloud=True,
+                    appliance_type=appliance.type,
                 )
             else:  # DISCOVERY_LAN
                 ip_address = appliance.address

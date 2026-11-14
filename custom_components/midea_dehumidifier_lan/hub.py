@@ -216,6 +216,7 @@ class Hub(AbstractHub):  # pylint: disable=too-many-instance-attributes
                 self.cloud,
                 use_cloud,
                 device[CONF_ID],
+                device.get(CONF_TYPE),
             )
 
         except Exception as ex:  # pylint: disable=broad-except
