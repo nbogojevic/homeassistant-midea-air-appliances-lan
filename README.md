@@ -1,5 +1,11 @@
 # homeassistant-midea-air-appliances-lan
 
+> **Recommended: Home Assistant’s built-in Midea integration**
+>
+> Home Assistant now includes a [built-in Midea integration](https://www.home-assistant.io/integrations/midea/), with support for dehumidifiers and other Midea appliances. I recommend migrating to it if your device is supported, rather than continuing to use this custom integration.
+>
+> For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier) and using firmware from [my fork](https://github.com/nbogojevic/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing Midea dongle with ESP32 based device described in links above.
+
 [![Repository validation](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml)
 
 [![hacs][hacsbadge]][hacs]
@@ -36,7 +42,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 * If IPv4 address of appliance changes, new IPv4 address will not be used until Home Assistant's restart.
 * If Home Assistant installation doesn't have access to physical network, the integration may not discover all appliances.
 * Dehumidifier modes correspond to Inventor EVA ΙΟΝ Pro Wi-Fi model. Your dehumidifier might use different names (e.g., `Boost` instead of `Dry`)
-* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea appliance integrations in combination with this one. To avoid problems, use a single integration - this one 🙂.
+* Having two integrations accessing the same device can result in undefined behavior. For example, having two Home Assistant instances accessing same device, or using one of other Midea appliance integrations in combination with this one. To avoid conflicts, use only one integration per appliance. When migrating, disable this custom integration before enabling its replacement.
 * If you encounter issues after upgrading, uninstall the integration, restart Home Assistant and re-install it.
 * Some of sensors and switches are disabled by default. You need to enable them manually. See tables below for more information.
 * Temperature sensor on dehumidifier is often under-reporting real ambient temperature. This may be due to sensor proximity to cooling pipes of the humidifier, algorithm, or electronics error. The under-reporting depends on the active mode, and stronger modes may result in larger offset from real temperature.
