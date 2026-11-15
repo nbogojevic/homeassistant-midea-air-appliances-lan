@@ -1,5 +1,5 @@
 -r requirements-dev.txt
-asynctest~=0.13
-pytest>=7.2
+midea-beautiful-air==0.10.7
+pytest>=9.0.3
 pytest-cov>=3.0
-pytest-homeassistant-custom-component>=0.12
+pytest-homeassistant>=2026.11.0

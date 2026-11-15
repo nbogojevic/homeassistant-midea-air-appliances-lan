@@ -182,6 +182,11 @@ class ApplianceEntity(CoordinatorEntity):
             self._was_online_registered = True
 
     @callback
+    def async_entity_id_changed(self, old_entity_id: str) -> None:
+        """Opt in to in-place renames; subscriptions are not keyed by entity ID."""
+        super().async_entity_id_changed(old_entity_id)
+
+    @callback
     def _updated_data(self) -> None:
         """Called when data has been updated by coordinator"""
 

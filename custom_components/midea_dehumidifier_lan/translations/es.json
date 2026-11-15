@@ -62,6 +62,7 @@
       "unknown": "Se produjo un error desconocido. Consulta el registro para más información."
     },
     "abort": {
+      "unique_id_mismatch": "La cuenta no coincide con la cuenta configurada originalmente.",
       "single_instance_allowed": "Ya se ha definido una cuenta de la app Midea. Solo se admite una cuenta para los electrodomésticos Midea Air (LAN).",
       "reauth_successful": "La reautenticación fue exitosa",
       "no_configured_devices": "No hay dispositivos para configurar"

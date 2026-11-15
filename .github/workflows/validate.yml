@@ -20,6 +20,28 @@ jobs:
         - name: Hassfest validation
           uses: home-assistant/actions/hassfest@master
 
+  tests:
+    runs-on: ubuntu-latest
+    name: Tests (HA ${{ matrix.homeassistant }})
+    strategy:
+      matrix:
+        homeassistant: ["2026.11.0", "latest"]
+    steps:
+        - uses: actions/checkout@v7.0.0
+        - uses: actions/setup-python@v6
+          with:
+            python-version: "3.14"
+        - name: Install test dependencies
+          run: |
+            if [ "${{ matrix.homeassistant }}" = "latest" ]; then
+              python -m pip install -r requirements-test.txt
+            else
+              python -m pip install -r requirements-test.txt \
+                "pytest-homeassistant==${{ matrix.homeassistant }}"
+            fi
+        - name: Run tests
+          run: python -m pytest
+
   pre-commit:
     runs-on: ubuntu-latest
     name: Run pre-commit checks

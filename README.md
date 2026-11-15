@@ -15,6 +15,8 @@ Home Assistant custom component for controlling Midea appliance on local network
 
 ## Installation instruction
 
+Home Assistant **2026.11.0 or newer** is required. Older versions are not supported.
+
 ### HACS
 
 The easiest way to install this integration is with [HACS][hacs]. First, install [HACS][hacs-download] if you don't have it yet. In Home Assistant, go to `HACS -> Integrations`, click on `+ Explore & Download Repositories`, search for `Midea Air Appliances (LAN)`, and click download. After download, restart Home Assistant.
@@ -25,7 +27,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 
 ### Manual installation
 
-1. Update Home Assistant to version 2021.12 or newer.
+1. Update Home Assistant to version 2026.11.0 or newer.
 2. Clone this repository.
 3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder.
 

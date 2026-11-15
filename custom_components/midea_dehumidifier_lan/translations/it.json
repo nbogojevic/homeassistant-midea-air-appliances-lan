@@ -62,6 +62,7 @@
       "unknown": "Si è verificato un errore sconosciuto. Consulta il registro per ulteriori informazioni."
     },
     "abort": {
+      "unique_id_mismatch": "L’account non corrisponde a quello configurato originariamente.",
       "single_instance_allowed": "Hai già configurato un account Midea. È supportato un solo account per gli elettrodomestici Midea Air (LAN).",
       "reauth_successful": "Rautenticazione riuscita",
       "no_configured_devices": "Non ci sono dispositivi da configurare"

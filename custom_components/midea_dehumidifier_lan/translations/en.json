@@ -62,6 +62,7 @@
       "unknown": "An unknown error has occurred. See log for more information."
     },
     "abort": {
+      "unique_id_mismatch": "The account does not match the account originally configured.",
       "single_instance_allowed": "Already defined a Midea app account. Only a single account is supported for Midea Air Appliances (LAN).",
       "reauth_successful": "Re-authentication was successful",
       "no_configured_devices": "There are no devices to configure"

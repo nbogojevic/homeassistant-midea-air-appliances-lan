@@ -62,6 +62,7 @@
       "unknown": "Ocorreu um erro desconhecido. Consulte o log para mais informações."
     },
     "abort": {
+      "unique_id_mismatch": "A conta não corresponde à conta configurada originalmente.",
       "single_instance_allowed": "Já está definida uma conta Midea. Apenas uma única conta é suportada para os seus dispositivos Midea (LAN).",
       "reauth_successful": "A reautenticação foi bem-sucedida",
       "no_configured_devices": "Não há dispositivos para configurar"
