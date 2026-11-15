@@ -6,7 +6,7 @@
 
 ### ✅ Alternative: ESPHome hardware modification
 
-For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier) and using firmware from [my fork](https://github.com/nbogojevic/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing Midea dongle with ESP32 based devices described in links above.
+For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing the Midea dongle with an ESP32-based device described in the linked project.
 
 {% if prerelease %}
 # This is a pre-release version!
