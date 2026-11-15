@@ -1,8 +1,12 @@
-> **Recommended: Home Assistant’s built-in Midea integration**
->
+## ⚠️ Recommended: use Home Assistant’s built-in Midea integration
+
 > Home Assistant now includes a [built-in Midea integration](https://www.home-assistant.io/integrations/midea/), with support for dehumidifiers and other Midea appliances. I recommend migrating to it if your device is supported, rather than continuing to use this custom integration.
 >
-> For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier) and using firmware from [my fork](https://github.com/nbogojevic/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing Midea dongle with ESP32 based devices described in links above.
+> **When migrating:** disable this custom integration before enabling its replacement.
+
+### Alternative: ESPHome hardware modification
+
+For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier) and using firmware from [my fork](https://github.com/nbogojevic/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing Midea dongle with ESP32 based devices described in links above.
 
 {% if prerelease %}
 # This is a pre-release version!
