@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from ipaddress import IPv4Address, IPv4Network
 import logging
 from typing import Any
@@ -296,19 +297,14 @@ class _MideaFlow(FlowHandler):
 
         # Remove not used elements
         self.conf.pop(CONF_ADVANCED_SETTINGS, None)
-        if self.config_entry:
-            _LOGGER.debug("Updating configuration data %s", RedactedConf(self.conf))
-            self.hass.config_entries.async_update_entry(
-                entry=self.config_entry, data=self.conf
-            )
-            # Reload the config entry otherwise devices will remain unavailable
-            self.hass.async_create_task(
-                self.hass.config_entries.async_reload(self.config_entry.entry_id)
-            )
-
         if not self.devices_conf:
             _LOGGER.debug("No configured appliances %s", RedactedConf(self.conf))
             return self.async_abort(reason="no_configured_devices")
+        return self._finish_flow()
+
+    @callback
+    def _finish_flow(self) -> FlowResult:
+        """Create a new config entry after appliance configuration."""
         _LOGGER.debug("Creating configuration data %s", RedactedConf(self.conf))
         return self.async_create_entry(title=NAME, data=self.conf)
 
@@ -476,7 +472,6 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         super().__init__()
         self.discovered_appliances: list[LanDevice | None] = []
         self.appliances: list[LanDevice] = []
-        self.config_entry: ConfigEntry | None = None
         self.advanced_settings = False
 
     @staticmethod
@@ -507,6 +502,8 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         assert user_input is not None
         self.conf[CONF_USERNAME] = user_input[CONF_USERNAME]
         self.conf[CONF_PASSWORD] = user_input[CONF_PASSWORD]
+        await self.async_set_unique_id(self.conf[CONF_USERNAME])
+        self._abort_if_unique_id_configured(error="single_instance_allowed")
 
         if self.advanced_settings:
             assert self.conf is not None
@@ -623,14 +620,9 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             user_input=user_input,
         )
 
-    async def _async_add_entry(self) -> FlowResult:
-        assert self.conf is not None
-        self.config_entry = await self.async_set_unique_id(self.conf[CONF_USERNAME])
-        return await super()._async_add_entry()
-
     async def async_step_reauth(self, config) -> FlowResult:
-        """Handle reauthorization request from Abode."""
-        self.conf = {**config}
+        """Reauthenticate the config entry linked to this flow."""
+        self.conf = deepcopy(dict(self._get_reauth_entry().data))
 
         return await self.async_step_reauth_confirm()
 
@@ -644,7 +636,7 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
         app = self.conf.get(CONF_MOBILE_APP, DEFAULT_APP)
         if user_input is not None:
             extra_conf = {
-                CONF_USERNAME: user_input.get(CONF_USERNAME, ""),
+                CONF_USERNAME: user_input.get(CONF_USERNAME, username),
                 CONF_PASSWORD: user_input.get(CONF_PASSWORD, ""),
                 CONF_MOBILE_APP: user_input.get(CONF_MOBILE_APP, app),
             }
@@ -655,10 +647,12 @@ class MideaConfigFlow(ConfigFlow, _MideaFlow, domain=DOMAIN):
             except Exception as ex:  # pylint: disable=broad-except
                 self._process_exception(ex)
             else:
-                self.conf[CONF_USERNAME] = username
-                self.conf[CONF_PASSWORD] = password
-                self.conf[CONF_MOBILE_APP] = app
-                return await self._async_add_entry()
+                await self.async_set_unique_id(extra_conf[CONF_USERNAME])
+                self._abort_if_unique_id_mismatch()
+                return self.async_update_reload_and_abort(
+                    self._get_reauth_entry(),
+                    data_updates=extra_conf,
+                )
 
         return self.async_show_form(
             step_id="reauth_confirm",
@@ -677,7 +671,7 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize Midea options flow."""
         super().__init__()
-        self.conf = {**config_entry.data}
+        self.conf = deepcopy(dict(config_entry.data))
         self.devices_conf = self.conf.get(CONF_DEVICES, [])
 
     async def async_step_init(
@@ -696,6 +690,14 @@ class MideaOptionsFlow(OptionsFlow, _MideaFlow):
             step_id="appliance",
             user_input=user_input,
         )
+
+    @callback
+    def _finish_flow(self) -> FlowResult:
+        """Update the existing entry without creating a replacement."""
+        _LOGGER.debug("Updating configuration data %s", RedactedConf(self.conf))
+        self.hass.config_entries.async_update_entry(self.config_entry, data=self.conf)
+        self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
+        return self.async_create_entry(title="", data={})
 
     def _build_appliance_list(self) -> None:
         assert self.config_entry

@@ -44,7 +44,6 @@ from custom_components.midea_dehumidifier_lan.hub import Hub
 
 _LOGGER = logging.getLogger(__name__)
 
-
 FAN_SILENT = "Silent"
 FAN_FULL = "Full"
 
@@ -134,7 +133,7 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
     _attr_max_temp = MAX_TARGET_TEMPERATURE
     _attr_min_temp = MIN_TARGET_TEMPERATURE
     _attr_precision = PRECISION_HALVES
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
 
     _attr_supported_features = (
         ClimateEntityFeature.TARGET_TEMPERATURE
@@ -150,8 +149,8 @@ class AirConditionerEntity(ApplianceEntity, ClimateEntity):
 
     def on_update(self) -> None:
         aircon = self.airconditioner()
-        self._attr_current_temperature = aircon.indoor_temperature
-        self._attr_target_temperature = aircon.target_temperature
+        self._attr_native_current_temperature = aircon.indoor_temperature
+        self._attr_native_target_temperature = aircon.target_temperature
         self._attr_fan_mode = self._fan_mode()
         self._attr_preset_mode = self._preset_mode()
         self._attr_swing_mode = self._swing_mode()

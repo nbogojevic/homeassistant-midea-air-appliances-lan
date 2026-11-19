@@ -1,10 +1,16 @@
 # homeassistant-midea-air-appliances-lan
 
-> **Recommended: Home Assistant’s built-in Midea integration**
+> [!IMPORTANT]
+> **Recommended: use Home Assistant’s built-in Midea integration**
 >
 > Home Assistant now includes a [built-in Midea integration](https://www.home-assistant.io/integrations/midea/), with support for dehumidifiers and other Midea appliances. I recommend migrating to it if your device is supported, rather than continuing to use this custom integration.
 >
-> For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier) and using firmware from [my fork](https://github.com/nbogojevic/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing Midea dongle with ESP32 based device described in links above.
+> **When migrating:** disable this custom integration before enabling its replacement.
+
+> [!TIP]
+> **Alternative: ESPHome hardware modification**
+>
+> For my own dehumidifiers, I have taken a different route: I migrated them to ESP32/ESPHome, following the instructions in [Chreece/ESPHome-Dehumidifier](https://github.com/Chreece/ESPHome-Dehumidifier). This involves opening your dehumidifier and replacing the Midea dongle with an ESP32-based device described in the linked project.
 
 [![Repository validation](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml/badge.svg)](https://github.com/nbogojevic/homeassistant-midea-air-appliances-lan/actions/workflows/validate.yml)
 
@@ -14,6 +20,8 @@
 Home Assistant custom component for controlling Midea appliance on local network.
 
 ## Installation instruction
+
+Home Assistant **2026.11.0 or newer** is required. Older versions are not supported.
 
 ### HACS
 
@@ -25,7 +33,7 @@ Once the integration is installed, you can add it to the Home Assistant by going
 
 ### Manual installation
 
-1. Update Home Assistant to version 2021.12 or newer.
+1. Update Home Assistant to version 2026.11.0 or newer.
 2. Clone this repository.
 3. Copy the `custom_components/midea_dehumidifier_lan` folder into your Home Assistant's `custom_components` folder.
 

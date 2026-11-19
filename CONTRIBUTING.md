@@ -50,6 +50,25 @@ Use [flake8](https://pypi.org/project/flake8/) for linting.
 
 ## Test your code modification
 
+Home Assistant 2026.11.0 or newer and Python 3.14.2 or newer are required.
+
+Create a virtual environment and install the test dependencies:
+
+```shell
+python3.14 -m venv .venv
+.venv/bin/python -m pip install -r requirements-test.txt
+.venv/bin/python -m pytest
+```
+
+Tests use the official `pytest-homeassistant` package, which installs the matching
+Home Assistant version. Upgrade them together. Do not install
+`pytest-homeassistant-custom-component` in the same environment; if migrating an
+existing environment, uninstall it before installing the test dependencies.
+Custom integrations and shared fixtures are loaded automatically.
+
+CI runs the suite against the minimum supported release (2026.11.0) and the
+latest available `pytest-homeassistant` release.
+
 This component comes with development environment in a container, easy to launch
 if you use Visual Studio Code. With this container you will have a stand alone
 Home Assistant instance running and already configured with the included

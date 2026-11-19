@@ -8,7 +8,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import UnitOfRatio, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -52,7 +52,7 @@ class CurrentHumiditySensor(ApplianceEntity, SensorEntity):
     """Crrent environment humidity sensor"""
 
     _attr_device_class = SensorDeviceClass.HUMIDITY
-    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_native_unit_of_measurement = UnitOfRatio.PERCENTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Humidity"
 
@@ -99,7 +99,7 @@ class CurrentTemperatureSensor(ApplianceEntity, SensorEntity):
 class TankLevelSensor(ApplianceEntity, SensorEntity):
     """Current tank water level sensor"""
 
-    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_native_unit_of_measurement = UnitOfRatio.PERCENTAGE
     _attr_state_class = SensorStateClass.MEASUREMENT
     _name_suffix = " Water Level"
 

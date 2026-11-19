@@ -62,6 +62,7 @@
       "unknown": "Une erreur inconnue est survenue. Consultez les journaux pour plus d’informations."
     },
     "abort": {
+      "unique_id_mismatch": "Le compte ne correspond pas au compte configuré à l’origine.",
       "single_instance_allowed": "Un compte Midea est déjà défini. Un seul compte est pris en charge pour les appareils Midea Air (LAN).",
       "reauth_successful": "Réauthentification réussie",
       "no_configured_devices": "Aucun appareil à configurer"

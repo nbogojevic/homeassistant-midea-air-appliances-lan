@@ -62,6 +62,7 @@
       "unknown": "Vyskytla sa neznáma chyba. Viac informácií nájdete v denníku."
     },
     "abort": {
+      "unique_id_mismatch": "Účet sa nezhoduje s pôvodne nakonfigurovaným účtom.",
       "single_instance_allowed": "Už definovaný účet aplikácie Midea. Pre zariadenia Midea Air Appliance (LAN) je podporovaný iba jeden účet.",
       "reauth_successful": "Opätovné overenie bolo úspešné",
       "no_configured_devices": "Neexistujú žiadne zariadenia na konfiguráciu"

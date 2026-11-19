@@ -51,7 +51,11 @@ from custom_components.midea_dehumidifier_lan.const import (
     UNKNOWN_IP,
 )
 from custom_components.midea_dehumidifier_lan.hub import Hub
-from custom_components.midea_dehumidifier_lan.util import MideaClient, address_ok
+from custom_components.midea_dehumidifier_lan.util import (
+    MideaClient,
+    RedactedConf,
+    address_ok,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -189,12 +193,19 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
             await id_resolver.async_get_unique_id_if_missing(new_conf, new)
             new_devices.append(new)
 
-        config_entry.version = CURRENT_CONFIG_VERSION
+        if not id_resolver.success:
+            return False
+
         _LOGGER.debug(
-            "Migrating configuration from %s to %s", config_entry.data, new_conf
+            "Migrating configuration from %s to %s",
+            RedactedConf(dict(config_entry.data)),
+            RedactedConf(new_conf),
         )
         if hass.config_entries.async_update_entry(
-            config_entry, data=new_conf, title=NAME
+            config_entry,
+            data=new_conf,
+            title=NAME,
+            version=CURRENT_CONFIG_VERSION,
         ):
             _LOGGER.info("Configuration migrated to version %s", config_entry.version)
         else:
@@ -202,7 +213,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
                 "Configuration didn't change during migration to version %s",
                 config_entry.version,
             )
-        return id_resolver.success
+        return True
 
     return True
 
