@@ -1,3 +1,9 @@
+## 🧊 This integration is frozen
+
+> I have moved my own appliances to ESPHome and no longer have any Midea-compatible devices, so I can no longer develop or test this integration. No new features will be added; only critical fixes will be considered.
+>
+> This integration and the [midea-beautiful-air](https://github.com/nbogojevic/midea-beautiful-air) library it uses are now frozen.
+
 ## ⚠️ Recommended: use Home Assistant’s built-in Midea integration
 
 > Home Assistant now includes a [built-in Midea integration](https://www.home-assistant.io/integrations/midea/), with support for dehumidifiers and other Midea appliances. I recommend migrating to it if your device is supported, rather than continuing to use this custom integration.

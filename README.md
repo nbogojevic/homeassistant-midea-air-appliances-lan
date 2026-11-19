@@ -1,5 +1,12 @@
 # homeassistant-midea-air-appliances-lan
 
+> [!WARNING]
+> **This integration is frozen**
+>
+> I have moved my own appliances to ESPHome and no longer have any Midea-compatible devices, so I can no longer develop or test this integration. No new features will be added; only critical fixes will be considered.
+>
+> This integration and the [midea-beautiful-air](https://github.com/nbogojevic/midea-beautiful-air) library it uses are now frozen.
+
 > [!IMPORTANT]
 > **Recommended: use Home Assistant’s built-in Midea integration**
 >
