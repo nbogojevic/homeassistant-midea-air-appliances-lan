@@ -1,5 +1,6 @@
 """Entity API compatibility and in-place rename regression tests."""
 
+from datetime import UTC, datetime
 import inspect
 import logging
 from types import SimpleNamespace
@@ -18,6 +19,7 @@ from custom_components.midea_dehumidifier_lan.appliance_coordinator import (
 from custom_components.midea_dehumidifier_lan.climate import AirConditionerEntity
 from custom_components.midea_dehumidifier_lan.const import ATTR_FAN_SPEED
 from custom_components.midea_dehumidifier_lan.fan import MODE_HIGH, DehumidiferFan
+from custom_components.midea_dehumidifier_lan.humidifier import DehumidifierEntity
 from custom_components.midea_dehumidifier_lan.sensor import (
     CurrentHumiditySensor,
     TankLevelSensor,
@@ -31,6 +33,7 @@ def coordinator():
         indoor_temperature=22.5,
         target_temperature=24.0,
         current_humidity=50,
+        target_humidity=55,
         tank_level=20,
         fan_speed=102,
         running=True,
@@ -159,3 +162,70 @@ def test_fan_turn_on(coordinator, kwargs, speed):
     with patch.object(entity, "apply") as apply:
         entity.turn_on(**kwargs)
     apply.assert_called_once_with(ATTR_FAN_SPEED, speed)
+
+
+@pytest.mark.parametrize("entity_class", [AirConditionerEntity, DehumidifierEntity])
+def test_raw_protocol_data_is_not_state(coordinator, entity_class):
+    """Raw frames change every poll and belong in diagnostics, not attributes."""
+    entity = entity_class(coordinator)
+    coordinator.appliance.state.latest_data = bytes.fromhex("a001")
+    coordinator.appliance.state.capabilities_data = bytes.fromhex("b001")
+    entity.on_update()
+    attributes = dict(entity.extra_state_attributes)
+
+    coordinator.appliance.state.latest_data = bytes.fromhex("c801")
+    coordinator.appliance.state.capabilities_data = bytes.fromhex("b002")
+    entity.on_update()
+
+    assert entity.extra_state_attributes == attributes
+    assert "last_data" not in attributes
+    assert "capabilities_data" not in attributes
+    assert attributes["last_error_time"] is None
+
+
+def test_error_time_changes_only_for_new_errors(coordinator):
+    """A persistent error keeps its timestamp; a new error gets a new one."""
+    entity = DehumidifierEntity(coordinator)
+    first = datetime(2026, 1, 1, tzinfo=UTC)
+    second = datetime(2026, 1, 2, tzinfo=UTC)
+    third = datetime(2026, 1, 3, tzinfo=UTC)
+    state = coordinator.appliance.state
+    with patch(
+        "custom_components.midea_dehumidifier_lan.appliance_coordinator.dt_util.utcnow",
+        side_effect=[first, second, third],
+    ):
+        state.error_code = 1
+        entity.on_update()
+        entity.on_update()
+        assert entity.extra_state_attributes["last_error_code"] == 1
+        assert entity.extra_state_attributes["last_error_time"] == first
+
+        state.error_code = 2
+        entity.on_update()
+        assert entity.extra_state_attributes["last_error_code"] == 2
+        assert entity.extra_state_attributes["last_error_time"] == second
+
+        state.error_code = 0
+        entity.on_update()
+        state.error_code = 2
+        entity.on_update()
+        assert entity.extra_state_attributes["error_code"] == 2
+        assert entity.extra_state_attributes["last_error_time"] == third
+
+
+async def test_unchanged_poll_does_not_change_state(hass, coordinator):
+    """Only last_reported advances when a poll changes raw protocol data only."""
+    component = EntityComponent(logging.getLogger(__name__), "humidifier", hass)
+    entity = DehumidifierEntity(coordinator)
+    with patch.object(DehumidifierEntity, "device_info", None):
+        await component.async_add_entities([entity])
+    listener = coordinator.async_add_listener.call_args.args[0]
+    before = hass.states.get(entity.entity_id)
+
+    coordinator.appliance.state.latest_data = bytes.fromhex("d00102")
+    listener()
+    after = hass.states.get(entity.entity_id)
+
+    assert after.last_updated == before.last_updated
+    assert after.attributes == before.attributes
+    await entity.async_remove()

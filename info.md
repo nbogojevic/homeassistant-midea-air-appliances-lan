@@ -82,7 +82,7 @@ Platform | Description
 `switch` | Switch to enable pump (_created if device announces that pump is supported_).
 `switch` | Switch to activate beep on action (_disabled by default_).
 
-In addition to this, humidifier entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, humidifier entity will have additional attributes describing capabilities, current and last error code, and time of last error. Raw payloads are available in the integration diagnostics download.
 
 **This component will set up the following entities for air conditioners.**
 
@@ -97,7 +97,7 @@ Platform | Description
 `switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
 `switch` | Switch screen on and off (_enabled if device announces that it is supported_).
 
-In addition to this, climate entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, climate entity will have additional attributes describing capabilities, current and last error code, and time of last error. Raw payloads are available in the integration diagnostics download.
 
 {% if not installed %}
 
