@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import timedelta
 import logging
 from time import monotonic
 from typing import Any, cast, final
@@ -17,7 +17,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
-from homeassistant.util import slugify
+from homeassistant.util import dt as dt_util, slugify
 from midea_beautiful.appliance import AirConditionerAppliance, DehumidifierAppliance
 from midea_beautiful.cloud import MideaCloud
 from midea_beautiful.exceptions import MideaError
@@ -159,6 +159,7 @@ class ApplianceEntity(CoordinatorEntity):
     _capability_attr = ""
     _add_extra_attrs = False
     _was_online_registered = False
+    _last_seen_error_code = 0
 
     def __init__(self, coordinator: ApplianceUpdateCoordinator) -> None:
         self.coordinator = coordinator
@@ -170,7 +171,7 @@ class ApplianceEntity(CoordinatorEntity):
         if self._add_extra_attrs:
             self._attr_extra_state_attributes = {
                 "last_error_code": 0,
-                "last_error_time": datetime.now(),
+                "last_error_time": None,
             }
 
     async def async_added_to_hass(self) -> None:
@@ -221,19 +222,20 @@ class ApplianceEntity(CoordinatorEntity):
         """Allows additional processing after the coordinator updates data"""
         if self._add_extra_attrs:
             state = self.appliance.state
-            _error_code = state.error_code
+            error_code = state.error_code
 
+            # Raw protocol frames are exposed through diagnostics. They change on
+            # every poll and must not be state attributes.
             self._attr_extra_state_attributes |= {
                 "capabilities": str(state.capabilities),
-                "capabilities_data": state.capabilities_data.hex(),
-                "error_code": _error_code,
-                "last_data": state.latest_data.hex(),
+                "error_code": error_code,
             }
-            if _error_code:
+            if error_code and error_code != self._last_seen_error_code:
                 self._attr_extra_state_attributes |= {
-                    "last_error_code": _error_code,
-                    "last_error_time": datetime.now(),
+                    "last_error_code": error_code,
+                    "last_error_time": dt_util.utcnow(),
                 }
+            self._last_seen_error_code = error_code
 
     def on_online(self, update: bool) -> None:
         """To be called when appliance comes online for the first time"""

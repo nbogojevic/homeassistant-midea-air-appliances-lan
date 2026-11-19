@@ -90,7 +90,7 @@ Platform | Description
 `switch` | Switch to activate beep on action (_disabled by default_).
 
 
-In addition to this, `humidifier` entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, `humidifier` entity will have additional attributes describing capabilities, current and last error code, and time of last error. Raw payloads are available in the integration diagnostics download.
 
 This custom component creates following entities for each discovered air conditioner:
 
@@ -105,7 +105,7 @@ Platform | Description
 `switch` | Switch turbo fan on and off (_enabled if device announces that it is supported_).
 `switch` | Switch screen on and off (_enabled if device announces that it is supported_).
 
-In addition to this, `climate` entity will have additional attributes describing capabilities, current and last error code, time of last error, as well as last payloads received.
+In addition to this, `climate` entity will have additional attributes describing capabilities, current and last error code, and time of last error. Raw payloads are available in the integration diagnostics download.
 
 ## Troubleshooting
 
@@ -142,6 +142,8 @@ logger:
 ```
 
 Home Assistant needs to be restarted after this change.
+
+Raw appliance payloads and parsed capabilities can be downloaded from the integration or device page using **Download diagnostics**. Credentials, tokens, keys, addresses, and device identifiers are redacted.
 
 ## See also
 
